@@ -301,7 +301,7 @@ export class UI {
 
   // Aviso breve entre niveles (nuevo personaje) sin pantalla completa.
   toast(text, ms = 3500) {
-    const n = this.el('div', 'dialog', text);
+    const n = this.el('div', 'dialog toast', text);
     n.style.pointerEvents = 'none';
     this.root.appendChild(n);
     setTimeout(() => n.remove(), ms);

@@ -27,6 +27,7 @@ const dict = {
     'action.ability': 'Habilidad (Select)',
     'action.pause': 'Pausa',
     'menu.version': 'Versión de pruebas',
+    'touch.rotate': 'Gira el móvil para jugar',
 
     'select.title': 'Elige tu personaje',
     'select.locked': 'Bloqueado',
@@ -57,7 +58,6 @@ const dict = {
     'lobby.tapes': 'E: ver tus cintas',
     'lobby.door': 'Sal por la puerta de arriba para entrar a los pasillos',
     'lobby.welcome': '¡Hola! Habla conmigo para elegir personaje. En la estantería están tus cintas. Cuando estés lista, sal por la puerta de arriba.',
-    'game.talkShop': 'E: hablar con Tarda',
 
     'intro.skip': 'Saltar (Enter)',
     'intro.sign': 'SE BUSCA GENTE\nPARA UN TRABAJO',
@@ -147,6 +147,7 @@ const dict = {
     'action.ability': 'Ability (Select)',
     'action.pause': 'Pause',
     'menu.version': 'Test version',
+    'touch.rotate': 'Turn your phone sideways to play',
 
     'select.title': 'Choose your character',
     'select.locked': 'Locked',
@@ -177,7 +178,6 @@ const dict = {
     'lobby.tapes': 'E: look at your tapes',
     'lobby.door': 'Leave through the top door to enter the hallways',
     'lobby.welcome': "Hi! Talk to me to pick a character. Your tapes are on the shelf. When you're ready, leave through the top door.",
-    'game.talkShop': 'E: talk to Tarda',
 
     'intro.skip': 'Skip (Enter)',
     'intro.sign': 'PEOPLE WANTED\nFOR A JOB',

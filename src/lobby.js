@@ -13,7 +13,8 @@ export class Lobby extends Game {
   constructor(character, callbacks) {
     super(character, loadMap('lobby', LOBBY), callbacks);
     const m = this.level.markers;
-    this.tarda = characterById('tarda');
+    // La Tarda de la tienda es amarilla, para distinguirla de la Tarda personaje (verde). Decidido por Elora.
+    this.tarda = { ...characterById('tarda'), color: '#e8c840', dark: '#b89820' };
     this.npc = m.N[0];
     this.shelf = m.V;
     this.doors = m.D;

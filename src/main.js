@@ -8,6 +8,7 @@ import { Game } from './game.js';
 import { Lobby } from './lobby.js';
 import { Intro } from './intro.js';
 import { Title } from './title.js';
+import { TouchControls } from './touch.js';
 import { music } from './music.js';
 import { characterById } from './characters.js';
 
@@ -15,6 +16,7 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const input = new Input();
 const ui = new UI(document.getElementById('ui'), input);
+const touch = new TouchControls(input);   // botones en pantalla, solo en móviles y tablets
 
 loadLang();
 
@@ -126,17 +128,6 @@ function startLevel(n) {
       game.paused = true;
       ui.showPause({ onResume: () => { ui.clear(); game.paused = false; input.clear(); }, onMenu: () => gotoLobby() });
     },
-    onShop: () => {
-      game.paused = true;
-      const close = () => { ui.clear(); game.paused = false; input.clear(); };
-      const open = () => ui.showShop({
-        unlocked, coins: wallet.coins, current: run.character,
-        onChoose: (ch) => { run.character = ch; save(); game.ch = ch; close(); },
-        onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
-        onClose: close,
-      });
-      open();
-    },
     onDeath: (reason) => {
       music.stop();
       ui.showGameOver({
@@ -178,6 +169,8 @@ function frame(now) {
   input.pollPad();
   if (ui.padTick) ui.padTick();
   else ui.padNavigate();
+  // los botones táctiles se esconden cuando hay un menú o diálogo abierto (los avisos no cuentan)
+  if (touch.enabled) touch.setVisible(!ui.root.querySelector('.screen, .dialog:not(.toast)'));
   if (scene) {
     scene.update(dt, input);
     if (scene) scene.render(ctx);
@@ -191,6 +184,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Gancho para pruebas automáticas (no afecta al juego).
-window.holewayDebug = { get scene() { return scene; }, run, unlocked, wallet, flags, gotoLobby, startLevel, music };
+window.holewayDebug = { get scene() { return scene; }, run, unlocked, wallet, flags, gotoLobby, startLevel, music, input, touch };
 
 gotoMenu();

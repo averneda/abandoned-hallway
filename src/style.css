@@ -87,3 +87,21 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 
 .padfocus { outline: 3px solid var(--accent2); outline-offset: 2px; }
 .card.padfocus { outline-offset: 0; }
+
+/* ---- Controles táctiles (móvil y tablet). Los crea src/touch.js solo en pantallas táctiles. */
+#touch { position: fixed; inset: 0; pointer-events: none; z-index: 5; user-select: none; -webkit-user-select: none; }
+#touch.hidden { display: none; }
+#touch > * { pointer-events: auto; touch-action: none; }
+.tpad { position: absolute; left: 18px; bottom: 18px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.22); }
+.tstick { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: rgba(255, 255, 255, 0.28); pointer-events: none; }
+.tbtn { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(214, 32, 43, 0.55); border: 2px solid rgba(255, 255, 255, 0.35); color: #fff; font-weight: 800; font-size: 22px; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5); }
+.tbtn.on { background: rgba(238, 42, 54, 0.95); }
+.tbtn.ta { right: 20px; bottom: 84px; width: 68px; height: 68px; }
+.tbtn.tb { right: 100px; bottom: 20px; width: 68px; height: 68px; }
+.tbtn.tpill { border-radius: 16px; background: rgba(42, 34, 51, 0.7); font-size: 11px; letter-spacing: 1px; width: 74px; height: 30px; }
+.tbtn.tpill.on { background: rgba(85, 68, 95, 0.95); }
+.tbtn.tstart { right: 24px; bottom: 172px; }
+.tbtn.tselect { right: 108px; bottom: 108px; }
+.tbtn.tpause { right: 14px; top: 14px; width: 42px; height: 42px; font-size: 14px; background: rgba(42, 34, 51, 0.7); }
+#rotate-hint { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(7, 6, 10, 0.92); color: var(--text); font-size: 22px; text-align: center; padding: 24px; z-index: 20; pointer-events: none; }
+@media (orientation: portrait) and (pointer: coarse) { #rotate-hint { display: flex; } }

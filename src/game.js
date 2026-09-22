@@ -2,7 +2,7 @@
 
 import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
-import { CHARACTERS, drawCharacter, PINTURA_KATY, characterById } from './characters.js';
+import { CHARACTERS, drawCharacter, PINTURA_KATY } from './characters.js';
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 
@@ -90,13 +90,6 @@ export class Game {
     this.wave = null;  // onda del mordisco de Draila: {x, y, dir, len, max, golpeados}
     this.freeze = 0; // segundos que quedan de Bloodies parados (habilidad de Oct)
 
-    // Tarda NPC de tienda dentro de un nivel (marcador 'N' en el mapa).
-    const npcMarkers = L.markers && L.markers.N;
-    if (npcMarkers && npcMarkers.length && !L.lobby) {
-      this.shopNpc = npcMarkers[0];
-      this.shopTarda = { ...characterById('tarda'), color: '#e8c840', dark: '#b89820' };
-      this.nearShop = false;
-    }
     this.enemies = L.enemies.map((e, i) => ({
       x: e.x, y: e.y, r: ENEMY.radius, dir: DIRS[Math.floor(this.rand() * 4)], turn: 1 + this.rand() * 2,
       chasing: false, lostFor: 0, stuck: 0, recoil: 0, phase: this.rand() * 10, facing: 'down', walk: 0,
@@ -328,15 +321,6 @@ export class Game {
       }
     }
 
-    // --- NPC tienda (Tarda amarilla) ---
-    if (this.shopNpc) {
-      this.nearShop = dist(this.shopNpc.x, this.shopNpc.y, p.x, p.y) < TILE * 1.9;
-      if (this.nearShop && input.wasPressed('interact') && this.cb.onShop) {
-        this.cb.onShop();
-        return;
-      }
-    }
-
     // --- salida ---
     if (this.buttonPressed && tileAt(L, Math.floor(p.x / TILE), Math.floor(p.y / TILE)) === T.EXIT_OPEN) {
       this.finished = true;
@@ -503,33 +487,12 @@ export class Game {
       ctx.beginPath(); ctx.arc(tr.x + tr.r * 0.8, tr.y + tr.r * 0.3, tr.r * 0.3, 0, Math.PI * 2); ctx.fill();
     }
 
-    // NPC tienda: mostrador y Tarda amarilla
-    if (this.shopNpc) {
-      const nx = this.shopNpc.x, ny = this.shopNpc.y;
-      ctx.fillStyle = '#4a3220'; ctx.fillRect(nx - 30, ny + 10, 60, 14);
-      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(nx - 30, ny + 8, 60, 4);
-      ctx.fillStyle = '#ffd95a'; ctx.beginPath(); ctx.ellipse(nx + 18, ny + 12, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
-    }
-
-    // Bloodies, NPC y jugador (ordenados por altura para que se tapen bien)
+    // Bloodies y jugador (ordenados por altura para que se tapen bien)
     const frozen = this.freeze > 0;
     const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 }) }));
-    if (this.shopNpc) {
-      const nx = this.shopNpc.x, ny = this.shopNpc.y;
-      actors.push({ y: ny, draw: () => drawCharacter(ctx, this.shopTarda, nx, ny, 'down', this.time * 2, 0, false) });
-    }
     actors.push({ y: p.y, draw: () => this.drawPlayer(ctx) });
     actors.sort((a, b) => a.y - b.y);
     for (const a of actors) a.draw();
-
-    // bocadillo de la Tarda de tienda cuando estás cerca
-    if (this.shopNpc && this.nearShop) {
-      const nx = this.shopNpc.x, ny = this.shopNpc.y;
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(nx + 22, ny - 34, 12, 9, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#222'; ctx.font = 'bold 12px "Segoe UI", Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('...', nx + 22, ny - 35);
-      ctx.textBaseline = 'alphabetic';
-    }
 
     ctx.restore();
 
@@ -783,8 +746,6 @@ export class Game {
     for (const e of this.enemies) {
       if (e.pintado > 0) hole(e.x - cam.x, e.y - cam.y, TILE * 2.6, 0.9);
     }
-    // La Tarda de tienda emite algo de luz para que la encuentres.
-    if (this.shopNpc) hole(this.shopNpc.x - cam.x, this.shopNpc.y - cam.y, TILE * 2.8, 0.85);
     // Las monedas de la lluvia brillan, para poder encontrarlas.
     for (const it of L.items) {
       if (it.taken || it.ttl == null) continue;
@@ -838,8 +799,7 @@ export class Game {
     // mensajes
     ctx.textAlign = 'center';
     let yy = VIEW_H - 40;
-    if (this.nearShop) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t('game.talkShop'), VIEW_W / 2, yy); yy -= 30; }
-    else if (this.nearButton) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.pressButton'), VIEW_W / 2, yy); yy -= 30; }
+    if (this.nearButton) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.pressButton'), VIEW_W / 2, yy); yy -= 30; }
     this.renderMessages(ctx, yy, font);
     ctx.restore();
   }

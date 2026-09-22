@@ -40,6 +40,10 @@ export class Input {
     this.padDirPressed = { x: 0, y: 0 }; // la cruceta se acaba de mover en esta dirección
     this.rawDown = new Set();     // números de botón pulsados (para la pantalla de configurar)
     this.rawPressed = new Set();
+    // táctil (los botones en pantalla del móvil, ver touch.js)
+    this.touchDown = new Set();
+    this.touchPressed = new Set();
+    this.touchDir = { x: 0, y: 0 };
     this.loadPadMap();
 
     window.addEventListener('keydown', (e) => {
@@ -112,23 +116,23 @@ export class Input {
   }
 
   isDown(action) {
-    return KEYS[action].some((k) => this.down.has(k)) || this.padDown.has(action);
+    return KEYS[action].some((k) => this.down.has(k)) || this.padDown.has(action) || this.touchDown.has(action);
   }
 
   wasPressed(action) {
-    return KEYS[action].some((k) => this.pressed.has(k)) || this.padPressed.has(action);
+    return KEYS[action].some((k) => this.pressed.has(k)) || this.padPressed.has(action) || this.touchPressed.has(action);
   }
 
   // Dirección del movimiento: {x: -1..1, y: -1..1}
   axis() {
     let x = (this.isDown('right') ? 1 : 0) - (this.isDown('left') ? 1 : 0);
     let y = (this.isDown('down') ? 1 : 0) - (this.isDown('up') ? 1 : 0);
-    if (x === 0) x = this.padDir.x;
-    if (y === 0) y = this.padDir.y;
+    if (x === 0) x = this.padDir.x || this.touchDir.x;
+    if (y === 0) y = this.padDir.y || this.touchDir.y;
     return { x, y };
   }
 
   // Llamar al final de cada fotograma.
-  endFrame() { this.pressed.clear(); this.padPressed.clear(); this.rawPressed.clear(); this.padDirPressed = { x: 0, y: 0 }; }
-  clear() { this.down.clear(); this.pressed.clear(); this.padPressed.clear(); this.rawPressed.clear(); }
+  endFrame() { this.pressed.clear(); this.padPressed.clear(); this.rawPressed.clear(); this.touchPressed.clear(); this.padDirPressed = { x: 0, y: 0 }; }
+  clear() { this.down.clear(); this.pressed.clear(); this.padPressed.clear(); this.rawPressed.clear(); this.touchPressed.clear(); }
 }
