@@ -102,7 +102,7 @@ function gotoLobby() {
     onStart: () => startLevel(1),
   });
   scene = lobby;
-  music.stop();   // en el lobby no suena la música de miedo
+  music.play('lobby');   // musiquilla tranquila del lobby, pedida por Elora
   ui.clear();
   // Tarda saluda la primera vez que entras al lobby.
   if (!flags.lobbySeen) {

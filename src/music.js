@@ -2,6 +2,7 @@
 // Son melodías inventadas para el juego, no copias de nada.
 //   'miedo'  → notas largas y raras en tono menor, para los pasillos.
 //   'alegre' → saltarina y rápida en tono mayor, para la sala Bonus.
+//   'lobby'  → tranquila y un poco misteriosa, como de sala de espera, para el lobby.
 
 const NOTA = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
 
@@ -51,6 +52,27 @@ const CANCIONES = {
       ['D3', 2], ['A3', 2], ['D3', 2], ['A3', 2],
       ['E3', 2], ['B3', 2], ['E3', 2], ['G3', 2],
       ['F3', 2], ['C4', 2], ['G3', 2], ['G3', 2],
+    ],
+  },
+  // Mi menor, suave como una cajita de música: chill pero con una nota rarita
+  // de vez en cuando. La pidió Elora para el lobby, con el rollo del lobby de
+  // Color o Die (melodía inventada, no es una copia).
+  lobby: {
+    tiempo: 0.3,
+    voz: 'triangle', volVoz: 0.13,
+    bajoTipo: 'sine', volBajo: 0.14,
+    melodia: [
+      ['E5', 2], ['G5', 1], ['F#5', 1], ['E5', 2], ['B4', 2],
+      ['C5', 2], ['D5', 1], ['E5', 1], ['D5', 2], ['B4', 2],
+      ['A4', 2], ['C5', 2], ['B4', 1], ['G4', 1], ['E4', 2],
+      ['F#4', 2], ['D#5', 2], ['E5', 3], [null, 1],
+      ['G5', 2], ['E5', 1], ['B4', 1], ['C5', 2], ['A4', 2],
+      ['B4', 2], ['D5', 1], ['C5', 1], ['B4', 2], [null, 2],
+      ['E5', 1], ['F#5', 1], ['G5', 2], ['F#5', 1], ['D#5', 1], ['E5', 2],
+      ['B4', 4], [null, 4],
+    ],
+    bajo: [
+      ['E2', 4], ['C3', 4], ['A2', 4], ['B2', 4],
     ],
   },
 };
