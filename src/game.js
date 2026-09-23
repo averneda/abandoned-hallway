@@ -12,6 +12,21 @@ const FACING_VEC = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
 export function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 
+// La mancha de luz que "agujerea" la oscuridad: fuerte en el centro y difuminada en el borde.
+let luz = null;
+function lightSprite() {
+  if (luz) return luz;
+  const S = 128, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g2 = c.getContext('2d'), g = g2.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(0.55, 'rgba(0,0,0,0.85)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  g2.fillStyle = g; g2.fillRect(0, 0, S, S);
+  luz = c;
+  return luz;
+}
+
 // ¿Un cuadrado de radio r en (x,y) choca con alguna casilla sólida?
 export function collides(level, x, y, r, who, jumping) {
   const x0 = Math.floor((x - r) / TILE), x1 = Math.floor((x + r) / TILE);
@@ -112,8 +127,11 @@ export class Game {
       if (L.noButton) this.say(t('msg.bonus'), 6);
     }
 
+    // La oscuridad es un degradado suave: se calcula a media resolución (4 veces menos trabajo)
+    // y se estira al pintarla, sin que se note.
     this.dark = document.createElement('canvas');
-    this.dark.width = VIEW_W; this.dark.height = VIEW_H;
+    this.dark.width = VIEW_W / 2; this.dark.height = VIEW_H / 2;
+    this.dark.getContext('2d').setTransform(0.5, 0, 0, 0.5, 0, 0);
     this.updateCamera();
   }
 
@@ -570,16 +588,52 @@ export class Game {
   // Suelo, paredes, decoración, trastos, puertas, botón y objetos. (También lo usa el lobby.)
   renderWorld(ctx) {
     const L = this.level, cam = this.cam;
-    const theme = L.theme || { floor: [72, 78, 92], wall: [34, 30, 42], grout: 'rgba(0,0,0,0.18)' };
     const tx0 = Math.floor(cam.x / TILE), ty0 = Math.floor(cam.y / TILE);
     const tx1 = Math.ceil((cam.x + VIEW_W) / TILE), ty1 = Math.ceil((cam.y + VIEW_H) / TILE);
 
-    // suelo y paredes
+    // Lo que no cambia nunca (suelo, paredes, manchas y trastos) se pinta una sola vez
+    // en una imagen guardada y aquí solo se copia el trozo que se ve.
+    if (!this.staticLayer) this.staticLayer = this.buildStaticLayer();
+    const layer = this.staticLayer;
+    const sx = Math.max(0, Math.floor(cam.x)), sy = Math.max(0, Math.floor(cam.y));
+    const sw = Math.min(layer.width - sx, VIEW_W + 1), sh = Math.min(layer.height - sy, VIEW_H + 1);
+    if (sw > 0 && sh > 0) ctx.drawImage(layer, sx, sy, sw, sh, sx, sy, sw, sh);
+
+    // puertas y botón: cambian durante la partida, se pintan en cada fotograma
     for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
       const tile = tileAt(L, tx, ty);
       const x = tx * TILE, y = ty * TILE;
+      if (tile === T.DOOR_START) {
+        this.drawDoor(ctx, x, y, !this.doorClosed, '#6b4a2b', '#c9a45c');
+      } else if (tile === T.EXIT_CLOSED) {
+        this.drawDoor(ctx, x, y, false, '#3d4650', '#e0343d');
+      } else if (tile === T.EXIT_OPEN) {
+        this.drawDoor(ctx, x, y, true, '#3d4650', '#6be07a');
+      } else if (tile === T.BUTTON || tile === T.BUTTON_PRESSED) {
+        ctx.fillStyle = '#5c6270'; ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12);
+        ctx.fillStyle = '#3c414c'; ctx.fillRect(x + 6, y + TILE - 12, TILE - 12, 6);
+        const on = tile === T.BUTTON_PRESSED;
+        ctx.fillStyle = on ? '#4ad35c' : (Math.sin(this.time * 5) > 0 ? '#ff3b47' : '#b7202a');
+        ctx.beginPath(); ctx.arc(x + TILE / 2, y + TILE / 2 - 2, on ? 6 : 8, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    this.renderItems(ctx);
+  }
+
+  // La imagen fija del nivel: se hace una vez al empezar a dibujarlo.
+  buildStaticLayer() {
+    const L = this.level;
+    const theme = L.theme || { floor: [72, 78, 92], wall: [34, 30, 42], grout: 'rgba(0,0,0,0.18)' };
+    const layer = document.createElement('canvas');
+    layer.width = L.w * TILE; layer.height = L.h * TILE;
+    const ctx = layer.getContext('2d');
+
+    // suelo y paredes
+    for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
+      const tile = tileAt(L, tx, ty);
+      const x = tx * TILE, y = ty * TILE;
       if (tile === T.WALL) {
-        if (tx < 0 || ty < 0 || tx >= L.w || ty >= L.h) continue;
         const h = ((tx * 7 + ty * 13) % 5) * 2;
         ctx.fillStyle = `rgb(${theme.wall[0] + h},${theme.wall[1] + h},${theme.wall[2] + h})`;
         ctx.fillRect(x, y, TILE, TILE);
@@ -606,7 +660,6 @@ export class Game {
 
     // manchas y cosas rotas
     for (const d of L.decals) {
-      if (d.x < cam.x - 40 || d.x > cam.x + VIEW_W + 40 || d.y < cam.y - 40 || d.y > cam.y + VIEW_H + 40) continue;
       if (d.kind === 'blood') {
         ctx.fillStyle = '#8f1119';
         ctx.beginPath(); ctx.ellipse(d.x, d.y, d.r, d.r * 0.7, d.seed * 3, 0, Math.PI * 2); ctx.fill();
@@ -621,8 +674,8 @@ export class Game {
       }
     }
 
-    // trastos, puertas, botón
-    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+    // trastos
+    for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
       const tile = tileAt(L, tx, ty);
       const x = tx * TILE, y = ty * TILE;
       if (tile === T.OBSTACLE) {
@@ -637,23 +690,16 @@ export class Game {
         ctx.fillStyle = '#c4303a'; ctx.fillRect(x + 1, y + 1, TILE - 2, 7);
         ctx.strokeStyle = '#4a0b10'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(x + 5, y + 10); ctx.lineTo(x + TILE - 5, y + TILE - 6); ctx.moveTo(x + TILE - 5, y + 10); ctx.lineTo(x + 5, y + TILE - 6); ctx.stroke();
-      } else if (tile === T.DOOR_START) {
-        this.drawDoor(ctx, x, y, !this.doorClosed, '#6b4a2b', '#c9a45c');
-      } else if (tile === T.EXIT_CLOSED) {
-        this.drawDoor(ctx, x, y, false, '#3d4650', '#e0343d');
-      } else if (tile === T.EXIT_OPEN) {
-        this.drawDoor(ctx, x, y, true, '#3d4650', '#6be07a');
-      } else if (tile === T.BUTTON || tile === T.BUTTON_PRESSED) {
-        ctx.fillStyle = '#5c6270'; ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12);
-        ctx.fillStyle = '#3c414c'; ctx.fillRect(x + 6, y + TILE - 12, TILE - 12, 6);
-        const on = tile === T.BUTTON_PRESSED;
-        ctx.fillStyle = on ? '#4ad35c' : (Math.sin(this.time * 5) > 0 ? '#ff3b47' : '#b7202a');
-        ctx.beginPath(); ctx.arc(x + TILE / 2, y + TILE / 2 - 2, on ? 6 : 8, 0, Math.PI * 2); ctx.fill();
       }
     }
+    return layer;
+  }
 
-    // objetos
+  // Cintas, comida, corazones, estamina y monedas (se mueven un poco, se pintan en cada fotograma).
+  renderItems(ctx) {
+    const L = this.level, cam = this.cam;
     for (const it of L.items) {
+      if (it.x < cam.x - 20 || it.x > cam.x + VIEW_W + 20 || it.y < cam.y - 20 || it.y > cam.y + VIEW_H + 20) continue;
       if (it.taken) continue;
       const bob = Math.sin(this.time * 3 + it.x) * 2;
       if (it.type === 'tape') this.drawTape(ctx, it.x, it.y + bob);
@@ -728,13 +774,11 @@ export class Game {
     d.fillStyle = L.noButton ? 'rgba(4,2,8,0.72)' : 'rgba(4,2,8,0.93)';
     d.fillRect(0, 0, VIEW_W, VIEW_H);
     d.globalCompositeOperation = 'destination-out';
+    // cada luz es la misma mancha redonda (hecha una sola vez), estirada al tamaño que toque
+    const sprite = lightSprite();
     const hole = (x, y, r, strength = 1) => {
-      const g = d.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(0,0,0,${strength})`);
-      g.addColorStop(0.55, `rgba(0,0,0,${strength * 0.85})`);
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      d.fillStyle = g;
-      d.beginPath(); d.arc(x, y, r, 0, Math.PI * 2); d.fill();
+      d.globalAlpha = strength;
+      d.drawImage(sprite, x - r, y - r, r * 2, r * 2);
     };
     const flicker = 1 + Math.sin(this.time * 9) * 0.02 + Math.sin(this.time * 23) * 0.01;
     // El Bonus está mucho más iluminado: es una sala alegre y se tiene que ver entera.
@@ -751,7 +795,8 @@ export class Game {
       if (it.taken || it.ttl == null) continue;
       hole(it.x - cam.x, it.y - cam.y, TILE * 2.2, 0.75);
     }
-    ctx.drawImage(this.dark, 0, 0);
+    d.globalAlpha = 1;
+    ctx.drawImage(this.dark, 0, 0, VIEW_W, VIEW_H);
   }
 
   renderHUD(ctx) {

@@ -10,11 +10,26 @@ function sr(n) { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - 
 const HORIZON = 402;
 
 export class Title {
-  constructor() { this.time = 0; }
+  constructor() {
+    this.time = 0;
+    // El cartel se pinta en una imagen guardada y solo se repinta 10 veces por segundo:
+    // las gotas se mueven muy despacio y así la portada no va a tirones.
+    this.cache = document.createElement('canvas');
+    this.cache.width = VIEW_W; this.cache.height = VIEW_H;
+    this.cacheTime = -1;
+  }
 
   update(dt) { this.time += dt; }
 
   render(ctx) {
+    if (this.cacheTime < 0 || this.time - this.cacheTime >= 0.1) {
+      this.cacheTime = this.time;
+      this.paint(this.cache.getContext('2d'));
+    }
+    ctx.drawImage(this.cache, 0, 0);
+  }
+
+  paint(ctx) {
     const bg = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, 60, VIEW_W / 2, VIEW_H / 2, 560);
     bg.addColorStop(0, '#1a0d12'); bg.addColorStop(1, '#07060a');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);

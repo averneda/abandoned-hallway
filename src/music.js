@@ -4,6 +4,8 @@
 //   'alegre' → saltarina y rápida en tono mayor, para la sala Bonus.
 //   'lobby'  → tranquila y un poco misteriosa, como de sala de espera, para el lobby.
 
+import { audioContext } from './audio.js';
+
 const NOTA = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
 
 // "A3" -> 220 Hz
@@ -82,7 +84,8 @@ const ADELANTO = 0.6;  // cuánto se programa por delante
 export class Music {
   constructor() {
     this.ctx = null;
-    this.gain = null;
+    this.gain = null;        // volumen general de la música (no se toca al cambiar de canción)
+    this.songGain = null;    // volumen de la canción que suena ahora: es el que se apaga poco a poco
     this.playing = false;
     this.timer = null;
     this.volume = 0.22;
@@ -91,7 +94,8 @@ export class Music {
 
   ensure() {
     if (!this.ctx) {
-      try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+      this.ctx = audioContext();
+      if (!this.ctx) return null;
       this.gain = this.ctx.createGain();
       this.gain.gain.value = this.volume;
       this.gain.connect(this.ctx.destination);
@@ -112,18 +116,20 @@ export class Music {
     g.gain.exponentialRampToValueAtTime(vol, t0 + 0.04);
     g.gain.setValueAtTime(vol, t0 + dur * 0.7);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(this.gain);
+    o.connect(g).connect(this.songGain);
     o.start(t0);
     o.stop(t0 + dur + 0.05);
   }
 
-  // play('miedo') o play('alegre'). Si ya suena esa, no hace nada.
+  // play('miedo'), play('alegre') o play('lobby'). Si ya suena esa, no hace nada.
   play(nombre) {
     if (this.playing && this.cancion === nombre) return;
     if (!CANCIONES[nombre]) return;
     if (this.playing) this.stop();
     if (!this.ensure()) return;
-    if (this.gain) this.gain.gain.value = this.volume;
+    // Cada canción tiene su propio volumen: así la anterior se apaga sola sin callar a la nueva.
+    this.songGain = this.ctx.createGain();
+    this.songGain.connect(this.gain);
     this.cancion = nombre;
     this.playing = true;
     this.melIdx = 0; this.bajoIdx = 0;
@@ -162,13 +168,15 @@ export class Music {
     this.playing = false;
     this.cancion = null;
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
-    // baja el volumen poco a poco para que no corte de golpe
-    if (this.gain && this.ctx) {
-      const g = this.gain.gain, t = this.ctx.currentTime;
-      g.cancelScheduledValues(t);
-      g.setValueAtTime(g.value, t);
-      g.linearRampToValueAtTime(0.0001, t + 0.4);
-      setTimeout(() => { if (!this.playing && this.gain) this.gain.gain.value = this.volume; }, 500);
+    // baja el volumen de esta canción poco a poco para que no corte de golpe (incluidas
+    // las notas que ya estaban programadas) y luego la desconecta
+    const sg = this.songGain;
+    this.songGain = null;
+    if (sg && this.ctx) {
+      const t = this.ctx.currentTime;
+      sg.gain.setValueAtTime(1, t);
+      sg.gain.linearRampToValueAtTime(0.0001, t + 0.4);
+      setTimeout(() => sg.disconnect(), 1000);
     }
   }
 

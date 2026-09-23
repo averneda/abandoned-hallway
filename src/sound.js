@@ -1,15 +1,10 @@
 // Sonidos provisionales hechos con el sintetizador del navegador.
 // Cuando Elora grabe los suyos, se cargan como archivos desde assets/sonidos/ y se sustituyen aquí.
 
-let ctx = null;
-function ac() {
-  if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
-  if (ctx.state === 'suspended') ctx.resume();
-  return ctx;
-}
+import { audioContext } from './audio.js';
 
 function tone({ type = 'triangle', from = 440, to = from, time = 0.2, gain = 0.2, delay = 0 }) {
-  const c = ac(); if (!c) return;
+  const c = audioContext(); if (!c) return;
   const o = c.createOscillator(), g = c.createGain();
   const t0 = c.currentTime + delay;
   o.type = type;
