@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURA_KATY } from './characters.js';
 import { t, getLang } from './i18n.js';
@@ -96,8 +96,9 @@ export class Game {
       x: L.spawn.x, y: L.spawn.y, r: PLAYER.radius, facing: 'up', walk: 0,
       hearts: PLAYER.hearts, anxiety: ANXIETY.start, invuln: 0, jump: 0, jumping: false,
       kx: 0, ky: 0, moving: false, cooldown: 0,
-      tongue: null,  // lengua de Gek: {dir, len, max, phase, target}
+      tongue: null,  // lengua de Gec: {dir, len, max, phase, target}
       capa: 0,       // segundos que le queda la capa Tun de Tarda (inmortal, pero más lento)
+      fly: 0,        // segundos que le quedan a Drake volando (pasa por encima de trastos y nadie le coge)
       stamina: STAMINA.start,  // se gasta corriendo y se recupera parando
       agotado: false,          // se quedó a cero: hay que recuperar un poco antes de volver a correr
       sinCorrer: 0,            // segundos desde la última vez que corrió
@@ -108,7 +109,7 @@ export class Game {
     this.enemies = L.enemies.map((e, i) => ({
       x: e.x, y: e.y, r: ENEMY.radius, dir: DIRS[Math.floor(this.rand() * 4)], turn: 1 + this.rand() * 2,
       chasing: false, lostFor: 0, stuck: 0, recoil: 0, phase: this.rand() * 10, facing: 'down', walk: 0,
-      pintado: 0,  // segundos que le queda la pintura fosforita de Katy
+      pintado: 0,  // segundos que le queda la pintura fosforita de Caty
       lastSeen: null, trail: [], trailDist: 0,
       look: CHARACTERS[(i + Math.floor(this.rand() * CHARACTERS.length)) % CHARACTERS.length],
     }));
@@ -162,7 +163,7 @@ export class Game {
     p.facing = facingOf(ax.x, ax.y, p.facing);
     if (p.moving) p.walk += dt * (corriendo ? 16 : 11);
 
-    if (input.wasPressed('jump') && !p.jumping) { p.jumping = true; p.jump = this.jumpTime; }
+    if (input.wasPressed('jump') && !p.jumping && p.fly <= 0) { p.jumping = true; p.jump = this.jumpTime; }
     if (p.jumping) {
       p.jump -= dt;
       if (this.ch.ability === 'carot') speed *= ABILITIES.carot.airSpeed;
@@ -170,7 +171,7 @@ export class Game {
       if (p.jump <= 0 && !collides(L, p.x, p.y, p.r, 'player', false)) p.jumping = false;
     }
 
-    // lengua de Gek (tecla Q)
+    // lengua de Gec (tecla Q)
     if (p.cooldown > 0) p.cooldown -= dt;
     if (this.ch.ability === 'gek' && input.wasPressed('ability') && p.cooldown <= 0 && !p.tongue) this.shootTongue();
     if (this.ch.ability === 'draila' && input.wasPressed('ability') && p.cooldown <= 0) this.bite();
@@ -181,6 +182,19 @@ export class Game {
       sfx.capa();
     }
     if (this.ch.ability === 'katy' && input.wasPressed('ability') && p.cooldown <= 0) this.paint();
+    if (this.ch.ability === 'drake' && input.wasPressed('ability') && p.cooldown <= 0 && p.fly <= 0) {
+      p.fly = ABILITIES.drake.time;
+      p.cooldown = ABILITIES.drake.cooldown;
+      p.jumping = false;
+      this.say(t('msg.fly'), 2);
+      sfx.fly();
+    }
+    if (p.fly > 0) {
+      p.fly -= dt;
+      // no aterrizar encima de un trasto: sigue volando hasta estar sobre el suelo
+      // (0,35 s es lo que tarda en bajar; así baja siempre ya fuera del trasto)
+      if (p.fly < 0.35 && collides(L, p.x, p.y, p.r, 'player', false)) p.fly = 0.35;
+    }
     if (p.capa > 0) p.capa -= dt;
     if (p.tongue) {
       const tg = p.tongue;
@@ -211,11 +225,11 @@ export class Game {
     const kdx = p.kx * dt, kdy = p.ky * dt;
     p.kx *= Math.max(0, 1 - dt * 8); p.ky *= Math.max(0, 1 - dt * 8);
 
-    move(L, p, vx * speed * dt + kdx, vy * speed * dt + kdy, 'player', p.jumping);
+    move(L, p, vx * speed * dt + kdx, vy * speed * dt + kdy, p.fly > 0 ? 'flyer' : 'player', p.jumping);
     if (p.invuln > 0) p.invuln -= dt;
   }
 
-  // Gek lanza la lengua hacia donde mira. Si toca algo sólido antes de 7 casillas, se engancha ahí.
+  // Gec lanza la lengua hacia donde mira. Si toca algo sólido antes de 7 casillas, se engancha ahí.
   shootTongue() {
     const L = this.level, p = this.player;
     const [dx, dy] = FACING_VEC[p.facing];
@@ -269,7 +283,7 @@ export class Game {
     }
   }
 
-  // Katy pinta a TODOS los Bloodies del mapa de azul fosforito: durante unos segundos
+  // Caty pinta a TODOS los Bloodies del mapa de azul fosforito: durante unos segundos
   // se ven en la oscuridad y, si están fuera de la pantalla, sale una flecha señalándolos.
   paint() {
     const p = this.player;
@@ -404,7 +418,7 @@ export class Game {
 
       // te toca (Carot pasa por encima si está saltando)
       const overJump = this.ch.ability === 'carot' && p.jumping;
-      const inmortal = p.capa > 0;   // la capa Tun de Tarda
+      const inmortal = p.capa > 0 || p.fly > 0;   // la capa Tun de Tarda o Drake volando
       if (d < e.r + p.r && p.invuln <= 0 && e.recoil <= 0 && !overJump && !inmortal) {
         p.hearts -= 1;
         p.invuln = PLAYER.invuln;
@@ -494,6 +508,12 @@ export class Game {
     const p = this.player;
     ctx.fillStyle = '#0b0a0e';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    // con mucho estrés la pantalla tiembla (Elora); el marcador no tiembla
+    const estres = Math.max(0, (p.anxiety / ANXIETY.max - STRESS.from) / (1 - STRESS.from));
+    const temblor = Math.max(0, (p.anxiety / ANXIETY.max - STRESS.shakeFrom) / (1 - STRESS.shakeFrom)) * STRESS.shakePx;
+    const sx = Math.round(Math.sin(this.time * 47) * temblor), sy = Math.round(Math.cos(this.time * 53) * temblor);
+    ctx.save();
+    ctx.translate(sx, sy);
     ctx.save();
     ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
     this.renderWorld(ctx);
@@ -516,8 +536,12 @@ export class Game {
 
     // oscuridad
     this.renderDarkness(ctx);
+    ctx.restore();
 
-    // flechas de la pintura de Katy hacia los Bloodies que están fuera de la pantalla
+    // estrés: la pantalla se oscurece con los bordes en rojo, latiendo (Elora)
+    if (estres > 0) this.renderStress(ctx, estres);
+
+    // flechas de la pintura de Caty hacia los Bloodies que están fuera de la pantalla
     this.renderPaintMarkers(ctx);
 
     // golpe
@@ -526,6 +550,23 @@ export class Game {
     if (frozen) { ctx.fillStyle = `rgba(120,200,255,${Math.min(0.18, this.freeze * 0.1)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
 
     this.renderHUD(ctx);
+  }
+
+  // Viñeta de estrés: oscura hacia fuera y roja en los bordes; late más fuerte cuanto más estrés.
+  renderStress(ctx, estres) {
+    if (!this.stressGrad) {
+      const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.25, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.62);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(0.55, 'rgba(30,0,4,0.35)');
+      g.addColorStop(1, 'rgba(170,0,12,0.85)');
+      this.stressGrad = g;
+    }
+    const latido = 0.8 + 0.2 * Math.sin(this.time * (5 + estres * 5));
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, estres * latido);
+    ctx.fillStyle = this.stressGrad;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.restore();
   }
 
   // Los Bloodies pintados que se salen de la pantalla se marcan con una flecha en el borde:
@@ -554,7 +595,7 @@ export class Game {
 
   drawPlayer(ctx) {
     const p = this.player;
-    // lengua de Gek
+    // lengua de Gec
     if (p.tongue && p.tongue.len > 0) {
       const [dx, dy] = p.tongue.dir;
       ctx.strokeStyle = '#ff6f9c'; ctx.lineWidth = 4; ctx.lineCap = 'round';
@@ -562,9 +603,13 @@ export class Game {
       ctx.fillStyle = '#ff4d85';
       ctx.beginPath(); ctx.arc(p.x + dx * p.tongue.len, p.y - 12 + dy * p.tongue.len, 4, 0, Math.PI * 2); ctx.fill();
     }
-    const jumpH = p.jumping && p.jump > 0.06 ? Math.sin((1 - p.jump / this.jumpTime) * Math.PI) * (this.ch.ability === 'carot' ? 34 : 22) : 0;
+    let jumpH = p.jumping && p.jump > 0.06 ? Math.sin((1 - p.jump / this.jumpTime) * Math.PI) * (this.ch.ability === 'carot' ? 34 : 22) : 0;
+    // Drake volando: sube, se balancea un poco y baja despacio al final
+    if (p.fly > 0) jumpH = (26 + Math.sin(this.time * 5) * 3) * Math.min(1, p.fly / 0.35, (ABILITIES.drake.time - p.fly) / 0.25 + 0.2);
     drawCharacter(ctx, this.ch, p.x, p.y, p.facing, p.moving || (p.tongue && p.tongue.phase === 'dash') ? p.walk : 0, jumpH,
-      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0 });
+      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null });
+    // sin estamina: gotas de sudor de cansancio (Elora)
+    if (p.agotado) this.drawSweat(ctx, p.x, p.y - jumpH);
     // la onda del mordisco de Draila
     if (this.wave) {
       const w = this.wave;
@@ -583,6 +628,25 @@ export class Game {
       }
       ctx.restore();
     }
+  }
+
+  // Tres gotas de sudor que salen de la cabeza y caen, una detrás de otra.
+  drawSweat(ctx, x, y) {
+    for (let i = 0; i < 3; i++) {
+      const ph = (this.time * 1.6 + i / 3) % 1;
+      const side = i === 1 ? 1 : -1;
+      const dx = x + side * (11 + ph * 5), dy = y - 24 + ph * 14;
+      ctx.globalAlpha = ph < 0.8 ? 1 : (1 - ph) * 5;
+      ctx.fillStyle = '#8fd8ff';
+      ctx.beginPath();
+      ctx.moveTo(dx, dy - 7);
+      ctx.quadraticCurveTo(dx + 5, dy, dx, dy + 4.5);
+      ctx.quadraticCurveTo(dx - 5, dy, dx, dy - 7);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(dx - 1.2, dy, 1.3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   // Suelo, paredes, decoración, trastos, puertas, botón y objetos. (También lo usa el lobby.)
@@ -658,20 +722,12 @@ export class Game {
       }
     }
 
-    // manchas y cosas rotas
+    // manchas de sangre
+    ctx.fillStyle = '#8f1119';
     for (const d of L.decals) {
-      if (d.kind === 'blood') {
-        ctx.fillStyle = '#8f1119';
-        ctx.beginPath(); ctx.ellipse(d.x, d.y, d.r, d.r * 0.7, d.seed * 3, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(d.x + d.r * 0.9, d.y + d.r * 0.4, d.r * 0.35, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(d.x - d.r * 0.8, d.y - d.r * 0.5, d.r * 0.25, 0, Math.PI * 2); ctx.fill();
-      } else {
-        ctx.fillStyle = '#2a2530';
-        ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.seed * 6);
-        ctx.fillRect(-d.r, -d.r * 0.4, d.r * 2, d.r * 0.8);
-        ctx.fillRect(-d.r * 0.3, -d.r, d.r * 0.6, d.r * 0.6);
-        ctx.restore();
-      }
+      ctx.beginPath(); ctx.ellipse(d.x, d.y, d.r, d.r * 0.7, d.seed * 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(d.x + d.r * 0.9, d.y + d.r * 0.4, d.r * 0.35, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(d.x - d.r * 0.8, d.y - d.r * 0.5, d.r * 0.25, 0, Math.PI * 2); ctx.fill();
     }
 
     // trastos
@@ -786,7 +842,7 @@ export class Game {
     hole(p.x - cam.x, p.y - cam.y, radio);
     // Con la salida abierta, su luz verde se ve desde lejos para guiarte hasta ella.
     if (this.buttonPressed) for (const e of L.exits) hole((e.tx + 0.5) * TILE - cam.x, (e.ty + 0.5) * TILE - cam.y, TILE * 3, 0.8);
-    // Los Bloodies pintados por Katy se ven en la oscuridad.
+    // Los Bloodies pintados por Caty se ven en la oscuridad.
     for (const e of this.enemies) {
       if (e.pintado > 0) hole(e.x - cam.x, e.y - cam.y, TILE * 2.6, 0.9);
     }
@@ -860,6 +916,11 @@ export class Game {
     } else if (this.ch.ability === 'gek') {
       const name = t('ability.gek.name');
       if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }
+      else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
+    } else if (this.ch.ability === 'drake') {
+      const name = t('ability.drake.name');
+      if (p.fly > 0) { ctx.fillStyle = '#ffb070'; ctx.fillText(`${name}: ${Math.ceil(p.fly)}s`, x, y); }
+      else if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }
       else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
     } else if (this.ch.ability === 'tarda') {
       const name = t('ability.tarda.name');

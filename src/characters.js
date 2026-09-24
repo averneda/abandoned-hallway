@@ -1,7 +1,7 @@
 // Personajes jugables. Los dibujos son provisionales (formas simples); se sustituirán por sprites hechos a partir de los dibujos de Elora.
 // Los Bloodies son las versiones "rotas y sangrando" de estos mismos personajes.
 
-// Azul fosforito de la pintura de Katy (el mismo azul que su mancha de la cara, pero brillante).
+// Azul fosforito de la pintura de Caty (el mismo azul que su mancha de la cara, pero brillante).
 export const PINTURA_KATY = '#3ad6ff';
 export const PINTURA_KATY_CLARO = '#9fefff';
 
@@ -9,10 +9,11 @@ export const CHARACTERS = [
   { id: 'carot', name: 'Carot', species: { es: 'Conejo', en: 'Rabbit' }, color: '#e9d6b8', dark: '#b8977a', shape: 'rabbit', price: 0, ability: 'carot' },
   { id: 'oct', name: 'Oct', species: { es: 'Pulpo', en: 'Octopus' }, color: '#5b8fe0', dark: '#3a62ad', shape: 'octopus', price: 30, ability: 'oct' },
   { id: 'tarda', name: 'Tarda', species: { es: 'Tardígrado', en: 'Tardigrade' }, color: '#a9d68b', dark: '#6f9f57', shape: 'tardigrade', price: 60, ability: 'tarda' },
-  { id: 'gek', name: 'Gek', species: { es: 'Lagarto', en: 'Lizard' }, color: '#6fc94a', dark: '#3f8a2a', shape: 'lizard', price: 80, ability: 'gek' },
-  { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: 100, ability: null },
+  { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#6fc94a', dark: '#3f8a2a', shape: 'lizard', price: 80, ability: 'gek' },
+  { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: 100, ability: 'drake' },
   { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 120, ability: 'draila' },
-  { id: 'katy', name: 'Katy', species: { es: 'Gata', en: 'Cat' }, color: '#d8d2cc', dark: '#9a938c', shape: 'cat', price: 140, ability: 'katy' },
+  { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#d8d2cc', dark: '#9a938c', shape: 'cat', price: 140, ability: 'katy' },
+  { id: 'jely', name: 'Jely', species: { es: 'Medusa', en: 'Jellyfish' }, color: '#e7a3e0', dark: '#b06aa8', shape: 'jellyfish', price: 160, ability: null },
 ];
 
 export function characterById(id) { return CHARACTERS.find((c) => c.id === id) || CHARACTERS[0]; }
@@ -48,7 +49,19 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
   }
 
   // cola / detalles traseros según el animal
-  if (ch.shape === 'dragon') {
+  if (ch.shape === 'dragon' && opts.flap != null && !opts.bloody) {
+    // volando: alas grandes que baten
+    ctx.strokeStyle = dark; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 6); ctx.quadraticCurveTo(12, 14, 18, 6); ctx.stroke();
+    const f = Math.sin(opts.flap);
+    ctx.fillStyle = dark;
+    for (const side of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(side * 10, -8);
+      ctx.lineTo(side * (30 + f * 4), -22 + f * 12);
+      ctx.lineTo(side * (26 + f * 3), -4 + f * 6);
+      ctx.lineTo(side * 11, 3); ctx.closePath(); ctx.fill();
+    }
+  } else if (ch.shape === 'dragon') {
     ctx.strokeStyle = dark; ctx.lineWidth = 4; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(0, 6); ctx.quadraticCurveTo(12, 14, 18, 6); ctx.stroke();
     ctx.fillStyle = dark;
@@ -72,6 +85,17 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
       // púas del lomo
       ctx.fillStyle = dark;
       for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * 5 - 2, -2 + i * 4); ctx.lineTo(i * 5, -7 + i * 4); ctx.lineTo(i * 5 + 2, -2 + i * 4); ctx.closePath(); ctx.fill(); }
+    }
+  }
+  if (ch.shape === 'jellyfish') {
+    // tentáculos finos que ondulan (a los Bloodies les falta uno)
+    ctx.strokeStyle = dark; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = -2; i <= 2; i++) {
+      if (opts.bloody && i === 2) continue;
+      const w = Math.sin(walk * 0.9 + i * 1.3) * 3;
+      ctx.beginPath(); ctx.moveTo(i * 4, 6);
+      ctx.bezierCurveTo(i * 4 + w, 12, i * 5 - w, 17, i * 5 + w * 0.6, 23);
+      ctx.stroke();
     }
   }
   if (ch.shape === 'octopus') {
@@ -177,6 +201,20 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
       ctx.beginPath(); ctx.ellipse(hx - 5, hy + 8.5, 1.8, 3, 0, 0, Math.PI * 2); ctx.fill();
     }
   }
+  if (ch.shape === 'jellyfish') {
+    // campana translúcida sobre la cabeza, con el borde ondulado y un brillo
+    ctx.save();
+    ctx.globalAlpha *= 0.75;
+    ctx.fillStyle = opts.bloody ? '#d23a44' : '#f6c9f1';
+    ctx.beginPath(); ctx.arc(hx, hy - 1, 12.5, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = dark;
+    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.arc(hx + i * 5, hy - 0.5, 2.3, 0, Math.PI); ctx.fill(); }
+    if (!opts.bloody) {
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.beginPath(); ctx.ellipse(hx - 5, hy - 8, 2.2, 3.5, -0.6, 0, Math.PI * 2); ctx.fill();
+    }
+  }
   if (ch.shape === 'lizard') {
     // cresta
     ctx.fillStyle = dark;
@@ -243,7 +281,7 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
     }
     ctx.restore();
   }
-  // pintura fosforita de Katy: el Bloodie brilla en azul, el color de la mancha de Katy
+  // pintura fosforita de Caty: el Bloodie brilla en azul, el color de la mancha de Caty
   if (opts.pintado) {
     ctx.save();
     ctx.globalAlpha = 0.6;

@@ -13,23 +13,26 @@
 // Nivel 1 — El Colegio. Hecho a partir del dibujo de Elora (assets/referencias/escenarios/nivel-1-el-colegio.jpeg).
 
 // El lobby: donde eliges personaje con Tarda, ves tus cintas y entras a los pasillos.
+// Una sola puerta, en el centro (Elora). Abajo a la derecha, una U de cajas naranjas contra
+// la pared con monedas dentro, para practicar el salto (Elora).
 export const LOBBY = {
   lobby: true,
+  fixedItems: true,
   name: { es: 'Lobby', en: 'Lobby' },
   theme: { floor: [96, 84, 76], wall: [52, 40, 36], grout: 'rgba(0,0,0,0.2)' },
   rows: [
-    '##########################',
-    '##########DD##############',
-    '#..VVV...........N.......#',
-    '#........................#',
-    '#........................#',
-    '#........................#',
-    '#........................#',
-    '#..........P.............#',
-    '#........................#',
-    '#....RR..........RR......#',
-    '#........................#',
-    '##########################',
+    '###########################',
+    '#############D#############',
+    '#..VVV............N.......#',
+    '#.........................#',
+    '#.........................#',
+    '#.........................#',
+    '#.........................#',
+    '#............P............#',
+    '#.................OOOOO...#',
+    '#....RR...........OcccO...#',
+    '#.................OcccO...#',
+    '###########################',
   ],
 };
 
@@ -40,7 +43,8 @@ export const BONUS = {
   noButton: true,
   fixedItems: true,
   // Lluvia de monedas al empezar: salen varias a la vez, duran unos segundos y se van.
-  coinRush: { duration: 20, every: 4, life: 4, count: 6 },
+  // life: 6 s (antes 4): Elora pidió que desaparezcan un 50% más lento.
+  coinRush: { duration: 20, every: 4, life: 6, count: 6 },
   // Paredes negras y suelo de colores, como pidió Elora.
   theme: {
     wall: [14, 12, 18],

@@ -7,11 +7,15 @@ import { LOBBY } from './maps.js';
 import { Game, dist } from './game.js';
 import { drawCharacter, characterById } from './characters.js';
 import { t } from './i18n.js';
+import { sfx } from './sound.js';
 
 export class Lobby extends Game {
-  // callbacks: { onPause(), onShop(), onTapes(), onStart(), totalCoins(), totalTapes() }
+  // callbacks: { onPause(), onShop(), onTapes(), onStart(), onCoin(n), totalCoins(), totalTapes(),
+  //              practiceTaken: Set con las monedas de práctica ya cogidas }
   constructor(character, callbacks) {
     super(character, loadMap('lobby', LOBBY), callbacks);
+    // Las monedas de práctica ya cogidas no vuelven hasta que escapes de un pasillo.
+    this.level.items.forEach((it, i) => { if (callbacks.practiceTaken.has(i)) it.taken = true; });
     const m = this.level.markers;
     // La Tarda de la tienda es amarilla, para distinguirla de la Tarda personaje (verde). Decidido por Elora.
     this.tarda = { ...characterById('tarda'), color: '#e8c840', dark: '#b89820' };
@@ -38,6 +42,15 @@ export class Lobby extends Game {
     this.updatePlayer(dt, input);
     const p = this.player;
 
+    // monedas de práctica dentro de la U de cajas
+    this.level.items.forEach((it, i) => {
+      if (it.taken || dist(it.x, it.y, p.x, p.y) > p.r + 10) return;
+      it.taken = true;
+      this.cb.practiceTaken.add(i);
+      this.cb.onCoin(1);
+      sfx.coin();
+    });
+
     // ¿cerca de Tarda o de la estantería?
     this.near = null;
     if (dist(p.x, p.y, this.npc.x, this.npc.y) < TILE * 1.9) this.near = 'tarda';
@@ -47,9 +60,8 @@ export class Lobby extends Game {
       return;
     }
 
-    // la puerta de arriba lleva a los pasillos
-    const tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE);
-    if (this.doors.some((d) => d.tx === tx && d.ty === ty)) { this.finished = true; this.cb.onStart(); return; }
+    // la puerta de arriba lleva a los pasillos (vale con llegar a ella, aunque no estés justo en el centro)
+    if (this.doors.some((d) => dist(d.x, d.y, p.x, p.y) < TILE * 1.1)) { this.finished = true; this.cb.onStart(); return; }
 
     for (const m of this.messages) m.ttl -= dt;
     this.messages = this.messages.filter((m) => m.ttl > 0);
@@ -64,8 +76,8 @@ export class Lobby extends Game {
     ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
     this.renderWorld(ctx);
 
-    // puerta a los pasillos (luz ámbar)
-    for (const d of this.doors) this.drawDoor(ctx, d.tx * TILE, d.ty * TILE, true, '#6b4a2b', '#ffd35a');
+    // puerta a los pasillos: bordes rojos (Elora) y luz ámbar
+    for (const d of this.doors) this.drawDoor(ctx, d.tx * TILE, d.ty * TILE, true, '#b3202a', '#ffd35a');
 
     // estantería con cintas
     const total = this.cb.totalTapes();

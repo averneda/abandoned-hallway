@@ -50,6 +50,10 @@ function save() {
 
 let scene = null; // objeto con update(dt, input) y render(ctx), o null
 
+// Monedas de práctica del lobby ya cogidas: vuelven a salir cuando escapas de un pasillo,
+// para que no se puedan sacar monedas infinitas entrando y saliendo del lobby.
+const practiceTaken = new Set();
+
 // Lo que comparten el lobby y los pasillos.
 const common = {
   onCoin: (k) => { wallet.coins += k; save(); },
@@ -80,6 +84,7 @@ function gotoMenu() {
 function gotoLobby() {
   const lobby = new Lobby(run.character, {
     ...common,
+    practiceTaken,
     onPause: () => {
       lobby.paused = true;
       ui.showPause({ menuLabel: 'pause.mainMenu', onResume: () => { ui.clear(); lobby.paused = false; input.clear(); }, onMenu: gotoMenu });
@@ -137,6 +142,7 @@ function startLevel(n) {
       });
     },
     onComplete: ({ tapes }) => {
+      practiceTaken.clear();
       run.tapes += tapes;
       wallet.coins += COINS.levelBonus; save();
       if (n % CONTINUE_EVERY === 0) {

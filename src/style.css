@@ -68,8 +68,9 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 .screen.shop { gap: 10px; padding: 14px 20px; }
 .screen.shop h2 { font-size: 24px; }
 .screen.shop .coins { font-size: 17px !important; }
-.screen.shop .cards { gap: 10px; flex-wrap: wrap; max-width: 96%; }
-.screen.shop .card { width: 132px; padding: 7px 6px; gap: 2px; }
+/* 2 filas de 4 para que quepan los 8 personajes y el botón de cerrar */
+.screen.shop .cards { gap: 10px; flex-wrap: wrap; max-width: 860px; }
+.screen.shop .card { width: 200px; padding: 6px 8px; gap: 2px; }
 .screen.shop .card canvas { width: 68px; height: 68px; }
 .screen.shop .card .name { font-size: 17px; }
 .screen.shop .card .species { font-size: 12px; }

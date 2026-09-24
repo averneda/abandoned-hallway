@@ -1,5 +1,5 @@
-// Generador de niveles: una "habitación" grande hecha de pasillos.
-// Cada nivel se genera a partir de su número, así el nivel 1 es siempre igual.
+// Niveles: todos son mapas dibujados por Elora (src/maps.js), que se van repitiendo.
+// La forma es siempre la suya; el botón, la salida y los objetos cambian en cada partida.
 
 import { TILE, LEVEL, MAP_RANDOM, BONUS_EVERY } from './config.js';
 import { MAPS, BONUS } from './maps.js';
@@ -27,7 +27,6 @@ export function rng(seed) {
   };
 }
 
-function pick(rand, arr) { return arr[Math.floor(rand() * arr.length)]; }
 function shuffle(rand, arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
@@ -42,8 +41,15 @@ export function generateLevel(n, seed) {
   const s = seed == null ? Math.floor(Math.random() * 1e9) : seed;
   // Cada BONUS_EVERY pasillos toca el Bonus: sin Bloodies, sin botón y con premios.
   if (n > 0 && n % BONUS_EVERY === 0) return loadMap(n, BONUS, s);
-  if (MAPS[n]) return loadMap(n, MAPS[n], s);
-  return generateRandomLevel(n, s);
+  return loadMap(n, mapForLevel(n), s);
+}
+
+// Los mapas de Elora por turnos (El Colegio, El Centro Comercial, El Colegio...),
+// saltándose los pasillos de Bonus. Un mapa nuevo en MAPS entra solo en la rueda.
+export function mapForLevel(n) {
+  const orden = Object.keys(MAPS).map(Number).sort((a, b) => a - b);
+  const normales = n - Math.floor(n / BONUS_EVERY);   // pasillos normales hasta este, incluido
+  return MAPS[orden[(normales - 1) % orden.length]];
 }
 
 // Casillas por las que el jugador puede pasar andando o saltando.
@@ -133,7 +139,9 @@ export function loadMap(n, map, seed = 0) {
     for (const e of exits) setTileRaw(tiles, W, H, e.tx, e.ty, T.EXIT_OPEN);
     exit = exits[0] || null;
     items = fixed;
-  } else if (!map.lobby) {
+  } else if (map.lobby) {
+    items = fixed;   // las monedas de práctica del lobby, donde están dibujadas
+  } else {
     // --- puerta de salida: una de las candidatas, lejos de la entrada
     const usable = exitSpots.filter((e) => {
       // tiene que dar a una casilla a la que se pueda llegar
@@ -174,18 +182,14 @@ export function loadMap(n, map, seed = 0) {
     }
   }
 
-  // decoración
+  // decoración: sangre dibujada por el suelo (el lobby y el Bonus no tienen)
   const decals = [];
   const dRand = rng(seed * 97 + 7);
   const floor = free.slice();
   shuffle(dRand, floor);
-  const tranquilo = map.lobby || map.noButton; // el lobby y el Bonus no tienen sangre
-  const nBlood = tranquilo ? 0 : LEVEL.bloodDecals, nDebris = tranquilo ? 4 : LEVEL.debrisDecals;
+  const nBlood = map.lobby || map.noButton ? 0 : LEVEL.bloodDecals;
   for (let i = 0; i < nBlood && i < floor.length; i++) {
     decals.push({ kind: 'blood', x: (floor[i].tx + 0.5) * TILE, y: (floor[i].ty + 0.5) * TILE, r: 6 + dRand() * 9, seed: dRand() });
-  }
-  for (let i = nBlood; i < nBlood + nDebris && i < floor.length; i++) {
-    decals.push({ kind: 'debris', x: (floor[i].tx + 0.5) * TILE, y: (floor[i].ty + 0.5) * TILE, r: 4 + dRand() * 5, seed: dRand() });
   }
 
   return { n, w: W, h: H, tiles, spawn, startDoor, exit, exits, button, items, enemies, decals, markers,
@@ -198,186 +202,6 @@ function setTileRaw(tiles, W, H, tx, ty, v) {
   tiles[ty * W + tx] = v;
 }
 
-export function generateRandomLevel(n, seed = 0) {
-  // El laberinto depende solo del número de pasillo (así el pasillo 3 siempre tiene la misma forma),
-  // pero el botón, la salida y los objetos se colocan con el azar de esta partida.
-  const rand = rng(1000 + n * 7919);
-  const luck = rng(seed * 2654435761 + 999);
-  const CW = LEVEL.cellsW, CH = LEVEL.cellsH, C = LEVEL.corridor, S = C + 1;
-  const W = CW * S + 1, H = CH * S + 1;
-  const tiles = new Uint8Array(W * H).fill(T.WALL);
-
-  const grid = (v) => Array.from({ length: CH }, () => new Array(CW).fill(v));
-  const east = grid(false), south = grid(false), visited = grid(false);
-
-  // 1. Laberinto base (recorrido con pila).
-  const stack = [[0, 0]];
-  visited[0][0] = true;
-  while (stack.length) {
-    const [cx, cy] = stack[stack.length - 1];
-    const nb = [];
-    if (cx > 0 && !visited[cy][cx - 1]) nb.push([cx - 1, cy, 'W']);
-    if (cx < CW - 1 && !visited[cy][cx + 1]) nb.push([cx + 1, cy, 'E']);
-    if (cy > 0 && !visited[cy - 1][cx]) nb.push([cx, cy - 1, 'N']);
-    if (cy < CH - 1 && !visited[cy + 1][cx]) nb.push([cx, cy + 1, 'S']);
-    if (!nb.length) { stack.pop(); continue; }
-    const [nx, ny, d] = pick(rand, nb);
-    if (d === 'E') east[cy][cx] = true;
-    if (d === 'W') east[cy][cx - 1] = true;
-    if (d === 'S') south[cy][cx] = true;
-    if (d === 'N') south[cy - 1][cx] = true;
-    visited[ny][nx] = true;
-    stack.push([nx, ny]);
-  }
-
-  // 2. Pasillos extra para que haya varios caminos.
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-    if (x < CW - 1 && !east[y][x] && rand() < LEVEL.loops) east[y][x] = true;
-    if (y < CH - 1 && !south[y][x] && rand() < LEVEL.loops) south[y][x] = true;
-  }
-
-  // 3. Zonas abiertas (bloques 2x2 sin paredes).
-  const roomCorners = [];
-  for (let i = 0; i < LEVEL.rooms; i++) {
-    const rx = 1 + Math.floor(rand() * (CW - 2)), ry = Math.floor(rand() * (CH - 1));
-    east[ry][rx] = true; south[ry][rx] = true; east[ry + 1][rx] = true; south[ry][rx + 1] = true;
-    roomCorners.push([rx, ry]);
-  }
-
-  // 4. Pasar de celdas a casillas.
-  const origin = (cx, cy) => [cx * S + 1, cy * S + 1];
-  const set = (tx, ty, v) => { tiles[ty * W + tx] = v; };
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-    const [ox, oy] = origin(x, y);
-    for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) set(ox + i, oy + j, T.FLOOR);
-    if (east[y][x]) for (let j = 0; j < C; j++) set(ox + C, oy + j, T.FLOOR);
-    if (south[y][x]) for (let i = 0; i < C; i++) set(ox + i, oy + C, T.FLOOR);
-  }
-  for (const [rx, ry] of roomCorners) { const [ox, oy] = origin(rx, ry); set(ox + C, oy + C, T.FLOOR); }
-
-  // 5. Distancias desde la celda de entrada (para colocar cosas lejos).
-  const startCy = Math.floor(rand() * CH);
-  const dist = grid(-1);
-  const q = [[0, startCy]]; dist[startCy][0] = 0;
-  const degree = grid(0);
-  while (q.length) {
-    const [cx, cy] = q.shift();
-    const d = dist[cy][cx];
-    const nbs = [];
-    if (cx < CW - 1 && east[cy][cx]) nbs.push([cx + 1, cy]);
-    if (cx > 0 && east[cy][cx - 1]) nbs.push([cx - 1, cy]);
-    if (cy < CH - 1 && south[cy][cx]) nbs.push([cx, cy + 1]);
-    if (cy > 0 && south[cy - 1][cx]) nbs.push([cx, cy - 1]);
-    degree[cy][cx] = nbs.length;
-    for (const [nx, ny] of nbs) if (dist[ny][nx] < 0) { dist[ny][nx] = d + 1; q.push([nx, ny]); }
-  }
-  let maxDist = 0;
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) maxDist = Math.max(maxDist, dist[y][x]);
-
-  // Puerta de entrada y aparición del jugador.
-  const [sx, sy] = origin(0, startCy);
-  const startDoor = { tx: 0, ty: sy + 1 };
-  set(startDoor.tx, startDoor.ty, T.DOOR_START);
-  const spawn = { x: (sx + 0.5) * TILE, y: (sy + 1 + 0.5) * TILE };
-
-  // 6. Puerta de salida: en un borde, lo más lejos posible.
-  const border = [];
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-    if (x === 0 && y === startCy) continue;
-    if (x === 0 || x === CW - 1 || y === 0 || y === CH - 1) border.push([x, y, dist[y][x]]);
-  }
-  border.sort((a, b) => b[2] - a[2]);
-  // entre las celdas del borde más lejanas: cuantas más, más cambia la salida de una partida a otra
-  const [ex, ey] = pick(luck, border.slice(0, Math.max(3, Math.ceil(border.length * 0.35))));
-  const [eox, eoy] = origin(ex, ey);
-  let exit;
-  if (ex === CW - 1) exit = { tx: W - 1, ty: eoy + 1 };
-  else if (ey === CH - 1) exit = { tx: eox + 1, ty: H - 1 };
-  else if (ey === 0) exit = { tx: eox + 1, ty: 0 };
-  else exit = { tx: 0, ty: eoy + 1 };
-  set(exit.tx, exit.ty, T.EXIT_CLOSED);
-
-  // 7. Botón: lejos de la entrada y de la salida, mejor en un callejón sin salida.
-  let candidates = [];
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-    if ((x === 0 && y === startCy) || (x === ex && y === ey)) continue;
-    if (dist[y][x] >= Math.max(2, Math.floor(maxDist * 0.5))) candidates.push([x, y]);
-  }
-  const farEnough = candidates.filter(([x, y]) => { const [ox, oy] = origin(x, y); return Math.hypot((ox + 1.5) * TILE - spawn.x, (oy + 1.5) * TILE - spawn.y) >= 8 * TILE; });
-  if (farEnough.length) candidates = farEnough;
-  // se prefieren los callejones sin salida, pero solo si hay unos cuantos donde elegir
-  const deadEnds = candidates.filter(([x, y]) => degree[y][x] === 1);
-  if (deadEnds.length >= 3) candidates = deadEnds;
-  const [bx, by] = pick(luck, candidates);
-  const [box, boy] = origin(bx, by);
-  const button = { tx: box + 1, ty: boy + 1 };
-  set(button.tx, button.ty, T.BUTTON);
-
-  // 8. Trastos que bloquean pasillos (el jugador salta, los Sangrientos no).
-  const passages = [];
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-    if (dist[y][x] < 2) continue;
-    const [ox, oy] = origin(x, y);
-    if (east[y][x] && x < CW - 1 && dist[y][x + 1] >= 2 && !isRoomCell(x, y) && !isRoomCell(x + 1, y))
-      passages.push(Array.from({ length: C }, (_, j) => [ox + C, oy + j]));
-    if (south[y][x] && y < CH - 1 && dist[y + 1][x] >= 2 && !isRoomCell(x, y) && !isRoomCell(x, y + 1))
-      passages.push(Array.from({ length: C }, (_, i) => [ox + i, oy + C]));
-  }
-  function isRoomCell(x, y) {
-    return roomCorners.some(([rx, ry]) => x >= rx && x <= rx + 1 && y >= ry && y <= ry + 1);
-  }
-  shuffle(rand, passages);
-  for (const p of passages.slice(0, LEVEL.obstacles)) for (const [tx, ty] of p) set(tx, ty, T.OBSTACLE);
-
-  // 9. Objetos: cintas y comida en casillas de suelo (no en la celda de entrada).
-  const floorTiles = [];
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-    if (dist[y][x] < 1) continue;
-    const [ox, oy] = origin(x, y);
-    for (let j = 0; j < C; j++) for (let i = 0; i < C; i++)
-      if (tiles[(oy + j) * W + ox + i] === T.FLOOR) floorTiles.push([ox + i, oy + j]);
-  }
-  shuffle(luck, floorTiles);
-  const items = [];
-  let k = 0;
-  for (let i = 0; i < LEVEL.tapes; i++, k++) items.push(mkItem('tape', floorTiles[k]));
-  for (let i = 0; i < LEVEL.food; i++, k++) items.push(mkItem('food', floorTiles[k]));
-  for (let i = 0; i < LEVEL.hearts; i++, k++) items.push(mkItem('heart', floorTiles[k]));
-  for (let i = 0; i < LEVEL.coins; i++, k++) items.push(mkItem('coin', floorTiles[k]));
-  for (let i = 0; i < LEVEL.stamina; i++, k++) items.push(mkItem('stamina', floorTiles[k]));
-  function mkItem(type, [tx, ty]) { return { type, x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, taken: false }; }
-
-  // 10. Sangrientos: en celdas lejos de la entrada.
-  const enemyCount = Math.min(LEVEL.enemiesMax, Math.floor(LEVEL.enemiesBase + (n - 1) * LEVEL.enemiesPerLevel));
-  // Lejos de verdad: no solo por pasillos, también en línea recta (que no aparezcan al lado a través de una pared).
-  const farCells = [];
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-    if (dist[y][x] < 3 || (x === bx && y === by)) continue;
-    const [ox, oy] = origin(x, y);
-    const dx = (ox + 1.5) * TILE - spawn.x, dy = (oy + 1.5) * TILE - spawn.y;
-    if (Math.hypot(dx, dy) >= 9 * TILE) farCells.push([x, y]);
-  }
-  shuffle(luck, farCells);
-  const enemies = farCells.slice(0, enemyCount).map(([x, y]) => {
-    const [ox, oy] = origin(x, y);
-    return { x: (ox + 1.5) * TILE, y: (oy + 1.5) * TILE };
-  });
-
-  // 11. Decoración: sangre dibujada y cosas rotas.
-  const decals = [];
-  for (let i = 0; i < LEVEL.bloodDecals && k < floorTiles.length; i++, k++) {
-    const [tx, ty] = floorTiles[k];
-    decals.push({ kind: 'blood', x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, r: 6 + rand() * 9, seed: rand() });
-  }
-  for (let i = 0; i < LEVEL.debrisDecals && k < floorTiles.length; i++, k++) {
-    const [tx, ty] = floorTiles[k];
-    decals.push({ kind: 'debris', x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, r: 4 + rand() * 5, seed: rand() });
-  }
-
-  return { n, w: W, h: H, tiles, spawn, startDoor, exit, exits: [exit], button, items, enemies, decals, markers: {},
-    free: floorTiles.map(([tx, ty]) => ({ tx, ty })), coinRush: null, name: null, theme: null, noButton: false, seed };
-}
-
 export function tileAt(level, tx, ty) {
   if (tx < 0 || ty < 0 || tx >= level.w || ty >= level.h) return T.WALL;
   return level.tiles[ty * level.w + tx];
@@ -388,13 +212,13 @@ export function setTile(level, tx, ty, v) {
   level.tiles[ty * level.w + tx] = v;
 }
 
-// ¿Esta casilla bloquea el paso?  who: 'player' | 'enemy'
+// ¿Esta casilla bloquea el paso?  who: 'player' | 'flyer' (Drake volando) | 'enemy'
 export function solidFor(t, who, jumping = false) {
   switch (t) {
     case T.FLOOR: return false;
-    case T.OBSTACLE: return who === 'player' ? !jumping : true;
-    case T.BLOCK: return true;
-    case T.EXIT_OPEN: return who !== 'player';
+    case T.OBSTACLE: return who === 'flyer' ? false : who === 'player' ? !jumping : true;
+    case T.BLOCK: return who !== 'flyer';
+    case T.EXIT_OPEN: return who === 'enemy';
     default: return true;
   }
 }

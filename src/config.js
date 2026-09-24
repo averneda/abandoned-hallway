@@ -28,6 +28,14 @@ export const ANXIETY = {
   hit: 12,              // te toca un Bloodie
 };
 
+// Cómo se ve el estrés (Elora): a partir de "from" (parte de la barra de ansiedad llena)
+// la pantalla se oscurece con los bordes en rojo; a partir de "shakeFrom" además tiembla.
+export const STRESS = {
+  from: 0.5,        // desde la mitad de la barra
+  shakeFrom: 0.75,  // tiembla desde las tres cuartas partes
+  shakePx: 4,       // cuánto tiembla como mucho (píxeles)
+};
+
 // Estamina (pedida por Elora). Correr la gasta; parando se recupera sola.
 // Las bolitas de estamina que hay por el suelo la rellenan de golpe.
 export const STAMINA = {
@@ -61,9 +69,11 @@ export const ABILITIES = {
   draila: { rangeTiles: 5, speed: 420, push: 520, stun: 1.6, cooldown: 6 },
   // Tarda: se envuelve en su capa "Tun". No le pueden hacer daño, pero va más lento.
   tarda: { time: 8, slow: 0.7, cooldown: 22 },
-  // Katy: pinta a TODOS los Bloodies del mapa de azul fosforito (el color de su mancha).
+  // Caty: pinta a TODOS los Bloodies del mapa de azul fosforito (el color de su mancha).
   // Es un mini-localizador: dura poco, pero te dice dónde están todos, estén donde estén.
   katy: { time: 3, cooldown: 10 },
+  // Drake: vuela. Pasa por encima de los trastos (naranjas y rojos) y los Bloodies no le pueden coger.
+  drake: { time: 5, cooldown: 16 },
 };
 
 export const COINS = {
@@ -71,22 +81,7 @@ export const COINS = {
 };
 
 export const LEVEL = {
-  cellsW: 9,          // "habitaciones" de la cuadrícula a lo ancho
-  cellsH: 7,          // ... y a lo alto
-  corridor: 3,        // ancho de los pasillos en casillas
-  loops: 0.20,        // probabilidad de abrir pasillos extra (más caminos)
-  rooms: 2,           // zonas abiertas grandes
-  enemiesBase: 2,     // Sangrientos en el nivel 1
-  enemiesPerLevel: 0.6, // cuántos más por nivel
-  enemiesMax: 9,
-  tapes: 4,           // cintas por nivel
-  food: 3,            // bolitas de comida por nivel
-  hearts: 1,          // comidas especiales (+1 corazón) por nivel
-  coins: 8,           // monedas por nivel
-  stamina: 3,         // bolitas de estamina por nivel
-  obstacles: 6,       // trastos que hay que saltar
-  bloodDecals: 14,    // manchas de sangre (dibujada)
-  debrisDecals: 18,   // cosas rotas por el suelo
+  bloodDecals: 14,    // manchas de sangre (dibujada) por el suelo de cada pasillo
 };
 
 // Distancias mínimas al repartir al azar el botón y la puerta en los mapas dibujados.
