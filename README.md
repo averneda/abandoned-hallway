@@ -35,3 +35,21 @@ Abandoned Hallway is a soft-horror survival game created by Elora, the first gam
 
 © 2026 Elora — **Todos los derechos reservados / All rights reserved.**
 Puedes jugarlo y disfrutarlo, pero el juego, sus personajes, su historia y sus dibujos son de Elora. No está permitido copiarlos ni reutilizarlos sin permiso.
+
+## Prueba 3D (experimental)
+
+Abre `3d.html` desde el mismo servidor local (`iniciar.bat`) para probar el modo
+3D con Carot. Conserva los mapas del Colegio, el Centro Comercial y el Bonus,
+las colisiones, el salto, los Bloodies, los objetos y el botón de salida del
+juego original. Cámara elevada fija; mismos controles de teclado y mando.
+El modo 2D de `index.html` sigue siendo la versión principal.
+
+Esta primera prueba no incluye lobby ni tienda, no guarda progreso y presenta
+modelos geométricos provisionales. La iluminación y la visibilidad aún no
+reproducen la oscuridad del modo 2D, por lo que no sirve para comparar dificultad.
+Las pantallas nuevas del prototipo están en español; el HUD reutiliza el idioma
+guardado. Los controles táctiles se reutilizan, pendientes de prueba en dispositivos reales.
+
+Three.js r160 está incluido en `vendor/` para funcionar sin CDN. Su licencia MIT
+se conserva en `vendor/three.LICENSE`; el arte, los personajes y la historia de
+Elora mantienen los derechos indicados arriba.
