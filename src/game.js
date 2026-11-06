@@ -2,7 +2,7 @@
 
 import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
-import { CHARACTERS, drawCharacter, PINTURA_KATY } from './characters.js';
+import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO } from './characters.js';
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { drawCoin, pickCoinKind, coinValue } from './coins.js';
@@ -161,6 +161,7 @@ export class Game {
     let speed = (corriendo ? PLAYER.run : PLAYER.walk) * statMul(this.ch, 'velocidad');
     if (p.capa > 0) speed *= ABILITIES.tarda.slow;   // con la capa Tun se va más despacio
     p.moving = len > 0;
+    p.corriendo = corriendo;   // (Gec va en monopatín cuando corre)
     p.facing = facingOf(ax.x, ax.y, p.facing);
     if (p.moving) p.walk += dt * (corriendo ? 16 : 11);
 
@@ -284,14 +285,17 @@ export class Game {
     }
   }
 
-  // Caty pinta a TODOS los Bloodies del mapa de azul fosforito: durante unos segundos
-  // se ven en la oscuridad y, si están fuera de la pantalla, sale una flecha señalándolos.
+  // Caty pinta a TODOS los Bloodies del mapa de un color fosforito, cada vez uno distinto (Elora):
+  // durante unos segundos se ven en la oscuridad y, si están fuera de la pantalla, sale una flecha
+  // señalándolos.
   paint() {
     const p = this.player;
     p.cooldown = ABILITIES.katy.cooldown;
     if (this.enemies.length === 0) { this.say(t('msg.paintNone'), 2); return; }
+    const otros = PINTURAS_FOSFORITO.filter((c) => c !== this.pintura);   // nunca el mismo que la vez anterior
+    this.pintura = otros[Math.floor(Math.random() * otros.length)];
     for (const e of this.enemies) e.pintado = ABILITIES.katy.time;
-    this.say(t('msg.paint'), 2);
+    this.say(t('msg.paint', { color: t('paint.color.' + this.pintura.id) }), 2);
     sfx.paint();
   }
 
@@ -528,7 +532,7 @@ export class Game {
 
     // Bloodies y jugador (ordenados por altura para que se tapen bien)
     const frozen = this.freeze > 0;
-    const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 }) }));
+    const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null }) }));
     actors.push({ y: p.y, draw: () => this.drawPlayer(ctx) });
     actors.sort((a, b) => a.y - b.y);
     for (const a of actors) a.draw();
@@ -587,8 +591,9 @@ export class Game {
       ctx.save();
       ctx.translate(px, py); ctx.rotate(ang);
       ctx.globalAlpha = e.pintado < 0.6 ? e.pintado / 0.6 : 1;   // se apaga al acabarse
-      ctx.shadowColor = PINTURA_KATY; ctx.shadowBlur = 12;
-      ctx.fillStyle = PINTURA_KATY;
+      const pin = this.pintura || PINTURAS_FOSFORITO[0];
+      ctx.shadowColor = pin.c; ctx.shadowBlur = 12;
+      ctx.fillStyle = pin.c;
       ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-7, -7); ctx.lineTo(-3, 0); ctx.lineTo(-7, 7); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
@@ -608,7 +613,7 @@ export class Game {
     // Drake volando: sube, se balancea un poco y baja despacio al final
     if (p.fly > 0) jumpH = (26 + Math.sin(this.time * 5) * 3) * Math.min(1, p.fly / 0.35, (ABILITIES.drake.time - p.fly) / 0.25 + 0.2);
     drawCharacter(ctx, this.ch, p.x, p.y, p.facing, p.moving || (p.tongue && p.tongue.phase === 'dash') ? p.walk : 0, jumpH,
-      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null });
+      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null, skate: !!p.corriendo, lengua: !!p.tongue });
     // sin estamina: gotas de sudor de cansancio (Elora)
     if (p.agotado) this.drawSweat(ctx, p.x, p.y - jumpH);
     // la onda del mordisco de Draila

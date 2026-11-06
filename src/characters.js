@@ -1,4 +1,4 @@
-// Personajes jugables. Carot, Froggy, Oct y Caty se dibujan a partir de sus fichas de Elora; el resto son
+// Personajes jugables. Carot, Froggy, Oct, Caty y Gec se dibujan a partir de sus fichas de Elora; el resto son
 // dibujos provisionales (formas simples) hasta que lleguen sus fichas.
 // Los Bloodies son las versiones "rotas y sangrando" de estos mismos personajes.
 //
@@ -9,9 +9,17 @@
 //   La original está en assets/referencias/personajes/; se aviva con tools-fichas/avivar.sh.
 //   Si un personaje no tiene ficha, se hace una de papel.
 
-// Azul fosforito de la pintura de Caty (el mismo azul que su mancha de la cara, pero brillante).
-export const PINTURA_KATY = '#3ad6ff';
-export const PINTURA_KATY_CLARO = '#9fefff';
+// Colores fosforito de la pintura de Caty (Elora): cada vez que usa su habilidad sale uno
+// distinto. c: el color; claro: el de los goterones. El nombre de cada uno está en src/i18n.js
+// ('paint.color.<id>').
+export const PINTURAS_FOSFORITO = [
+  { id: 'azul', c: '#3ad6ff', claro: '#9fefff' },
+  { id: 'rosa', c: '#ff3ad6', claro: '#ffa3ee' },
+  { id: 'verde', c: '#39ff6a', claro: '#a8ffbe' },
+  { id: 'amarillo', c: '#f4ff3a', claro: '#fbffa8' },
+  { id: 'naranja', c: '#ff8a1f', claro: '#ffc58f' },
+  { id: 'lila', c: '#b56bff', claro: '#dcb8ff' },
+];
 
 const S50 = { velocidad: 50, cordura: 50, sigilo: 50 };   // todos a 50 de momento (Elora los ajustará)
 
@@ -26,7 +34,9 @@ export const CHARACTERS = [
     stats: { ...S50 }, ficha: 'assets/sprites/fichas/oct.webp',
     fichaCuadro: { left: 62, top: 23, right: 4, bottom: 5 } },
   { id: 'tarda', name: 'Tarda', species: { es: 'Tardígrado', en: 'Tardigrade' }, color: '#a9d68b', dark: '#6f9f57', shape: 'tardigrade', price: 60, ability: 'tarda', stats: { ...S50 } },
-  { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#6fc94a', dark: '#3f8a2a', shape: 'lizard', price: 80, ability: 'gek', stats: { ...S50 } },
+  { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#98cc84', dark: '#5e9a4c', shape: 'lizard', price: 80, ability: 'gek',   // hermano adoptivo de Draila (Elora)
+    stats: { ...S50 }, ficha: 'assets/sprites/fichas/gek.webp',
+    fichaCuadro: { left: 65.5, top: 33, right: 3, bottom: 5 } },
   { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: 100, ability: 'drake', stats: { ...S50 } },
   { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 120, ability: 'draila', stats: { ...S50 } },
   { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 140, ability: 'katy',
@@ -93,16 +103,14 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
       if (!opts.bloody) { ctx.beginPath(); ctx.moveTo(12, -6); ctx.lineTo(24, -14); ctx.lineTo(13, 2); ctx.closePath(); ctx.fill(); }
       else { ctx.beginPath(); ctx.moveTo(12, -6); ctx.lineTo(19, -9); ctx.lineTo(13, 2); ctx.closePath(); ctx.fill(); }
     }
-    if (ch.shape === 'lizard' || ch.shape === 'crocodile') {
+    if (ch.shape === 'crocodile') {
       // cola larga que se mueve
-      ctx.strokeStyle = dark; ctx.lineWidth = ch.shape === 'crocodile' ? 6 : 4; ctx.lineCap = 'round';
+      ctx.strokeStyle = dark; ctx.lineWidth = 6; ctx.lineCap = 'round';
       const w = Math.sin(walk * 0.8) * 5;
       ctx.beginPath(); ctx.moveTo(0, 7); ctx.quadraticCurveTo(8 + w, 16, 4 + w * 2, 24); ctx.stroke();
-      if (ch.shape === 'crocodile') {
-        // púas del lomo
-        ctx.fillStyle = dark;
-        for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * 5 - 2, -2 + i * 4); ctx.lineTo(i * 5, -7 + i * 4); ctx.lineTo(i * 5 + 2, -2 + i * 4); ctx.closePath(); ctx.fill(); }
-      }
+      // púas del lomo
+      ctx.fillStyle = dark;
+      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * 5 - 2, -2 + i * 4); ctx.lineTo(i * 5, -7 + i * 4); ctx.lineTo(i * 5 + 2, -2 + i * 4); ctx.closePath(); ctx.fill(); }
     }
     if (ch.shape === 'jellyfish') {
       // tentáculos finos que ondulan (a los Bloodies les falta uno)
@@ -181,11 +189,6 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
         ctx.beginPath(); ctx.ellipse(hx - 5, hy - 8, 2.2, 3.5, -0.6, 0, Math.PI * 2); ctx.fill();
       }
     }
-    if (ch.shape === 'lizard') {
-      // cresta
-      ctx.fillStyle = dark;
-      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(hx + i * 4 - 2, hy - 8); ctx.lineTo(hx + i * 4, hy - 14); ctx.lineTo(hx + i * 4 + 2, hy - 8); ctx.closePath(); ctx.fill(); }
-    }
     // grietas de los Bloodies
     if (opts.bloody) {
       ctx.strokeStyle = '#2a0306'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
@@ -197,7 +200,7 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
     // cara (solo si no está de espaldas)
     if (facing !== 'up') {
       const ex = facing === 'left' ? -3 : facing === 'right' ? 3 : 0;
-      const big = ch.shape === 'lizard' ? 3.4 : 2.6;
+      const big = 2.6;
       ctx.fillStyle = chasing ? '#ffe36b' : '#fff';
       ctx.beginPath(); ctx.arc(hx + ex - 3.5, hy + 1, big, 0, Math.PI * 2); ctx.moveTo(hx + ex + 3.5 + big, hy + 1); ctx.arc(hx + ex + 3.5, hy + 1, big, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = opts.bloody ? '#7a0b12' : '#222';
@@ -232,16 +235,18 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
     }
     ctx.restore();
   }
-  // pintura fosforita de Caty: el Bloodie brilla en azul, el color de la mancha de Caty
+  // pintura fosforita de Caty: el Bloodie brilla del color que ha salido esta vez
+  // (opts.pintado es uno de PINTURAS_FOSFORITO)
   if (opts.pintado) {
+    const pin = opts.pintado.c ? opts.pintado : PINTURAS_FOSFORITO[0];
     ctx.save();
     ctx.globalAlpha = 0.6;
-    ctx.fillStyle = PINTURA_KATY;
-    ctx.shadowColor = PINTURA_KATY; ctx.shadowBlur = 18;
+    ctx.fillStyle = pin.c;
+    ctx.shadowColor = pin.c; ctx.shadowBlur = 18;
     ctx.beginPath(); ctx.ellipse(0, -4, 15, 19, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
     // goterones de pintura
-    ctx.fillStyle = PINTURA_KATY_CLARO;
+    ctx.fillStyle = pin.claro;
     for (let i = -1; i <= 1; i++) {
       const g2 = (Math.sin(walk * 0.4 + i * 2) + 1) * 2;
       ctx.beginPath(); ctx.ellipse(i * 6, 6 + g2, 2, 3.5, 0, 0, Math.PI * 2); ctx.fill();
@@ -645,4 +650,113 @@ function drawCaty(ctx, pal, facing, walk, opts) {
   ctx.fillRect(hx - 2.2, hy + 3.7, 4.4, 1.3);
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty };
+// Gec (ficha de Elora): lagarto verde con los ojos grandes y negros, una sonrisa enorme con dos
+// dientes grandes, dos agujeritos de nariz, camiseta gris con "ROK!" en rojo, los brazos un poco
+// abiertos y la cola larga. Sin cuello y con la cabeza quieta al andar. Su monopatín rojo
+// (Elora): al andar lo lleva en la mano; al correr (opts.skate) va subido encima; y mientras usa
+// la lengua (opts.lengua) lo agarra con las dos manos encima de la cabeza, porque va tan rápido
+// que se le caería.
+function drawGec(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
+  const skin = pal.color, skinDark = pal.dark;
+  const shirt = B ? '#5e0810' : '#a9abb0', shirtDark = B ? '#3a0408' : '#7c7e84';
+  const line = B ? '#2a0306' : '#1d241a';
+  const hx = 0, hy = -15;
+  const step = Math.sin(walk) * 1.5;
+  const lado = facing === 'left' ? 1 : -1;   // la cola sale por el lado contrario a donde mira
+  const agarra = !!opts.lengua && !B;             // con la lengua: monopatín agarrado con las dos manos
+  const skate = !!opts.skate && !B && !agarra;
+  const tabla = B ? '#3a0408' : '#e0303c', rueda = B ? '#1a0204' : '#2b2b30';
+  // el monopatín: una tabla roja con las puntas redondeadas y cuatro ruedas
+  const monopatin = (x, y, ang) => {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    ctx.fillStyle = rueda;
+    for (const k of [-5, 5]) { dot(ctx, k, 2, 1.3); }
+    ctx.fillStyle = tabla;
+    rrect(ctx, -8, -1.2, 16, 2.8, 1.4); ctx.fill();
+    ctx.restore();
+  };
+  if (skate) {
+    // subido al monopatín: la tabla debajo de los pies, se balancea un poco
+    monopatin(0, 13, Math.sin(walk * 0.5) * 0.06);
+    ctx.translate(0, -2.5);
+  }
+
+  // cola larga (detrás, salvo de espaldas)
+  const cola = () => {
+    const w = Math.sin(walk * 0.8) * 3;
+    ctx.strokeStyle = skin; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(lado * 4, 4); ctx.quadraticCurveTo(lado * 15, 6, lado * (13 + w), -6); ctx.stroke();
+  };
+  if (!back) cola();
+  // piernas
+  ctx.fillStyle = skin;
+  for (const side of [-1, 1]) {
+    const lift = !skate && side * step > 0 ? -side * step * 0.6 : 0;   // en el monopatín no da pasos
+    ctx.fillRect(side * 3.6 - 1.8, 3, 3.6, 8 + lift);
+    ctx.beginPath(); ctx.ellipse(side * 4.4, 11 + lift, 3.2, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // brazos un poco abiertos, con la mano de deditos (de Bloodie que persigue, arriba;
+  // en el monopatín, más abiertos para mantener el equilibrio)
+  const manos = [];
+  for (const side of [-1, 1]) {
+    const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.2);
+    const h = chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : agarra ? [side * 8, -26] : skate ? [side * 14, -6 + side * sw * 0.8] : [side * 12 + sw * 0.4, -1];
+    manos.push([side, h]);
+    ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(side * 6, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
+    ctx.fillStyle = skin;
+    for (let k = -1; k <= 1; k++) dot(ctx, h[0] + side * 1.6, h[1] + k * 1.5, 1);
+  }
+  // camiseta gris con mangas cortas
+  ctx.fillStyle = shirt;
+  rrect(ctx, -7, -9, 14, 14, 2.5); ctx.fill();
+  for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 5 : -9.5, -9, 4.5, 4.5);
+  ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = shirtDark; ctx.fillRect(3.5, -8, 3, 12); ctx.restore();
+  if (!back && !B) {
+    // "ROK!" en rojo (letras de palitos, pequeñas)
+    ctx.strokeStyle = '#d81e2c'; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-5, -1); ctx.lineTo(-5, -5); ctx.lineTo(-3.5, -5); ctx.lineTo(-3.5, -3.3); ctx.lineTo(-5, -3.3); ctx.lineTo(-3.4, -1);   // R
+    ctx.moveTo(-1.6, -5); ctx.lineTo(-0.2, -5); ctx.lineTo(-0.2, -1); ctx.lineTo(-1.6, -1); ctx.closePath();   // O
+    ctx.moveTo(1.3, -5); ctx.lineTo(1.3, -1); ctx.moveTo(3, -5); ctx.lineTo(1.4, -3); ctx.lineTo(3, -1);   // K
+    ctx.moveTo(4.6, -5); ctx.lineTo(4.6, -2.4);   // !
+    ctx.stroke();
+    ctx.fillStyle = '#d81e2c'; ctx.fillRect(4.15, -1.4, 0.9, 0.9);
+  }
+  // andando, lleva el monopatín en la mano (en la del lado de la cola), de pie junto a la pierna
+  if (!skate && !agarra && !B && !chasing) {
+    const h = manos.find(([side]) => side === lado)[1];
+    monopatin(h[0] + lado * 2, h[1] + 7, Math.PI / 2);
+    ctx.fillStyle = skin; for (let k = -1; k <= 1; k++) dot(ctx, h[0] + lado * 1.6, h[1] + k * 1.5, 1);
+  }
+  if (back) cola();
+  // cabeza grande y redonda
+  ctx.fillStyle = skin;
+  rrect(ctx, hx - 10, hy - 8.5, 20, 16, 7.5); ctx.fill();
+  // con la lengua: el monopatín bien agarrado con las dos manos, encima de la cabeza (Elora)
+  if (agarra) {
+    monopatin(0, -27, 0);
+    ctx.fillStyle = skin;
+    for (const [, h] of manos) for (let k = -1; k <= 1; k++) dot(ctx, h[0] + k * 1.3, h[1] - 0.5, 1);
+  }
+  if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (back) return;
+  // ojos grandes y negros, con un brillito (de Bloodie, rojos o amarillos al perseguir)
+  for (const side of [-1, 1]) {
+    const x = hx + side * 4.4, y = hy - 3.2;
+    ctx.fillStyle = B ? '#f0d0c8' : '#fff'; dot(ctx, x, y, 3.4);
+    ctx.fillStyle = B ? (chasing ? '#ffe36b' : '#7a0b12') : '#111'; dot(ctx, x, y + 0.2, 2.6);
+    if (!B) { ctx.fillStyle = '#fff'; dot(ctx, x + 0.9, y - 0.9, 0.7); }
+  }
+  // la sonrisa enorme con los dos dientes grandes
+  ctx.fillStyle = B ? '#e8d8c0' : '#fbfbf4';
+  rrect(ctx, hx - 7.5, hy + 1.6, 15, 4.4, 2); ctx.fill();
+  ctx.strokeStyle = line; ctx.lineWidth = 0.7; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hx - 2, hy + 1.8); ctx.lineTo(hx - 2, hy + 5.8); ctx.moveTo(hx + 2, hy + 1.8); ctx.lineTo(hx + 2, hy + 5.8); ctx.stroke();
+  // agujeritos de la nariz
+  ctx.fillStyle = B ? '#2a0306' : skinDark;
+  dot(ctx, hx - 1.3, hy - 0.2, 0.55); dot(ctx, hx + 1.3, hy - 0.2, 0.55);
+}
+
+const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec };
