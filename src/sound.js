@@ -17,6 +17,23 @@ function tone({ type = 'triangle', from = 440, to = from, time = 0.2, gain = 0.2
   o.start(t0); o.stop(t0 + time + 0.05);
 }
 
+// Ruido blanco (el "shhhh" de una tele sin señal). gain: volumen; time: segundos.
+function ruido({ time = 1, gain = 0.06, delay = 0 }) {
+  const c = audioContext(); if (!c) return;
+  const n = Math.floor(c.sampleRate * time);
+  const buf = c.createBuffer(1, n, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource(), g = c.createGain();
+  const t0 = c.currentTime + delay;
+  src.buffer = buf;
+  g.gain.setValueAtTime(gain, t0);
+  g.gain.setValueAtTime(gain, t0 + time * 0.8);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + time);
+  src.connect(g).connect(c.destination);
+  src.start(t0);
+}
+
 export const sfx = {
   // "taaaaaaan": la muerte, como pidió Elora
   death() {
@@ -39,5 +56,9 @@ export const sfx = {
   tongue() { tone({ type: 'square', from: 300, to: 900, time: 0.12, gain: 0.08 }); },
   dash() { tone({ type: 'sawtooth', from: 200, to: 700, time: 0.2, gain: 0.1 }); },
   stamina() { tone({ type: 'triangle', from: 440, to: 880, time: 0.18, gain: 0.12 }); tone({ type: 'sine', from: 660, to: 1320, time: 0.22, gain: 0.08, delay: 0.06 }); },
+  // cintas de grabación: meter la cinta en el vídeo (clac-clac), tele sin señal, y apagar la tele
+  tapeIn() { tone({ type: 'square', from: 180, to: 120, time: 0.06, gain: 0.12 }); tone({ type: 'square', from: 140, to: 90, time: 0.08, gain: 0.12, delay: 0.25 }); },
+  staticNoise(time = 1) { ruido({ time, gain: 0.05 }); },
+  tvOff() { tone({ type: 'sine', from: 900, to: 60, time: 0.35, gain: 0.12 }); ruido({ time: 0.15, gain: 0.04 }); },
   levelUp() { [523, 659, 784, 1046].forEach((f, i) => tone({ type: 'triangle', from: f, time: 0.18, gain: 0.12, delay: i * 0.1 })); },
 };

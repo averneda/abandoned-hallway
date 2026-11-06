@@ -3,6 +3,23 @@
 import { t, getLang, setLang } from './i18n.js';
 import { CHARACTERS, drawCharacter } from './characters.js';
 import { PAD_ACTIONS } from './input.js';
+import { TapePlayer, grabacionDeCinta } from './tapes.js';
+import { music } from './music.js';
+
+// ---- nombres de las cintas (Elora): quien juega puede ponerle nombre a cada cinta; se guarda en
+// el navegador. Si no le pone ninguno, sale el de siempre ('tape.G.name' en src/i18n.js, o "Cinta").
+// Las cintas no van numeradas (Elora).
+const TAPE_NAMES_KEY = 'holeway.tapeNames';
+function savedTapeNames() { try { return JSON.parse(localStorage.getItem(TAPE_NAMES_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function setTapeName(n, name) {
+  const all = savedTapeNames();
+  const limpio = String(name || '').trim().slice(0, 40);
+  if (limpio) all[n] = limpio; else delete all[n];
+  try { localStorage.setItem(TAPE_NAMES_KEY, JSON.stringify(all)); } catch (e) { /* sin guardar */ }
+}
+// (las cintas con la misma grabación se llaman igual: el nombre y el texto van con la grabación, 'tape.G')
+function defaultTapeName(n) { const k = 'tape.' + (grabacionDeCinta(n) || n) + '.name'; const v = t(k); return v === k ? t('tapes.item', { n }) : v; }
+export function tapeName(n) { return savedTapeNames()[n] || defaultTapeName(n); }
 
 export class UI {
   constructor(root, input) {
@@ -38,7 +55,10 @@ export class UI {
     }
   }
 
-  clear() { this.root.innerHTML = ''; this.keyHandler = null; this.padTick = null; this.navIndex = 0; }
+  clear() {
+    if (this.tapePlayer) { this.tapePlayer.parar(); this.tapePlayer = null; }
+    this.root.innerHTML = ''; this.keyHandler = null; this.padTick = null; this.navIndex = 0;
+  }
 
   el(tag, cls, text) {
     const e = document.createElement(tag);
@@ -278,6 +298,36 @@ export class UI {
     return cv;
   }
 
+  // ---------------- ver una grabación directamente (index.html?cinta=N, ver-cinta.bat): un botón grande para
+  // empezar (los navegadores no dejan sonar nada hasta que se pulsa algo) y, al volver, onExit().
+  showTapeDirect(n, onExit) {
+    this.clear();
+    const s = this.el('div', 'screen opaque');
+    s.appendChild(this.el('h2', '', '📼 ' + t('tapes.title')));
+    s.appendChild(this.button(t('tapes.play'), () => this.playTape(n, null, onExit), true));
+    this.root.appendChild(s);
+    this.keyHandler = (e) => { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); this.playTape(n, null, onExit); } };
+  }
+
+  // ---------------- la tele: ver la grabación de una cinta (src/tapes.js). Al volver, otra vez la estantería
+  // (o onExit(), si se vino directamente).
+  playTape(n, back, onExit) {
+    this.clear();
+    music.stop();
+    const s = this.el('div', 'screen tv');
+    const cv = document.createElement('canvas'); cv.width = 960; cv.height = 600; cv.className = 'tv-canvas';
+    const row = this.el('div', 'row');
+    const player = new TapePlayer(cv, n, () => { again.classList.remove('hidden'); });
+    const salir = () => { player.parar(); this.tapePlayer = null; if (onExit) { onExit(); return; } music.play('lobby'); this.showTapes(back); };
+    const again = this.button(t('tapes.again'), () => { player.parar(); this.playTape(n, back, onExit); });
+    again.classList.add('hidden');
+    row.append(again, this.button(t('tapes.back'), salir, true));
+    s.append(cv, row);
+    this.root.appendChild(s);
+    this.tapePlayer = player;
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyE') salir(); };
+  }
+
   // ---------------- estantería: las cintas que has conseguido
   showTapes({ total, onClose }) {
     this.clear();
@@ -288,17 +338,40 @@ export class UI {
       const list = this.el('div', 'tapes');
       for (let i = 1; i <= total; i++) {
         const row = this.el('div', 'tape');
-        row.appendChild(this.el('div', 'tape-name', '📼 ' + t('tapes.item', { n: i })));
-        const key = 'tape.' + i;
+        // el nombre de la cinta: el que le ponga quien juega (Elora) o, si no, el de siempre
+        const nombre = this.el('div', 'tape-name', '📼 ' + tapeName(i));
+        row.appendChild(nombre);
+        const grab = grabacionDeCinta(i);
+        const key = 'tape.' + (grab || i);
         const text = t(key);
         row.appendChild(this.el('div', 'tape-text', text === key ? t('tapes.placeholder') : text));
+        // si la cinta ya tiene grabación, se puede ver en la tele (src/tapes.js)
+        const botones = this.el('div', 'tape-buttons');
+        if (grab) botones.appendChild(this.button(t('tapes.play'), () => this.playTape(grab, { total, onClose })));
+        botones.appendChild(this.button(t('tapes.rename'), () => {
+          // se cambia el nombre ahí mismo: Enter guarda, Esc deja el que tenía; vacío = el de siempre
+          const campo = document.createElement('input');
+          campo.className = 'tape-input'; campo.maxLength = 40;
+          campo.value = savedTapeNames()[i] || ''; campo.placeholder = defaultTapeName(i);
+          const guardar = () => { setTapeName(i, campo.value); this.showTapes({ total, onClose }); };
+          campo.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') guardar();
+            else if (e.key === 'Escape') this.showTapes({ total, onClose });
+          });
+          campo.addEventListener('blur', guardar);
+          nombre.replaceChildren('📼 ', campo);
+          campo.focus();
+        }));
+        row.appendChild(botones);
         list.appendChild(row);
       }
       s.appendChild(list);
     }
     s.appendChild(this.button(t('shop.close'), onClose, true));
     this.root.appendChild(s);
-    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'KeyE') onClose(); };
+    // (si se está escribiendo el nombre de una cinta, las teclas son para escribir, no para cerrar)
+    this.keyHandler = (e) => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'KeyE') onClose(); };
   }
 
   // ---------------- cinemática (solo botón de saltar y nota)

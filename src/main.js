@@ -194,4 +194,12 @@ requestAnimationFrame(frame);
 // Gancho para pruebas automáticas (no afecta al juego).
 window.holewayDebug = { get scene() { return scene; }, run, unlocked, wallet, flags, gotoLobby, startLevel, music, input, touch };
 
-gotoMenu();
+// Atajo para ver una grabación directamente, sin buscar la cinta en los pasillos:
+// index.html?cinta=1 (lo usa ver-cinta.bat). Primero hay que pulsar el botón, para que el
+// navegador deje sonar las voces y el "ffffff". Al salir, se va al menú.
+const cintaDirecta = parseInt(new URLSearchParams(location.search).get('cinta') || '0', 10);
+if (cintaDirecta) {
+  ui.showTapeDirect(cintaDirecta, () => { location.href = location.pathname; });
+} else {
+  gotoMenu();
+}
