@@ -4,7 +4,9 @@
 //
 // stats (Elora): Velocidad, Cordura y Sigilo, de 0 a 100. Con 50 el personaje es "normal".
 // Cómo afecta cada uno al juego: STAT_EFFECTS en src/config.js.
-// ficha: la foto de la ficha de Elora (sale en la tienda de Tarda). Si no hay, se hace una de papel.
+// ficha: la foto de la ficha de Elora, con los colores avivados (sale en la tienda de Tarda).
+//   La original está en assets/referencias/personajes/; se aviva con tools-fichas/avivar.sh.
+//   Si un personaje no tiene ficha, se hace una de papel.
 
 // Azul fosforito de la pintura de Caty (el mismo azul que su mancha de la cara, pero brillante).
 export const PINTURA_KATY = '#3ad6ff';
@@ -14,9 +16,9 @@ const S50 = { velocidad: 50, cordura: 50, sigilo: 50 };   // todos a 50 de momen
 
 export const CHARACTERS = [
   { id: 'carot', name: 'Carot', species: { es: 'Coneja', en: 'Rabbit' }, color: '#f2b38e', dark: '#c47d5a', shape: 'carot', price: 0, ability: 'carot',
-    stats: { ...S50 }, ficha: 'assets/referencias/personajes/carot.webp' },
+    stats: { ...S50 }, ficha: 'assets/sprites/fichas/carot.webp' },
   { id: 'froggy', name: 'Froggy', species: { es: 'Rana', en: 'Frog' }, color: '#7cc36a', dark: '#3f7f3a', shape: 'frog', price: 0, ability: null,
-    stats: { ...S50 }, ficha: 'assets/referencias/personajes/froggy.webp' },
+    stats: { ...S50 }, ficha: 'assets/sprites/fichas/froggy.webp' },
   { id: 'oct', name: 'Oct', species: { es: 'Pulpo', en: 'Octopus' }, color: '#5b8fe0', dark: '#3a62ad', shape: 'octopus', price: 30, ability: 'oct', stats: { ...S50 } },
   { id: 'tarda', name: 'Tarda', species: { es: 'Tardígrado', en: 'Tardigrade' }, color: '#a9d68b', dark: '#6f9f57', shape: 'tardigrade', price: 60, ability: 'tarda', stats: { ...S50 } },
   { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#6fc94a', dark: '#3f8a2a', shape: 'lizard', price: 80, ability: 'gek', stats: { ...S50 } },
@@ -451,12 +453,17 @@ function drawFroggy(ctx, pal, facing, walk, opts) {
     ctx.fillStyle = skinDark;
     for (let k = -1; k <= 1; k++) dot(ctx, hand[0] + k * 1.6, hand[1] + (chasing ? -1.6 : 1.8), 1.1);
   }
-  // cuerpo alto como una caja, con las mangas de los hombros
-  ctx.fillStyle = skin;
+  // camiseta larga azul verdoso con mangas cortas (Elora), que tapa todo el cuerpo hasta las piernas
+  const shirt = B ? '#5e0810' : '#6fd0c4', shirtDark = B ? '#3a0408' : '#3f9e93';
+  ctx.fillStyle = shirt;
   rrect(ctx, -7, -8, 14, 15, 3); ctx.fill();
-  ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = skinDark; ctx.fillRect(4, -7, 2.5, 13); ctx.restore();
-  ctx.fillStyle = skin;
-  for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 5 : -9, -8, 4, 4);
+  ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = shirtDark; ctx.fillRect(4, -7, 2.5, 13); ctx.restore();
+  ctx.fillStyle = shirt;
+  for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 5 : -9, -8, 4, 4.5);
+  ctx.strokeStyle = shirtDark; ctx.lineWidth = 0.8;
+  for (const side of [-1, 1]) { ctx.beginPath(); ctx.moveTo(side > 0 ? 9 : -9, -3.5); ctx.lineTo(side > 0 ? 5.5 : -5.5, -3.5); ctx.stroke(); }
+  // cuello de la camiseta
+  ctx.beginPath(); ctx.moveTo(-3, -8); ctx.lineTo(0, -5.5); ctx.lineTo(3, -8); ctx.stroke();
   // bultitos de los ojos encima de la cabeza
   for (const side of [-1, 1]) {
     ctx.fillStyle = skin; dot(ctx, hx + side * 6.5, hy - 5.5, 3.4);
