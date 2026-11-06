@@ -337,13 +337,13 @@ function bloodyMarks(ctx, hx, hy, facing) {
 }
 
 // Carot (ficha de Elora): coneja color melocotón con vestido rosa con corazones,
-// collar de corazones, un lazo grande, una oreja tiesa y otra caída (naranja),
+// collar de corazones, un lazo grande, una oreja tiesa y otra caída (las dos del color del cuerpo),
 // pompón de cola, un bolsito colgado y cara triste.
 function drawCarot(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
   const dress = B ? '#5e0810' : '#ef9cc0', dressDark = B ? '#3a0408' : '#c4587f';
-  const bow = B ? '#7a0b12' : '#d63a7a', earOrange = B ? '#7a0b12' : '#e9874f';
+  const bow = B ? '#7a0b12' : '#d63a7a';
   const tail = B ? '#c9a0a0' : '#fff7f0';
   const ex = facing === 'left' ? -3 : facing === 'right' ? 3 : 0;
   const hx = ex, hy = back ? -15 : -14;
@@ -390,11 +390,12 @@ function drawCarot(ctx, pal, facing, walk, opts) {
   // collar de corazones
   ctx.fillStyle = dressDark; ctx.fillRect(-5, -8.5, 10, 2.5);
   if (!B) { ctx.fillStyle = '#ffd6e6'; for (let x = -3; x <= 3; x += 3) ctx.fillRect(x - 0.5, -7.8, 1, 1); }
-  // orejas: la de la derecha tiesa, la de la izquierda caída y naranja
+  // orejas: la de la derecha tiesa, la de la izquierda caída; las dos del color del cuerpo
+  // (Elora: en la ficha la caída salió más naranja por error)
   ctx.fillStyle = skin;
   ctx.beginPath(); ctx.ellipse(hx + 4, hy - 11, 3, 8, 0.2, 0, Math.PI * 2); ctx.fill();
   if (!B) { ctx.fillStyle = '#f7c9b0'; ctx.beginPath(); ctx.ellipse(hx + 4.3, hy - 11, 1.4, 5.5, 0.2, 0, Math.PI * 2); ctx.fill(); }
-  ctx.fillStyle = earOrange;
+  ctx.fillStyle = skin;
   ctx.beginPath(); ctx.ellipse(hx - 7, hy - 8, 2.8, 6.5, -0.9, 0, Math.PI * 2); ctx.fill();
   // cabeza
   ctx.fillStyle = skin; dot(ctx, hx, hy, 9.5);
@@ -423,8 +424,8 @@ function drawCarot(ctx, pal, facing, walk, opts) {
   ctx.beginPath(); ctx.arc(hx, hy + 7.6, 1.9, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
 }
 
-// Froggy (ficha de Elora): rana verde con la cabeza ancha y plana, dos bultitos
-// de ojos encima, ojitos diminutos, una sonrisa enorme llena de dientes, el cuerpo
+// Froggy (ficha de Elora): rana verde con la cabeza ancha y plana, los ojos en los dos
+// bultitos de encima, una naricita de dos puntos, una sonrisa enorme llena de dientes, el cuerpo
 // alto como una caja, brazos largos con deditos y las piernas dobladas.
 function drawFroggy(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
@@ -464,11 +465,12 @@ function drawFroggy(ctx, pal, facing, walk, opts) {
   for (const side of [-1, 1]) { ctx.beginPath(); ctx.moveTo(side > 0 ? 9 : -9, -3.5); ctx.lineTo(side > 0 ? 5.5 : -5.5, -3.5); ctx.stroke(); }
   // cuello de la camiseta
   ctx.beginPath(); ctx.moveTo(-3, -8); ctx.lineTo(0, -5.5); ctx.lineTo(3, -8); ctx.stroke();
-  // bultitos de los ojos encima de la cabeza
+  // los ojos van en los dos bultitos de encima de la cabeza (Elora)
   for (const side of [-1, 1]) {
     ctx.fillStyle = skin; dot(ctx, hx + side * 6.5, hy - 5.5, 3.4);
-    ctx.strokeStyle = skinDark; ctx.lineWidth = 0.9;
-    ctx.beginPath(); ctx.arc(hx + side * 6.5, hy - 5.5, 1.9, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+    if (back) continue;
+    ctx.fillStyle = B ? (chasing ? '#ffe36b' : '#f0d0c8') : '#fff'; dot(ctx, hx + side * 6.5, hy - 5.8, 2.2);
+    ctx.fillStyle = B ? '#7a0b12' : line; dot(ctx, hx + side * 6.5 + ex * 0.5, hy - 5.6, 1.1);
   }
   // cabeza ancha y plana
   ctx.fillStyle = skin;
@@ -482,9 +484,9 @@ function drawFroggy(ctx, pal, facing, walk, opts) {
   ctx.beginPath();
   for (let x = -7.5; x <= 7.5; x += 3.75) { ctx.moveTo(hx + x, hy + 0.7); ctx.lineTo(hx + x, hy + 5.3); }
   ctx.stroke();
-  // ojitos diminutos
-  ctx.fillStyle = B ? (chasing ? '#ffe36b' : '#7a0b12') : line;
-  for (const side of [-1, 1]) dot(ctx, hx + ex * 0.4 + side * 1.8, hy - 2.4, 0.9);
+  // la naricita: dos puntitos en el medio de la cara (Elora)
+  ctx.fillStyle = B ? '#2a0306' : skinDark;
+  for (const side of [-1, 1]) dot(ctx, hx + ex * 0.4 + side * 1.4, hy - 2.4, 0.6);
 }
 
 const OWN_DRAW = { carot: drawCarot, frog: drawFroggy };
