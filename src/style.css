@@ -78,7 +78,7 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 .card.mini:hover, .card.mini.focus { transform: translateY(-2px); }
 /* la ficha: la foto de la ficha de Elora, con los parámetros en su lado derecho */
 .ficha { position: relative; width: 518px; height: 370px; border-radius: 6px; overflow: hidden; background: #f1eee7; box-shadow: 0 6px 18px rgba(0,0,0,0.5); flex-shrink: 0; }
-.ficha-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ficha-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: left center; }   /* si la foto es más ancha, se recorta por la derecha (en blanco), no al personaje */
 /* el cuadro de los parámetros: a la derecha de la raya y debajo del nombre (cada ficha de Elora puede
    moverlo con fichaCuadro en src/characters.js); lo de dentro se reparte a lo alto del cuadro */
 .ficha-datos { position: absolute; left: 60%; right: 4%; top: 25%; bottom: 5%; display: flex; flex-direction: column; justify-content: space-evenly; gap: 4px; text-align: left;

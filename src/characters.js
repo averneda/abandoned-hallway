@@ -1,4 +1,4 @@
-// Personajes jugables. Carot, Froggy y Oct se dibujan a partir de sus fichas de Elora; el resto son
+// Personajes jugables. Carot, Froggy, Oct y Caty se dibujan a partir de sus fichas de Elora; el resto son
 // dibujos provisionales (formas simples) hasta que lleguen sus fichas.
 // Los Bloodies son las versiones "rotas y sangrando" de estos mismos personajes.
 //
@@ -29,7 +29,9 @@ export const CHARACTERS = [
   { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#6fc94a', dark: '#3f8a2a', shape: 'lizard', price: 80, ability: 'gek', stats: { ...S50 } },
   { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: 100, ability: 'drake', stats: { ...S50 } },
   { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 120, ability: 'draila', stats: { ...S50 } },
-  { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#d8d2cc', dark: '#9a938c', shape: 'cat', price: 140, ability: 'katy', stats: { ...S50 } },
+  { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 140, ability: 'katy',
+    stats: { ...S50 }, ficha: 'assets/sprites/fichas/katy.webp',
+    fichaCuadro: { left: 62.5, top: 25, right: 3, bottom: 5 } },
   { id: 'jely', name: 'Jely', species: { es: 'Medusa', en: 'Jellyfish' }, color: '#e7a3e0', dark: '#b06aa8', shape: 'jellyfish', price: 160, ability: null, stats: { ...S50 } },
 ];
 
@@ -90,12 +92,6 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
       // a los Bloodies les falta un trozo de ala
       if (!opts.bloody) { ctx.beginPath(); ctx.moveTo(12, -6); ctx.lineTo(24, -14); ctx.lineTo(13, 2); ctx.closePath(); ctx.fill(); }
       else { ctx.beginPath(); ctx.moveTo(12, -6); ctx.lineTo(19, -9); ctx.lineTo(13, 2); ctx.closePath(); ctx.fill(); }
-    }
-    if (ch.shape === 'cat') {
-      // cola larga que se balancea
-      ctx.strokeStyle = dark; ctx.lineWidth = 4; ctx.lineCap = 'round';
-      const w = Math.sin(walk * 0.7) * 6;
-      ctx.beginPath(); ctx.moveTo(0, 7); ctx.quadraticCurveTo(10 + w, 16, 14 + w, 6); ctx.stroke();
     }
     if (ch.shape === 'lizard' || ch.shape === 'crocodile') {
       // cola larga que se mueve
@@ -171,29 +167,6 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
       }
       if (opts.bloody) { ctx.beginPath(); ctx.moveTo(hx - 4, hy - 7); ctx.lineTo(hx - 7, hy - 10); ctx.lineTo(hx - 8, hy - 6); ctx.closePath(); ctx.fill(); }
     }
-    if (ch.shape === 'cat') {
-      // orejas triangulares
-      ctx.fillStyle = body;
-      for (const side of [-1, 1]) {
-        ctx.beginPath(); ctx.moveTo(hx + side * 3, hy - 8); ctx.lineTo(hx + side * 8, hy - 17); ctx.lineTo(hx + side * 10, hy - 5); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#f0a8bc';
-        ctx.beginPath(); ctx.moveTo(hx + side * 5, hy - 8); ctx.lineTo(hx + side * 7.5, hy - 13.5); ctx.lineTo(hx + side * 8.5, hy - 6.5); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = body;
-      }
-      // mancha de pintura sobre un ojo (decidido por Elora)
-      if (!opts.bloody) {
-        ctx.save();
-        ctx.beginPath(); ctx.arc(hx, hy, 9.5, 0, Math.PI * 2); ctx.clip();
-        ctx.fillStyle = '#4aa3e8';
-        ctx.beginPath(); ctx.ellipse(hx - 4, hy + 0.5, 6.5, 6, 0.3, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(hx - 7.5, hy - 5, 3, 2.6, 0.8, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(hx - 2, hy + 6.5, 2.4, 2, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-        // goterón que cae por la cara
-        ctx.fillStyle = '#4aa3e8';
-        ctx.beginPath(); ctx.ellipse(hx - 5, hy + 8.5, 1.8, 3, 0, 0, Math.PI * 2); ctx.fill();
-      }
-    }
     if (ch.shape === 'jellyfish') {
       // campana translúcida sobre la cabeza, con el borde ondulado y un brillo
       ctx.save();
@@ -239,15 +212,6 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
         }
       } else {
         ctx.beginPath(); ctx.arc(hx + ex - 3.5 + ex * 0.3, hy + 1.3, 1.2, 0, Math.PI * 2); ctx.moveTo(hx + ex + 4.7 + ex * 0.3, hy + 1.3); ctx.arc(hx + ex + 3.5 + ex * 0.3, hy + 1.3, 1.2, 0, Math.PI * 2); ctx.fill();
-        if (ch.shape === 'cat') {
-          // naricita y bigotes
-          ctx.fillStyle = '#f0a8bc';
-          ctx.beginPath(); ctx.moveTo(hx + ex - 1.6, hy + 5); ctx.lineTo(hx + ex + 1.6, hy + 5); ctx.lineTo(hx + ex, hy + 7); ctx.closePath(); ctx.fill();
-          ctx.strokeStyle = 'rgba(80,74,70,0.85)'; ctx.lineWidth = 1;
-          for (const side of [-1, 1]) for (let i = -1; i <= 1; i++) {
-            ctx.beginPath(); ctx.moveTo(hx + ex + side * 3, hy + 5.5); ctx.lineTo(hx + ex + side * 11, hy + 4 + i * 2.5); ctx.stroke();
-          }
-        }
       }
     }
   }
@@ -331,8 +295,8 @@ function drawCarot(ctx, pal, facing, walk, opts) {
   const dress = B ? '#5e0810' : '#ef9cc0', dressDark = B ? '#3a0408' : '#c4587f';
   const bow = B ? '#7a0b12' : '#d63a7a';
   const tail = B ? '#c9a0a0' : '#fff7f0';
-  const ex = facing === 'left' ? -3 : facing === 'right' ? 3 : 0;
-  const hx = ex, hy = back ? -15 : -14;
+  // la cabeza no se mueve hacia los lados al andar a izquierda o derecha (Elora)
+  const hx = 0, hy = back ? -15 : -14;
   const step = Math.sin(walk) * 1.5;
 
   // pompón (detrás si mira de frente)
@@ -570,4 +534,115 @@ function drawOct(ctx, pal, facing, walk, opts) {
   if (!B) { ctx.save(); ctx.globalAlpha *= 0.55; ctx.fillStyle = '#f08aa8'; dot(ctx, hx - dir * 3.5, hy + 2.6, 1.6); ctx.restore(); }
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct };
+// Caty (ficha de Elora): gata naranja con las puntas de las orejas y de la cola lilas, una mancha
+// de pintura lila sobre un ojo, los ojos cerrados de contenta, sonrisa con dientes, camiseta
+// clarita de "HAPY DAY!" con una flor rosa con carita amarilla, y un pincel en la mano.
+// La cabeza no se mueve hacia los lados al andar (como Carot). En la ficha tiene un brazo
+// levantado; en el juego van los dos bajados [PROVISIONAL] (como Oct, que solo saludaba).
+function drawCaty(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
+  const skin = pal.color, skinDark = pal.dark;
+  const lila = B ? '#c9a0a0' : '#a9a2e6';
+  const shirt = B ? '#5e0810' : '#fbf0a8', shirtDark = B ? '#3a0408' : '#d9c45a';
+  const line = B ? '#2a0306' : '#3a2418';
+  const hx = 0, hy = -15;
+  const step = Math.sin(walk) * 1.5;
+  // hacia qué lado lleva el pincel (la mano de la derecha; mirando a la izquierda, la de la izquierda)
+  const mano = facing === 'left' ? -1 : 1;
+
+  // la cola larga, que sube por un lado con la punta lila (por detrás, salvo de espaldas)
+  const cola = () => {
+    const w = Math.sin(walk * 0.7) * 2.5;
+    ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-mano * 4, 5); ctx.quadraticCurveTo(-mano * 17, 8, -mano * (15 + w), -8); ctx.stroke();
+    ctx.fillStyle = lila; dot(ctx, -mano * (15 + w), -9, 2.1);
+  };
+  if (!back) cola();
+  // piernas y pies
+  ctx.fillStyle = skin;
+  for (const side of [-1, 1]) {
+    const lift = side * step > 0 ? -side * step * 0.6 : 0;
+    ctx.fillRect(side * 3.5 - 1.7, 3, 3.4, 8 + lift);
+    ctx.beginPath(); ctx.ellipse(side * 4.2, 11 + lift, 3, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // brazos (de Bloodie que persigue, arriba)
+  const brazos = [];
+  for (const side of [-1, 1]) {
+    const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.5);
+    brazos.push([side, chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 3]]);
+  }
+  for (const [side, h] of brazos) {
+    ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(side * 6, -6); ctx.quadraticCurveTo(side * 10, -3, h[0], h[1]); ctx.stroke();
+  }
+  // camiseta clarita con mangas cortas
+  ctx.fillStyle = shirt;
+  rrect(ctx, -7, -9, 14, 14, 2.5); ctx.fill();
+  for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 5 : -9.5, -9, 4.5, 4.5);
+  ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = shirtDark; ctx.fillRect(3.5, -8, 3, 12); ctx.restore();
+  if (!back && !B) {
+    // la flor rosa con carita amarilla (cada pétalo, su propio círculo)
+    ctx.fillStyle = '#ef7fb0';
+    for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; dot(ctx, Math.cos(a) * 2.3, -2.5 + Math.sin(a) * 2.3, 1.4); }
+    ctx.fillStyle = '#ffd83a'; dot(ctx, 0, -2.5, 1.6);
+    ctx.fillStyle = line; dot(ctx, -0.6, -3, 0.3); dot(ctx, 0.6, -3, 0.3);
+    ctx.fillRect(-0.6, -2.2, 1.2, 0.5);
+  }
+  // el pincel, en una mano: palo marrón y la punta con pintura lila
+  if (!B) {
+    const h = brazos.find(([side]) => side === mano)[1];
+    ctx.strokeStyle = '#8a5a3a'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(h[0] - mano * 1, h[1] + 3); ctx.lineTo(h[0] + mano * 3, h[1] - 7); ctx.stroke();
+    ctx.fillStyle = '#c9c9d2'; ctx.fillRect(h[0] + mano * 3 - 1, h[1] - 8.5, 2, 1.6);
+    ctx.fillStyle = lila;
+    ctx.beginPath(); ctx.ellipse(h[0] + mano * 3.4, h[1] - 10, 1.3, 2, mano * 0.35, 0, Math.PI * 2); ctx.fill();
+  }
+  // manos
+  ctx.fillStyle = skin;
+  for (const [, h] of brazos) dot(ctx, h[0], h[1], 1.8);
+  if (back) cola();
+  // orejas: naranjas, con la punta lila y el dentro rosa
+  for (const side of [-1, 1]) {
+    ctx.fillStyle = skin;
+    ctx.beginPath(); ctx.moveTo(hx + side * 2.5, hy - 7); ctx.lineTo(hx + side * 8.5, hy - 17); ctx.lineTo(hx + side * 9.5, hy - 3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = lila;
+    ctx.beginPath(); ctx.moveTo(hx + side * 7.2, hy - 14.8); ctx.lineTo(hx + side * 8.5, hy - 17); ctx.lineTo(hx + side * 8.8, hy - 13.6); ctx.closePath(); ctx.fill();
+    if (!back) {
+      ctx.fillStyle = B ? '#3a0408' : '#f0a8bc';
+      ctx.beginPath(); ctx.moveTo(hx + side * 4.5, hy - 7.5); ctx.lineTo(hx + side * 7.6, hy - 12.5); ctx.lineTo(hx + side * 8, hy - 6); ctx.closePath(); ctx.fill();
+    }
+  }
+  // cabeza
+  ctx.fillStyle = skin; dot(ctx, hx, hy, 9);
+  if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (back) return;
+  // la mancha de pintura lila sobre el ojo derecho (Elora), con bultitos como una nube
+  if (!B) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(hx, hy, 9, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = lila;
+    dot(ctx, hx + 3.8, hy - 1, 3.4);
+    dot(ctx, hx + 6, hy - 3.6, 1.9);
+    dot(ctx, hx + 1.5, hy - 3.8, 1.6);
+    dot(ctx, hx + 6.4, hy + 1.2, 1.7);
+    ctx.restore();
+  }
+  // ojos: cerrados de contenta (arquitos); de Bloodie, abiertos y enfadados
+  ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.lineCap = 'round';
+  for (const side of [-1, 1]) {
+    const x = hx + side * 3.6;
+    if (B) {
+      ctx.fillStyle = chasing ? '#ffe36b' : '#7a0b12'; dot(ctx, x, hy - 1, 1.6);
+    } else {
+      ctx.beginPath(); ctx.arc(x, hy, 1.9, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+    }
+  }
+  // naricita y la sonrisa con dientes
+  ctx.fillStyle = B ? '#2a0306' : '#b5485a'; dot(ctx, hx, hy + 2.2, 0.8);
+  ctx.fillStyle = B ? '#2a0306' : '#5a2a22';
+  ctx.beginPath(); ctx.moveTo(hx - 3, hy + 3.6); ctx.quadraticCurveTo(hx, hy + 8.2, hx + 3, hy + 3.6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = B ? '#e8d8c0' : '#fff';
+  ctx.fillRect(hx - 2.2, hy + 3.7, 4.4, 1.3);
+}
+
+const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty };
