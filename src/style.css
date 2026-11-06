@@ -79,17 +79,22 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 /* la ficha: la foto de la ficha de Elora, con los parámetros en su lado derecho */
 .ficha { position: relative; width: 518px; height: 370px; border-radius: 6px; overflow: hidden; background: #f1eee7; box-shadow: 0 6px 18px rgba(0,0,0,0.5); flex-shrink: 0; }
 .ficha-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.ficha-datos { position: absolute; left: 59%; right: 3%; top: 26%; bottom: 4%; display: flex; flex-direction: column; gap: 8px; text-align: left;
+/* el cuadro de los parámetros: a la derecha de la raya y debajo del nombre (cada ficha de Elora puede
+   moverlo con fichaCuadro en src/characters.js); lo de dentro se reparte a lo alto del cuadro */
+.ficha-datos { position: absolute; left: 60%; right: 4%; top: 25%; bottom: 5%; display: flex; flex-direction: column; justify-content: space-evenly; gap: 4px; text-align: left;
   color: #33302e; font-family: "Comic Sans MS", "Chalkboard SE", "Segoe Print", "Segoe UI", sans-serif; }
-.ficha-especie { font-size: 15px; color: #6b6560; margin-bottom: 2px; }
-.ficha-stat { display: grid; grid-template-columns: 78px 1fr 28px; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; }
-.ficha-barra { height: 12px; border: 2px solid #4a4542; border-radius: 6px; background: rgba(255,255,255,0.55); overflow: hidden; }
+.ficha-especie { font-size: 16px; color: #6b6560; }
+/* cada parámetro: el nombre y el número arriba, la barra entera debajo */
+.ficha-stat { display: grid; grid-template-columns: 1fr auto; align-items: end; row-gap: 3px; font-size: 15px; font-weight: 700; }
+.ficha-stat > .ficha-nombre { grid-row: 1; grid-column: 1; }
+.ficha-stat > .ficha-num { grid-row: 1; grid-column: 2; }
+.ficha-barra { grid-row: 2; grid-column: 1 / -1; height: 12px; border: 2px solid #4a4542; border-radius: 6px; background: rgba(255,255,255,0.55); overflow: hidden; }
 .ficha-relleno { height: 100%; }
 .ficha-barra.velocidad .ficha-relleno { background: #4f8fe0; }
 .ficha-barra.cordura .ficha-relleno { background: #4caa5c; }
 .ficha-barra.sigilo .ficha-relleno { background: #9a6ad0; }
-.ficha-num { text-align: right; font-size: 14px; }
-.ficha-habilidad { font-size: 14px; line-height: 1.3; margin-top: 4px; }
+.ficha-num { text-align: right; font-size: 15px; }
+.ficha-habilidad { font-size: 14px; line-height: 1.3; }
 button:disabled { opacity: 0.75; cursor: default; }
 
 .screen.pad { gap: 12px; }

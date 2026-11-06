@@ -5,6 +5,7 @@
 // stats (Elora): Velocidad, Cordura y Sigilo, de 0 a 100. Con 50 el personaje es "normal".
 // Cómo afecta cada uno al juego: STAT_EFFECTS en src/config.js.
 // ficha: la foto de la ficha de Elora, con los colores avivados (sale en la tienda de Tarda).
+// fichaCuadro: dónde van los parámetros en esa foto (en %: a la derecha de su raya y debajo del nombre).
 //   La original está en assets/referencias/personajes/; se aviva con tools-fichas/avivar.sh.
 //   Si un personaje no tiene ficha, se hace una de papel.
 
@@ -16,9 +17,11 @@ const S50 = { velocidad: 50, cordura: 50, sigilo: 50 };   // todos a 50 de momen
 
 export const CHARACTERS = [
   { id: 'carot', name: 'Carot', species: { es: 'Coneja', en: 'Rabbit' }, color: '#f2b38e', dark: '#c47d5a', shape: 'carot', price: 0, ability: 'carot',
-    stats: { ...S50 }, ficha: 'assets/sprites/fichas/carot.webp' },
-  { id: 'froggy', name: 'Froggy', species: { es: 'Rana', en: 'Frog' }, color: '#7cc36a', dark: '#3f7f3a', shape: 'frog', price: 0, ability: null,
-    stats: { ...S50 }, ficha: 'assets/sprites/fichas/froggy.webp' },
+    stats: { ...S50 }, ficha: 'assets/sprites/fichas/carot.webp',
+    fichaCuadro: { left: 61.5, top: 26, right: 4, bottom: 5 } },
+  { id: 'froggy', name: 'Froggy', species: { es: 'Rana', en: 'Frog' }, color: '#7cc36a', dark: '#3f7f3a', shape: 'frog', price: 0, ability: 'carot',   // Elora: el mismo salto grande que Carot
+    stats: { ...S50 }, ficha: 'assets/sprites/fichas/froggy.webp',
+    fichaCuadro: { left: 63.5, top: 29, right: 4.5, bottom: 5 } },
   { id: 'oct', name: 'Oct', species: { es: 'Pulpo', en: 'Octopus' }, color: '#5b8fe0', dark: '#3a62ad', shape: 'octopus', price: 30, ability: 'oct', stats: { ...S50 } },
   { id: 'tarda', name: 'Tarda', species: { es: 'Tardígrado', en: 'Tardigrade' }, color: '#a9d68b', dark: '#6f9f57', shape: 'tardigrade', price: 60, ability: 'tarda', stats: { ...S50 } },
   { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#6fc94a', dark: '#3f8a2a', shape: 'lizard', price: 80, ability: 'gek', stats: { ...S50 } },

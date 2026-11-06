@@ -239,6 +239,8 @@ export class UI {
       box.appendChild(this.paperFicha(ch));
     }
     const side = this.el('div', 'ficha-datos');
+    // el cuadro que dejó Elora en su ficha (en % de la ficha); si no hay, el de style.css
+    if (ch.fichaCuadro) for (const k of ['left', 'top', 'right', 'bottom']) side.style[k] = ch.fichaCuadro[k] + '%';
     side.appendChild(this.el('div', 'ficha-especie', ch.species[getLang()] || ch.species.es));
     for (const [stat, key] of [['velocidad', 'stat.speed'], ['cordura', 'stat.sanity'], ['sigilo', 'stat.stealth']]) {
       const v = ch.stats ? ch.stats[stat] : 50;
