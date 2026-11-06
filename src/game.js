@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURA_KATY } from './characters.js';
 import { t, getLang } from './i18n.js';
@@ -157,7 +157,7 @@ export class Game {
       p.sinCorrer += dt;
       if (p.sinCorrer >= STAMINA.regenDelay) p.stamina = Math.min(STAMINA.max, p.stamina + STAMINA.regen * dt);
     }
-    let speed = corriendo ? PLAYER.run : PLAYER.walk;
+    let speed = (corriendo ? PLAYER.run : PLAYER.walk) * statMul(this.ch, 'velocidad');
     if (p.capa > 0) speed *= ABILITIES.tarda.slow;   // con la capa Tun se va más despacio
     p.moving = len > 0;
     p.facing = facingOf(ax.x, ax.y, p.facing);
@@ -378,7 +378,7 @@ export class Game {
       if (frozen) continue; // parados por Oct: no se mueven ni hacen daño
 
       // Solo te ven si no hay pared ni trasto alto en medio.
-      const sees = e.recoil <= 0 && d < ENEMY.sightTiles * TILE && canSee(L, e.x, e.y, p.x, p.y);
+      const sees = e.recoil <= 0 && d < ENEMY.sightTiles * TILE * statMul(this.ch, 'sigilo') && canSee(L, e.x, e.y, p.x, p.y);
       if (sees) { e.chasing = true; e.lostFor = 0; e.lastSeen = { x: p.x, y: p.y }; }
       else if (e.chasing) {
         e.lostFor += dt;
@@ -422,7 +422,7 @@ export class Game {
       if (d < e.r + p.r && p.invuln <= 0 && e.recoil <= 0 && !overJump && !inmortal) {
         p.hearts -= 1;
         p.invuln = PLAYER.invuln;
-        p.anxiety += ANXIETY.hit;
+        p.anxiety += ANXIETY.hit * statMul(this.ch, 'cordura');
         e.recoil = ENEMY.recoil;
         e.chasing = false;
         this.flash = 0.5;
@@ -434,7 +434,7 @@ export class Game {
 
     // --- ansiedad (sube con Bloodies cerca, baja cuando estás tranquilo) ---
     const nr = ANXIETY.nearRadiusTiles * TILE;
-    if (nearest < nr && !frozen) p.anxiety += (ANXIETY.nearGain * (1 - nearest / nr) + 2) * dt;
+    if (nearest < nr && !frozen) p.anxiety += (ANXIETY.nearGain * (1 - nearest / nr) + 2) * dt * statMul(this.ch, 'cordura');
     else p.anxiety -= ANXIETY.calm * dt;
     p.anxiety = Math.max(0, Math.min(ANXIETY.max, p.anxiety));
 
@@ -803,7 +803,7 @@ export class Game {
   drawTape(ctx, x, y) {
     ctx.fillStyle = '#1c1c22'; ctx.fillRect(x - 10, y - 6, 20, 13);
     ctx.fillStyle = '#e8e2c8'; ctx.fillRect(x - 7, y - 3, 14, 5);
-    ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(x - 4, y + 3, 2, 0, Math.PI * 2); ctx.arc(x + 4, y + 3, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(x - 4, y + 3, 2, 0, Math.PI * 2); ctx.moveTo(x + 6, y + 3); ctx.arc(x + 4, y + 3, 2, 0, Math.PI * 2); ctx.fill();
   }
 
   drawDoor(ctx, x, y, open, frame, light) {

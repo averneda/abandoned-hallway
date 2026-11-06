@@ -80,6 +80,24 @@ export const COINS = {
   levelBonus: 10,  // monedas al terminar un nivel
 };
 
+// Parámetros de cada personaje (Elora): Velocidad, Cordura y Sigilo, de 0 a 100 (están en
+// src/characters.js). Con 50 el personaje juega "normal"; cada punto por encima o por debajo
+// lo cambia un 1%. [PROVISIONAL] Cuánto cambia cada uno lo puede ajustar Elora.
+//   Velocidad: lo rápido que anda y corre (0 → la mitad, 100 → 1,5 veces).
+//   Cordura:   lo que se estresa (más cordura, menos sube la ansiedad: 0 → 1,5 veces, 100 → la mitad).
+//   Sigilo:    desde cuántas casillas le ven los Bloodies (0 → 1,5 veces más lejos, 100 → la mitad).
+export const STAT_EFFECTS = {
+  velocidad: (v) => 0.5 + v / 100,
+  cordura: (v) => 1.5 - v / 100,
+  sigilo: (v) => 1.5 - v / 100,
+};
+
+// Multiplicador de un parámetro para un personaje (si no tiene ese parámetro, 50 = normal).
+export function statMul(ch, stat) {
+  const v = ch && ch.stats && typeof ch.stats[stat] === 'number' ? ch.stats[stat] : 50;
+  return STAT_EFFECTS[stat](Math.max(0, Math.min(100, v)));
+}
+
 export const LEVEL = {
   bloodDecals: 14,    // manchas de sangre (dibujada) por el suelo de cada pasillo
 };

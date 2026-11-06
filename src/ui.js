@@ -162,48 +162,118 @@ export class UI {
   }
 
   // ---------------- tienda de Tarda: elegir personaje o comprarlo con monedas (se abre encima del lobby)
-  showShop({ unlocked, coins, current, onChoose, onBuy, onClose }) {
+  // Arriba, todos los personajes en fila; abajo, la ficha del que está señalado: la ficha de Elora
+  // (su foto) con los parámetros escritos en el lado derecho, que ella dejó en blanco para eso.
+  showShop({ unlocked, coins, current, focusId, onChoose, onBuy, onClose }) {
     this.clear();
     const s = this.el('div', 'screen dim shop');
-    s.appendChild(this.el('h2', '', t('shop.title')));
-    s.appendChild(this.el('p', 'coins', '🪙 ' + t('select.coins', { n: coins })));
-    const cards = this.el('div', 'cards');
+    const head = this.el('div', 'shop-head');
+    head.append(this.el('h2', '', t('shop.title')), this.el('p', 'coins', '🪙 ' + t('select.coins', { n: coins })));
+    s.appendChild(head);
+
+    const roster = this.el('div', 'roster');
+    const ficha = this.el('div', 'ficha');
+    const actions = this.el('div', 'row');
     const note = this.el('p', 'small note-inline', '');
-    let focus = Math.max(0, CHARACTERS.findIndex((c) => c.id === current.id));
+    let focus = Math.max(0, CHARACTERS.findIndex((c) => c.id === (focusId || current.id)));
+
     const activate = (ch) => {
       if (unlocked.has(ch.id)) { onChoose(ch); return; }
       if (coins >= ch.price) { onBuy(ch); }
       else { note.textContent = t('select.notEnough', { n: ch.price - coins }); note.classList.add('shake'); setTimeout(() => note.classList.remove('shake'), 400); }
     };
+
     const cardEls = CHARACTERS.map((ch, i) => {
       const locked = !unlocked.has(ch.id);
-      const c = this.el('div', 'card' + (locked ? ' locked' : '') + (ch.id === current.id ? ' current' : ''));
-      const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80;
-      const cx = cv.getContext('2d'); cx.translate(40, 48); cx.scale(1.9, 1.9);
+      const c = this.el('div', 'card mini' + (locked ? ' locked' : '') + (ch.id === current.id ? ' current' : ''));
+      const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64;
+      const cx = cv.getContext('2d'); cx.translate(32, 40); cx.scale(1.5, 1.5);
       drawCharacter(cx, ch, 0, 0, 'down', 0, 0, false);
       c.appendChild(cv);
-      c.appendChild(this.el('div', 'name', ch.name));
-      c.appendChild(this.el('div', 'species', ch.species[getLang()] || ch.species.es));
-      c.appendChild(this.el('div', 'ability', t(ch.ability ? 'select.ability.' + ch.ability : 'select.ability.pending')));
-      if (locked) c.appendChild(this.el('div', 'lock', '🔒 ' + t('select.price', { n: ch.price })));
-      else if (ch.id === current.id) c.appendChild(this.el('div', 'chosen', t('shop.current')));
-      c.onclick = () => activate(ch);
-      c.onmouseenter = () => { focus = i; refresh(); };
-      cards.appendChild(c);
+      c.appendChild(this.el('div', 'name', (locked ? '🔒 ' : '') + ch.name));
+      // ratón: pasar por encima enseña la ficha (solo con ratón de verdad: en el móvil, tocar
+      // también "pasa por encima" y elegiría o compraría al primer toque).
+      // Tocar/clic: la primera vez enseña la ficha, la segunda elige.
+      c.onpointerenter = (e) => { if (e.pointerType === 'mouse') { focus = i; refresh(); } };
+      c.onclick = () => { if (focus === i) activate(ch); else { focus = i; refresh(); } };
+      roster.appendChild(c);
       return c;
     });
-    const refresh = () => cardEls.forEach((c, i) => c.classList.toggle('focus', i === focus));
-    refresh();
-    s.appendChild(cards);
-    s.appendChild(note);
-    s.appendChild(this.button(t('shop.close'), onClose));
+
+    const refresh = () => {
+      const ch = CHARACTERS[focus];
+      cardEls.forEach((c, i) => c.classList.toggle('focus', i === focus));
+      note.textContent = '';
+      this.fillFicha(ficha, ch);
+      actions.innerHTML = '';
+      const locked = !unlocked.has(ch.id);
+      let label;
+      if (ch.id === current.id) label = t('shop.current');
+      else if (!locked) label = t('select.choose');
+      else label = '🔒 ' + t('shop.buy', { n: ch.price });
+      const main = this.button(label, () => activate(ch), true);
+      if (ch.id === current.id) main.disabled = true;
+      actions.append(main, this.button(t('shop.close'), onClose));
+    };
+
+    s.append(roster, ficha, actions, note);
     this.root.appendChild(s);
+    refresh();
     this.keyHandler = (e) => {
       if (e.code === 'ArrowRight') { focus = (focus + 1) % CHARACTERS.length; refresh(); }
       else if (e.code === 'ArrowLeft') { focus = (focus + CHARACTERS.length - 1) % CHARACTERS.length; refresh(); }
       else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); activate(CHARACTERS[focus]); }
       else if (e.code === 'Escape') onClose();
     };
+  }
+
+  // Rellena la ficha de un personaje: la foto de Elora si la hay, o una ficha de papel con su dibujo.
+  // En el lado derecho van sus parámetros (Velocidad, Cordura, Sigilo, de 0 a 100) y su habilidad.
+  fillFicha(box, ch) {
+    box.innerHTML = '';
+    if (ch.ficha) {
+      const img = this.el('img', 'ficha-foto');
+      img.src = ch.ficha; img.alt = ch.name;
+      box.appendChild(img);
+    } else {
+      box.appendChild(this.paperFicha(ch));
+    }
+    const side = this.el('div', 'ficha-datos');
+    side.appendChild(this.el('div', 'ficha-especie', ch.species[getLang()] || ch.species.es));
+    for (const [stat, key] of [['velocidad', 'stat.speed'], ['cordura', 'stat.sanity'], ['sigilo', 'stat.stealth']]) {
+      const v = ch.stats ? ch.stats[stat] : 50;
+      const row = this.el('div', 'ficha-stat');
+      const bar = this.el('div', 'ficha-barra ' + stat);
+      const fill = this.el('div', 'ficha-relleno'); fill.style.width = v + '%';
+      bar.appendChild(fill);
+      row.append(this.el('span', 'ficha-nombre', t(key)), bar, this.el('span', 'ficha-num', String(v)));
+      side.appendChild(row);
+    }
+    const hab = this.el('div', 'ficha-habilidad');
+    hab.append(this.el('b', '', t('stat.ability') + ': '),
+      document.createTextNode(ch.ability ? t('select.ability.' + ch.ability) : t('stat.abilityPending')));
+    side.appendChild(hab);
+    box.appendChild(side);
+  }
+
+  // Ficha de papel para los personajes que aún no tienen la suya dibujada por Elora:
+  // el mismo formato que las suyas (dibujo a la izquierda, raya, nombre arriba a la derecha).
+  paperFicha(ch) {
+    const cv = document.createElement('canvas');
+    cv.className = 'ficha-foto';
+    cv.width = 700; cv.height = 500;
+    const x = cv.getContext('2d');
+    x.fillStyle = '#f1eee7'; x.fillRect(0, 0, 700, 500);
+    x.strokeStyle = '#5a5a5a'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(405, 0); x.lineTo(395, 500); x.stroke();
+    x.beginPath(); x.moveTo(0, 445); x.quadraticCurveTo(200, 420, 395, 440); x.stroke();
+    x.save(); x.translate(200, 330); x.scale(7, 7);
+    drawCharacter(x, ch, 0, 0, 'down', 0, 0, false);
+    x.restore();
+    x.fillStyle = '#3a3a3a'; x.font = 'bold 56px "Comic Sans MS", "Chalkboard SE", "Segoe Print", "Segoe UI", sans-serif';
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(ch.name.toUpperCase(), 550, 70);
+    return cv;
   }
 
   // ---------------- estantería: las cintas que has conseguido

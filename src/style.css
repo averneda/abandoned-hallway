@@ -65,17 +65,32 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 .tape-name { font-weight: 700; color: #e8e2c8; }
 .tape-text { font-size: 14px; color: var(--muted); }
 
-.screen.shop { gap: 10px; padding: 14px 20px; }
-.screen.shop h2 { font-size: 24px; }
+.screen.shop { gap: 6px; padding: 8px 16px; justify-content: flex-start; }
+.shop-head { display: flex; align-items: baseline; gap: 18px; }
+.screen.shop h2 { font-size: 22px; }
 .screen.shop .coins { font-size: 17px !important; }
-/* 2 filas de 4 para que quepan los 8 personajes y el botón de cerrar */
-.screen.shop .cards { gap: 10px; flex-wrap: wrap; max-width: 860px; }
-.screen.shop .card { width: 200px; padding: 6px 8px; gap: 2px; }
-.screen.shop .card canvas { width: 68px; height: 68px; }
-.screen.shop .card .name { font-size: 17px; }
-.screen.shop .card .species { font-size: 12px; }
-.screen.shop .card .ability { font-size: 11px; line-height: 1.25; }
-.screen.shop .card .lock, .screen.shop .card .chosen { font-size: 11px; }
+/* fila con todos los personajes */
+.roster { display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap; }
+.card.mini { width: 86px; padding: 3px 2px 4px; gap: 0; border-width: 2px; border-radius: 10px; }
+.card.mini canvas { width: 54px; height: 54px; }
+.card.mini .name { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.card.mini.locked { opacity: 0.7; filter: grayscale(0.5); cursor: pointer; }
+.card.mini:hover, .card.mini.focus { transform: translateY(-2px); }
+/* la ficha: la foto de la ficha de Elora, con los parámetros en su lado derecho */
+.ficha { position: relative; width: 518px; height: 370px; border-radius: 6px; overflow: hidden; background: #f1eee7; box-shadow: 0 6px 18px rgba(0,0,0,0.5); flex-shrink: 0; }
+.ficha-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ficha-datos { position: absolute; left: 59%; right: 3%; top: 26%; bottom: 4%; display: flex; flex-direction: column; gap: 8px; text-align: left;
+  color: #33302e; font-family: "Comic Sans MS", "Chalkboard SE", "Segoe Print", "Segoe UI", sans-serif; }
+.ficha-especie { font-size: 15px; color: #6b6560; margin-bottom: 2px; }
+.ficha-stat { display: grid; grid-template-columns: 78px 1fr 28px; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; }
+.ficha-barra { height: 12px; border: 2px solid #4a4542; border-radius: 6px; background: rgba(255,255,255,0.55); overflow: hidden; }
+.ficha-relleno { height: 100%; }
+.ficha-barra.velocidad .ficha-relleno { background: #4f8fe0; }
+.ficha-barra.cordura .ficha-relleno { background: #4caa5c; }
+.ficha-barra.sigilo .ficha-relleno { background: #9a6ad0; }
+.ficha-num { text-align: right; font-size: 14px; }
+.ficha-habilidad { font-size: 14px; line-height: 1.3; margin-top: 4px; }
+button:disabled { opacity: 0.75; cursor: default; }
 
 .screen.pad { gap: 12px; }
 .padrows { display: flex; flex-direction: column; gap: 8px; width: min(560px, 92%); }
@@ -106,3 +121,5 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 .tbtn.tpause { right: 14px; top: 14px; width: 42px; height: 42px; font-size: 14px; background: rgba(42, 34, 51, 0.7); }
 #rotate-hint { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(7, 6, 10, 0.92); color: var(--text); font-size: 22px; text-align: center; padding: 24px; z-index: 20; pointer-events: none; }
 @media (orientation: portrait) and (pointer: coarse) { #rotate-hint { display: flex; } }
+/* aviso breve (al comprar un personaje): arriba, pequeño, para no tapar los botones de la tienda */
+.dialog.toast { top: 6px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); padding: 6px 18px; font-size: 16px; white-space: nowrap; z-index: 3; border-color: #ffd95a; }

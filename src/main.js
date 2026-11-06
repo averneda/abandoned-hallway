@@ -22,7 +22,8 @@ loadLang();
 
 // Lo que se recuerda entre partidas: personajes, monedas, cintas totales y personaje elegido.
 // El progreso de los pasillos NO se guarda.
-const unlocked = new Set(['carot']);
+// Carot y Froggy son los personajes iniciales: se pueden elegir desde el principio (Elora).
+const unlocked = new Set(['carot', 'froggy']);
 const wallet = { coins: 0, tapes: 0 };
 const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false };
 const run = { character: characterById('carot'), level: 1, tapes: 0 };
@@ -92,10 +93,11 @@ function gotoLobby() {
     onShop: () => {
       lobby.paused = true;
       const close = () => { ui.clear(); lobby.paused = false; input.clear(); };
-      const open = () => ui.showShop({
-        unlocked, coins: wallet.coins, current: run.character,
+      // focusId: a quién señalar al abrir (tras comprar, al recién comprado)
+      const open = (focusId) => ui.showShop({
+        unlocked, coins: wallet.coins, current: run.character, focusId,
         onChoose: (ch) => { run.character = ch; save(); lobby.setCharacter(ch); close(); },
-        onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
+        onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(ch.id); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
         onClose: close,
       });
       open();
