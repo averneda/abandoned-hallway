@@ -1,4 +1,5 @@
-// El lobby: una sala tranquila donde Tarda vende personajes, hay una estantería con tus cintas
+// El lobby: una sala tranquila donde Tarda vende personajes, hay una caja de cartón con tus cintas
+// (y la tele en pequeñito al lado; antes era una estantería)
 // y una puerta para entrar a los pasillos.
 
 import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES } from './config.js';
@@ -80,24 +81,14 @@ export class Lobby extends Game {
     // puerta a los pasillos: bordes rojos (Elora) y luz ámbar
     for (const d of this.doors) this.drawDoor(ctx, d.tx * TILE, d.ty * TILE, true, '#b3202a', '#ffd35a');
 
-    // estantería con cintas
+    // las cintas (Elora): una cajita de cartón con las cintas dentro y, a su izquierda, la tele marrón
+    // donde se ven, en pequeñito (la misma que dibujó Elora)
     const total = this.cb.totalTapes();
-    for (let i = 0; i < this.shelf.length; i++) {
-      const v = this.shelf[i];
-      const x = v.tx * TILE, y = v.ty * TILE;
-      ctx.fillStyle = '#4a3220'; ctx.fillRect(x, y - 6, TILE, TILE + 6);
-      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(x + 2, y - 4, TILE - 4, 3); ctx.fillRect(x + 2, y + 13, TILE - 4, 3);
-      for (let k = 0; k < 2; k++) {
-        const idx = i * 2 + k;
-        if (idx < total) {
-          ctx.fillStyle = '#1c1c22'; ctx.fillRect(x + 4 + k * 13, y + 1, 11, 10);
-          ctx.fillStyle = '#e8e2c8'; ctx.fillRect(x + 6 + k * 13, y + 4, 7, 3);
-        }
-      }
-      if (total > this.shelf.length * 2 && i === this.shelf.length - 1) {
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 11px "Segoe UI", Arial'; ctx.textAlign = 'center';
-        ctx.fillText('+' + (total - this.shelf.length * 2), x + TILE / 2, y + 27);
-      }
+    if (this.shelf.length) {
+      const v0 = this.shelf[0], vN = this.shelf[this.shelf.length - 1];
+      // la tele a la izquierda y la caja a la derecha (Elora)
+      this.drawMiniTV(ctx, v0.tx * TILE + 30, v0.ty * TILE + TILE - 2);
+      this.drawTapeBox(ctx, (vN.tx * TILE + TILE) - TILE / 2 - 4, vN.ty * TILE + TILE - 2, total);
     }
 
     // mostrador de Tarda
@@ -129,6 +120,67 @@ export class Lobby extends Game {
     ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     this.renderHUD(ctx);
+  }
+
+  // Caja de cartón abierta con las cintas asomando (cuantas más tengas, más asoman; como mucho 6).
+  // (x, y): el centro de abajo de la caja.
+  drawTapeBox(ctx, x, y, total) {
+    const w = 40, h = 24, top = y - h;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - w / 2 + 3, y - 2, w, 5);   // sombra
+    // el hueco de dentro y las cintas asomando
+    ctx.fillStyle = '#6a4826'; ctx.fillRect(x - w / 2 + 2, top - 4, w - 4, 8);
+    const n = Math.min(total, 6);
+    for (let i = 0; i < n; i++) {
+      const cx = x - w / 2 + 5 + i * 5.5, inclina = (i % 2 ? 1 : -1) * 0.12;
+      ctx.save(); ctx.translate(cx + 3, top + 2); ctx.rotate(inclina);
+      ctx.fillStyle = '#2c2c34'; ctx.fillRect(-3, -14, 6, 16);
+      ctx.fillStyle = '#f2ecd2'; ctx.fillRect(-2, -12, 4, 5);
+      ctx.restore();
+    }
+    // la caja
+    ctx.fillStyle = '#c8955a'; ctx.fillRect(x - w / 2, top, w, h);
+    ctx.fillStyle = '#a8743e'; ctx.fillRect(x - w / 2, top, w, 3);
+    ctx.fillStyle = '#b5824a'; ctx.fillRect(x + w / 2 - 9, top + 3, 9, h - 3);   // lado en sombra
+    // las solapas abiertas
+    ctx.fillStyle = '#d9a86a';
+    ctx.beginPath(); ctx.moveTo(x - w / 2, top); ctx.lineTo(x - w / 2 - 7, top - 7); ctx.lineTo(x - w / 2 + 6, top - 6); ctx.lineTo(x - w / 2 + 8, top); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + w / 2, top); ctx.lineTo(x + w / 2 + 7, top - 7); ctx.lineTo(x + w / 2 - 6, top - 6); ctx.lineTo(x + w / 2 - 8, top); ctx.closePath(); ctx.fill();
+    // cinta de embalar
+    ctx.fillStyle = 'rgba(230, 210, 150, 0.7)'; ctx.fillRect(x - 3, top, 6, h);
+    if (total > 6) {
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 10px "Segoe UI", Arial'; ctx.textAlign = 'center';
+      ctx.fillText('+' + (total - 6), x - 8, y - 6);
+    }
+  }
+
+  // La tele de las cintas en pequeñito, como la dibujó Elora: marco de madera marrón, dos antenas,
+  // la pantalla gris con rayas (con un poco de nieve) y debajo el mueble con el vídeo y el pomo amarillo.
+  // (x, y): el centro de abajo.
+  drawMiniTV(ctx, x, y) {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - 24, y - 2, 50, 5);   // sombra
+    // el mueble
+    ctx.fillStyle = '#e9e1b8'; ctx.fillRect(x - 24, y - 12, 48, 12);
+    ctx.fillStyle = '#d7cd9c'; ctx.fillRect(x - 24, y - 12, 48, 2);
+    ctx.fillStyle = '#f2c62e'; ctx.beginPath(); ctx.arc(x - 6, y - 5, 2.2, 0, Math.PI * 2); ctx.fill();   // el pomo amarillo
+    ctx.fillStyle = '#2b2b30'; ctx.fillRect(x + 7, y - 9, 12, 4);                                         // el vídeo
+    ctx.fillStyle = '#111'; ctx.fillRect(x + 9, y - 8, 8, 1.5);
+    // las antenas (cada bolita, su propio trazo)
+    ctx.strokeStyle = '#9a9aa2'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(x - 6, y - 44); ctx.lineTo(x - 14, y - 54); ctx.moveTo(x + 6, y - 44); ctx.lineTo(x + 12, y - 55); ctx.stroke();
+    ctx.fillStyle = '#c0c0c8';
+    ctx.beginPath(); ctx.arc(x - 14, y - 54, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 12, y - 55, 1.4, 0, Math.PI * 2); ctx.fill();
+    // el marco de madera
+    ctx.fillStyle = '#8b4a2b'; ctx.fillRect(x - 21, y - 44, 42, 32);
+    ctx.fillStyle = '#a65d38'; ctx.fillRect(x - 21, y - 44, 42, 3);
+    // la pantalla: gris con rayas y algo de nieve que parpadea
+    ctx.fillStyle = '#c9cbd0'; ctx.fillRect(x - 17, y - 40, 34, 24);
+    ctx.fillStyle = 'rgba(80,80,90,0.45)';
+    for (let k = 0; k < 3; k++) ctx.fillRect(x - 15, y - 36 + k * 7, 30, 1.5);
+    for (let k = 0; k < 10; k++) {
+      ctx.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.7)' : 'rgba(40,40,50,0.5)';
+      ctx.fillRect(x - 17 + Math.random() * 33, y - 40 + Math.random() * 23, 1.5, 1.5);
+    }
   }
 
   renderHUD(ctx) {
