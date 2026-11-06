@@ -5,6 +5,7 @@ import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from '.
 import { CHARACTERS, drawCharacter, PINTURA_KATY } from './characters.js';
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
+import { drawCoin, pickCoinKind, coinValue } from './coins.js';
 
 const ESTAMINA = '#2fe0a6';   // verde-turquesa de la estamina (barra y bolitas)
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -330,7 +331,7 @@ export class Game {
       if (it.type === 'tape') { this.tapes++; p.anxiety += ANXIETY.tape; this.say(t('msg.tape'), 1.5); sfx.tape(); this.cb.onTape(); }
       else if (it.type === 'food') { p.anxiety += ANXIETY.food; this.say(t('msg.food'), 1.5); sfx.food(); }
       else if (it.type === 'heart') { p.hearts = Math.min(PLAYER.hearts, p.hearts + 1); this.say(t('msg.heart'), 1.5); sfx.heart(); }
-      else if (it.type === 'coin') { this.coins++; this.cb.onCoin(1); sfx.coin(); }
+      else if (it.type === 'coin') { const v = coinValue(it.kind); this.coins += v; this.cb.onCoin(v); sfx.coin(); }
       else if (it.type === 'stamina') {
         p.stamina = Math.min(STAMINA.max, p.stamina + STAMINA.ball);
         p.agotado = false;
@@ -486,7 +487,7 @@ export class Game {
       }
       if (!mejor) break;
       puestas.push(mejor);
-      L.items.push({ type: 'coin', x: (mejor.tx + 0.5) * TILE, y: (mejor.ty + 0.5) * TILE, taken: false, ttl: r.life, born: this.time });
+      L.items.push({ type: 'coin', kind: pickCoinKind(this.rand), x: (mejor.tx + 0.5) * TILE, y: (mejor.ty + 0.5) * TILE, taken: false, ttl: r.life, born: this.time });
     }
     this.say(t('msg.coinRush'), 2);
   }
@@ -792,9 +793,7 @@ export class Game {
         const w = (Math.abs(Math.cos(this.time * 4 + it.x)) * 7 + 1) * escala;
         const h = 7 * escala;
         if (it.ttl != null) { ctx.shadowColor = '#ffe36b'; ctx.shadowBlur = 10; }
-        ctx.fillStyle = '#e6b31e'; ctx.beginPath(); ctx.ellipse(it.x, it.y + bob, w, h, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#fff1a8'; ctx.beginPath(); ctx.ellipse(it.x, it.y + bob, w * 0.5, h * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+        drawCoin(ctx, it.x, it.y + bob, it.kind, w, h);
         ctx.restore();
       }
     }

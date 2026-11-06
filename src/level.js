@@ -3,6 +3,7 @@
 
 import { TILE, LEVEL, MAP_RANDOM, BONUS_EVERY } from './config.js';
 import { MAPS, BONUS } from './maps.js';
+import { pickCoinKind } from './coins.js';
 
 export const T = {
   FLOOR: 0,
@@ -181,6 +182,9 @@ export function loadMap(n, map, seed = 0) {
       }
     }
   }
+
+  // cada moneda es de bronce, de metal o de oro (al azar); las de práctica del lobby, de bronce
+  for (const it of items) if (it.type === 'coin' && !it.kind) it.kind = map.lobby ? 'bronce' : pickCoinKind(rand);
 
   // decoración: sangre dibujada por el suelo (el lobby y el Bonus no tienen)
   const decals = [];

@@ -475,10 +475,11 @@ function drawFroggy(ctx, pal, facing, walk, opts) {
   for (const side of [-1, 1]) dot(ctx, hx + ex * 0.4 + side * 1.4, hy - 2.4, 0.6);
 }
 
-// Oct (ficha de Elora; Oct es no binarie): pulpo azul clarito con la cabeza redonda en un cuello
-// largo, unos tentáculos que le salen de la cara (Elora: no es un pico), gafas redondas, un coloretito en la
+// Oct (ficha de Elora; Oct es no binarie): pulpo azul clarito con la cabeza redonda (en el juego
+// sin cuello: Elora, así no es tan alte), unos tentáculos que le salen de la cara (Elora: no es un pico), gafas redondas, un coloretito en la
 // mejilla, camiseta morada de "GAMER" con un mando dibujado, y abajo una falda de tentáculos
-// con las ventosas amarillas. Los dos tentáculos-brazo van bajados (en la ficha uno está levantado porque saluda).
+// con las ventosas amarillas. Los dos tentáculos-brazo van bajados e iguales (en la ficha uno está
+// levantado porque saluda).
 function drawOct(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
@@ -488,23 +489,28 @@ function drawOct(ctx, pal, facing, walk, opts) {
   // hacia dónde apuntan los tentáculos de la cara: de frente, a la izquierda como en la ficha
   const dir = facing === 'right' ? 1 : -1;
   const ex = facing === 'left' ? -2 : facing === 'right' ? 2 : 0;
-  const hx = ex, hy = -20;   // la cabeza va alta: tiene el cuello largo
+  const hx = ex, hy = -15;   // la cabeza va justo encima de la camiseta (sin cuello: Elora)
 
-  // el otro tentáculo-brazo, bajado a un lado (Elora: en la ficha lo levanta solo porque está
-  // saludando; normalmente no lo lleva levantado). De Bloodie que persigue, arriba y agitándolo.
-  const sw = Math.sin(walk * (chasing ? 2 : 0.8)) * (chasing ? 3 : 1.2);
-  const ctl = chasing ? [-dir * 15, -8] : [-dir * 13, -4];
-  const end = chasing ? [-dir * 13 + sw, -24] : [-dir * 12 + sw * 0.4, 2];
-  ctx.strokeStyle = skin; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-dir * 6, -5); ctx.quadraticCurveTo(ctl[0], ctl[1], end[0], end[1]); ctx.stroke();
-  ctx.fillStyle = sucker;
-  for (const t of [0.55, 0.85]) {
-    // ventosas a lo largo del tentáculo
-    const u = 1 - t;
-    const px = u * u * (-dir * 6) + 2 * u * t * ctl[0] + t * t * end[0];
-    const py = u * u * (-5) + 2 * u * t * ctl[1] + t * t * end[1];
-    dot(ctx, px + dir * 1, py + 0.6, 0.9);
-  }
+  // los dos tentáculos-brazo son iguales, uno a cada lado, bajados (Elora: en la ficha uno está
+  // levantado solo porque saluda). De Bloodie que persigue, arriba y agitándolos.
+  const brazo = (side, fase) => {
+    const sw = Math.sin(walk * (chasing ? 2 : 0.8) + fase) * (chasing ? 3 : 1.2);
+    const ctl = chasing ? [side * 15, -8] : [side * 13, -4];
+    const end = chasing ? [side * 13 + sw, -24] : [side * 12 + sw * 0.4, 2];
+    ctx.strokeStyle = skin; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(side * 6, -5); ctx.quadraticCurveTo(ctl[0], ctl[1], end[0], end[1]); ctx.stroke();
+    ctx.fillStyle = sucker;
+    for (const t of [0.55, 0.85]) {
+      // ventosas a lo largo del tentáculo
+      const u = 1 - t;
+      const px = u * u * (side * 6) + 2 * u * t * ctl[0] + t * t * end[0];
+      const py = u * u * (-5) + 2 * u * t * ctl[1] + t * t * end[1];
+      dot(ctx, px - side * 1, py + 0.6, 0.9);
+    }
+  };
+
+  // el brazo de atrás (detrás de la camiseta)
+  brazo(-dir, 0);
   // falda de tentáculos con las puntas dobladas y las ventosas amarillas por debajo
   ctx.fillStyle = skin;
   ctx.beginPath(); ctx.moveTo(-6, 2); ctx.lineTo(6, 2); ctx.lineTo(11, 10); ctx.lineTo(-11, 10); ctx.closePath(); ctx.fill();
@@ -515,8 +521,6 @@ function drawOct(ctx, pal, facing, walk, opts) {
   }
   ctx.strokeStyle = skinDark; ctx.lineWidth = 0.7;
   ctx.beginPath(); ctx.moveTo(-3, 4); ctx.lineTo(-4.5, 9); ctx.moveTo(3, 4); ctx.lineTo(4.5, 9); ctx.stroke();
-  // cuello largo
-  ctx.fillStyle = skin; ctx.fillRect(hx - 2.6, hy + 5, 5.2, -hy - 13);
   // camiseta morada con mangas cortas
   ctx.fillStyle = shirt;
   rrect(ctx, -7, -9, 14, 12, 2.5); ctx.fill();
@@ -530,12 +534,8 @@ function drawOct(ctx, pal, facing, walk, opts) {
     rrect(ctx, -3.6, -5.2, 7.2, 3.6, 1.6); ctx.fill();
     ctx.fillStyle = line; dot(ctx, -1.8, -3.4, 0.6); dot(ctx, 1.6, -3.9, 0.45); dot(ctx, 2.4, -3, 0.45);
   }
-  // el tentáculo de delante, que hace de brazo (de Bloodie que persigue, arriba)
-  const sw2 = Math.sin(walk * (chasing ? 2 : 0.7) + 1) * (chasing ? 3 : 1);
-  const tip = chasing ? [dir * 14 + sw2, -19] : [dir * 12 + sw2 * 0.4, -1];
-  ctx.strokeStyle = skin; ctx.lineWidth = 3.2;
-  ctx.beginPath(); ctx.moveTo(dir * 7, -6); ctx.quadraticCurveTo(dir * 13, chasing ? -10 : -6, tip[0], tip[1]); ctx.stroke();
-  ctx.fillStyle = sucker; dot(ctx, tip[0] - dir * 0.6, tip[1] + 1.4, 1.2); dot(ctx, tip[0] - dir * 3, tip[1] + 0.6, 0.9);
+  // el brazo de delante, igual que el otro
+  brazo(dir, 1);
   // cabeza redonda
   ctx.fillStyle = skin; dot(ctx, hx, hy, 8);
   if (B) bloodyMarks(ctx, hx, hy, facing);

@@ -78,6 +78,14 @@ export const ABILITIES = {
 
 export const COINS = {
   levelBonus: 10,  // monedas al terminar un nivel
+  // Las tres monedas de Elora (se dibujan en src/coins.js). value: lo que vale cada una
+  // (el número que lleva dibujado). chance: de cada 100 monedas, cuántas salen de ese tipo
+  // [PROVISIONAL]. Las monedas de práctica del lobby son siempre de bronce.
+  kinds: {
+    bronce: { value: 1, chance: 60 },
+    metal: { value: 2, chance: 30 },
+    oro: { value: 3, chance: 10 },
+  },
 };
 
 // Parámetros de cada personaje (Elora): Velocidad, Cordura y Sigilo, de 0 a 100 (están en

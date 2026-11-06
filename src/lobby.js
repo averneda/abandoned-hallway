@@ -8,6 +8,7 @@ import { Game, dist } from './game.js';
 import { drawCharacter, characterById } from './characters.js';
 import { t } from './i18n.js';
 import { sfx } from './sound.js';
+import { coinValue } from './coins.js';
 
 export class Lobby extends Game {
   // callbacks: { onPause(), onShop(), onTapes(), onStart(), onCoin(n), totalCoins(), totalTapes(),
@@ -47,7 +48,7 @@ export class Lobby extends Game {
       if (it.taken || dist(it.x, it.y, p.x, p.y) > p.r + 10) return;
       it.taken = true;
       this.cb.practiceTaken.add(i);
-      this.cb.onCoin(1);
+      this.cb.onCoin(coinValue(it.kind));
       sfx.coin();
     });
 
