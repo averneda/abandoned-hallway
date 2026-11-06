@@ -74,6 +74,9 @@ export const ABILITIES = {
   katy: { time: 3, cooldown: 10 },
   // Drake: vuela. Pasa por encima de los trastos (naranjas y rojos) y los Bloodies no le pueden coger.
   drake: { time: 5, cooldown: 16 },
+  // Jely: inunda la sala 10 s. Con el agua los Bloodies van un 30% más lentos y ella un 20% más rápida.
+  // Se puede volver a usar a los 20 s (Elora).
+  jely: { time: 10, cooldown: 20, enemySlow: 0.7, playerFast: 1.2 },
 };
 
 export const COINS = {

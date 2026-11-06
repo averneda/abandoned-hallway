@@ -42,7 +42,9 @@ export const CHARACTERS = [
   { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 140, ability: 'katy',
     stats: { ...S50 }, ficha: 'assets/sprites/fichas/katy.webp',
     fichaCuadro: { left: 62.5, top: 25, right: 3, bottom: 5 } },
-  { id: 'jely', name: 'Jely', species: { es: 'Medusa', en: 'Jellyfish' }, color: '#e7a3e0', dark: '#b06aa8', shape: 'jellyfish', price: 160, ability: null, stats: { ...S50 } },
+  { id: 'jely', name: 'Jely', species: { es: 'Medusa', en: 'Jellyfish' }, color: '#3f9fe0', dark: '#2a78b8', shape: 'jellyfish', price: 160, ability: 'jely',   // no tiene boca: habla lengua de signos (Elora)
+    stats: { ...S50 }, ficha: 'assets/sprites/fichas/jely.webp',
+    fichaCuadro: { left: 65.5, top: 27, right: 2.5, bottom: 4 } },
 ];
 
 export function characterById(id) { return CHARACTERS.find((c) => c.id === id) || CHARACTERS[0]; }
@@ -759,4 +761,106 @@ function drawGec(ctx, pal, facing, walk, opts) {
   dot(ctx, hx - 1.3, hy - 0.2, 0.55); dot(ctx, hx + 1.3, hy - 0.2, 0.55);
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec };
+// Jely (ficha de Elora): medusa con la cabeza redonda turquesa clarito, los ojos tristes, dos
+// tentáculos rizados en la cara (no tiene boca: habla lengua de signos), tentáculos turquesas finos
+// a los lados, y el cuerpo como una columna azul que se ensancha abajo, con olas y el borde lila.
+// De Bloodie le falta un tentáculo (Elora: a los Bloodies de Jely les falta un tentáculo).
+function drawJely(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
+  const head = B ? '#c23a42' : '#a9e4e2', fin = head;   // los tentáculos, del color de los de la cara (Elora)
+  const body = pal.color, bodyDark = pal.dark, base = B ? '#5e0810' : '#c3b6ea';
+  const line = B ? '#2a0306' : '#1f2a33';
+  const ex = facing === 'left' ? -2 : facing === 'right' ? 2 : 0;
+  const hx = ex, hy = -15;
+  const sway = Math.sin(walk * 0.8) * 1.2;   // el bajo del cuerpo se balancea como en el agua
+
+  // tentáculos a los dos lados, saliendo de debajo de la cabeza (Elora: son tentáculos, no pinchos):
+  // dos finos por lado, cortos, que se mueven como en el agua
+  // (Elora: como los de la cara) cuelgan hacia abajo y acaban en un rizo
+  const tentaculo = (side, k) => {
+    const w = Math.sin(walk * (chasing ? 2.2 : 1.2) + side + k * 1.4) * (chasing ? 1.2 : 0.6);
+    const x0 = hx + side * (5.5 + k * 4), y0 = hy + 2.5 - k * 0.6;   // bien separados (Elora)
+    const fwd = [1.6, 4.4][k], down = [8.5, 7.5][k];
+    const xe = x0 + side * fwd + w, ye = y0 + down;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(x0, y0);
+    ctx.bezierCurveTo(x0 + side * fwd * 1.1, y0 + 2, x0 + side * fwd * 1.1 - w, y0 + down * 0.65, xe, ye);
+    // el rizo de la punta, hacia dentro
+    ctx.quadraticCurveTo(xe - side * 1.7, ye + 0.3, xe - side * 1.2, ye - 1.6);
+    ctx.stroke();
+  };
+  ctx.strokeStyle = fin; ctx.lineCap = 'round';
+  for (const side of [-1, 1]) {
+    for (let k = 0; k < 2; k++) {
+      if (B && side === 1 && k > 0) continue;   // de Bloodie le falta un tentáculo de un lado
+      tentaculo(side, k);
+    }
+  }
+
+  // cuerpo: columna azul, estrecha arriba y ancha abajo
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.moveTo(-5, hy + 3);
+  ctx.lineTo(5, hy + 3);
+  ctx.quadraticCurveTo(5, 2, 11 + sway, 10);
+  ctx.lineTo(-11 + sway, 10);
+  ctx.quadraticCurveTo(-5, 2, -5, hy + 3);
+  ctx.closePath(); ctx.fill();
+  // sombra de un lado
+  ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = bodyDark;
+  ctx.beginPath(); ctx.moveTo(2.5, hy + 4); ctx.lineTo(5, hy + 4); ctx.quadraticCurveTo(5, 2, 11 + sway, 10); ctx.lineTo(7 + sway, 10); ctx.quadraticCurveTo(3, 2, 2.5, hy + 4); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  // el borde de abajo, lila, y las olitas encima
+  ctx.fillStyle = base;
+  ctx.beginPath(); ctx.moveTo(-10 + sway, 7.5); ctx.lineTo(10 + sway, 7.5); ctx.lineTo(11 + sway, 10.5); ctx.lineTo(-11 + sway, 10.5); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = B ? '#2a0306' : '#e8f6ff'; ctx.lineWidth = 0.8; ctx.lineCap = 'round';
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const x0 = -9 + i * 4 + sway, ph = Math.sin(walk * 1.5 + i) * 0.4;
+    ctx.moveTo(x0, 6 + ph); ctx.quadraticCurveTo(x0 + 1, 4.6 + ph, x0 + 2, 6 + ph); ctx.quadraticCurveTo(x0 + 3, 7.2 + ph, x0 + 4, 6 + ph);
+  }
+  ctx.stroke();
+
+  // cabeza: una campana redonda turquesa clarito con la parte de abajo recta
+  ctx.fillStyle = head;
+  ctx.beginPath(); ctx.ellipse(hx, hy, 9.5, 9, 0, Math.PI, 0); ctx.lineTo(hx + 9.5, hy + 3); ctx.lineTo(hx - 9.5, hy + 3); ctx.closePath(); ctx.fill();
+  if (!B) {
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath(); ctx.ellipse(hx - 4.5, hy - 5.5, 1.8, 3, -0.6, 0, Math.PI * 2); ctx.fill();
+  }
+  if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (back) return;
+
+  // los dos tentáculos rizados de la cara (donde los demás tienen la boca), que se mueven un poco
+  ctx.strokeStyle = head; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+  for (const side of [-1, 1]) {
+    const w = Math.sin(walk * 1.2 + side) * 0.5;
+    const x0 = hx + side * 2.4;
+    ctx.beginPath();
+    ctx.moveTo(x0, hy + 1);
+    ctx.bezierCurveTo(x0 + side * 2.5, hy + 3, x0 + side * 2.5 + w, hy + 7, x0 + side * 0.5 + w, hy + 8);
+    ctx.quadraticCurveTo(x0 - side * 1.2 + w, hy + 8.2, x0 - side * 0.6 + w, hy + 6.6);
+    ctx.stroke();
+  }
+  // ojos tristes: blancos con la pupila negra y el párpado caído
+  const eyeC = B ? (chasing ? '#ffe36b' : '#7a0b12') : line;
+  for (const side of [-1, 1]) {
+    const x = hx + ex * 0.6 + side * 3.6;
+    ctx.fillStyle = B ? '#f0d0c8' : '#fff';
+    ctx.beginPath(); ctx.ellipse(x, hy - 3, 2.1, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = eyeC; dot(ctx, x + ex * 0.3, hy - 2.6, 1.2);
+    ctx.strokeStyle = line; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.ellipse(x, hy - 3, 2.1, 2.5, 0, 0, Math.PI * 2); ctx.stroke();
+    // el párpado caído (más bajo por fuera, como en la ficha): es lo que la hace parecer triste
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(x, hy - 3, 2.4, 2.8, 0, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = head;
+    ctx.beginPath(); ctx.moveTo(x - 3, hy - 6); ctx.lineTo(x + 3, hy - 6);
+    ctx.lineTo(x + side * 2.6, hy - 3.2); ctx.lineTo(x - side * 2.6, hy - 4.6); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = line; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(x - side * 2.2, hy - 4.6); ctx.lineTo(x + side * 2.3, hy - 3.3); ctx.stroke();
+  }
+}
+
+const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely };

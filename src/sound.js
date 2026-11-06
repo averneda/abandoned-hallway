@@ -47,6 +47,8 @@ export const sfx = {
   heart() { tone({ type: 'sine', from: 523, time: 0.12, gain: 0.12 }); tone({ type: 'sine', from: 659, time: 0.12, gain: 0.12, delay: 0.1 }); tone({ type: 'sine', from: 784, time: 0.2, gain: 0.12, delay: 0.2 }); },
   button() { tone({ type: 'square', from: 140, to: 90, time: 0.1, gain: 0.2 }); tone({ type: 'triangle', from: 600, to: 900, time: 0.25, gain: 0.1, delay: 0.15 }); },
   door() { tone({ type: 'sawtooth', from: 90, to: 60, time: 0.35, gain: 0.15 }); },
+  // agua que entra de golpe (inundación de Jely)
+  flood() { tone({ type: 'sine', from: 180, to: 60, time: 0.9, gain: 0.14 }); tone({ type: 'triangle', from: 700, to: 250, time: 0.5, gain: 0.06, delay: 0.1 }); tone({ type: 'sine', from: 500, to: 900, time: 0.12, gain: 0.05, delay: 0.5 }); tone({ type: 'sine', from: 600, to: 1000, time: 0.1, gain: 0.05, delay: 0.7 }); },
   freeze() { tone({ type: 'sine', from: 1200, to: 300, time: 0.6, gain: 0.12 }); tone({ type: 'triangle', from: 900, to: 200, time: 0.6, gain: 0.08, delay: 0.05 }); },
   bite() { tone({ type: 'sawtooth', from: 180, to: 60, time: 0.18, gain: 0.16 }); tone({ type: 'square', from: 900, to: 200, time: 0.3, gain: 0.08, delay: 0.05 }); },
   // Drake despega: un "fuush" que sube y un aleteo

@@ -106,6 +106,7 @@ export class Game {
     };
     this.wave = null;  // onda del mordisco de Draila: {x, y, dir, len, max, golpeados}
     this.freeze = 0; // segundos que quedan de Bloodies parados (habilidad de Oct)
+    this.flood = 0;  // segundos que quedan de sala inundada (habilidad de Jely)
 
     this.enemies = L.enemies.map((e, i) => ({
       x: e.x, y: e.y, r: ENEMY.radius, dir: DIRS[Math.floor(this.rand() * 4)], turn: 1 + this.rand() * 2,
@@ -160,6 +161,7 @@ export class Game {
     }
     let speed = (corriendo ? PLAYER.run : PLAYER.walk) * statMul(this.ch, 'velocidad');
     if (p.capa > 0) speed *= ABILITIES.tarda.slow;   // con la capa Tun se va más despacio
+    if (this.flood > 0) speed *= ABILITIES.jely.playerFast;   // Jely nada más rápido en el agua
     p.moving = len > 0;
     p.corriendo = corriendo;   // (Gec va en monopatín cuando corre)
     p.facing = facingOf(ax.x, ax.y, p.facing);
@@ -322,6 +324,13 @@ export class Game {
       this.say(t('msg.freeze'), 2);
       sfx.freeze();
     }
+    if (this.flood > 0) this.flood -= dt;
+    if (this.ch.ability === 'jely' && input.wasPressed('ability') && p.cooldown <= 0 && this.flood <= 0) {
+      this.flood = ABILITIES.jely.time;
+      p.cooldown = ABILITIES.jely.cooldown;
+      this.say(t('msg.flood'), 2);
+      sfx.flood();
+    }
 
     this.updatePlayer(dt, input);
 
@@ -381,6 +390,7 @@ export class Game {
         if (Math.hypot(e.kx, e.ky) < 5) { e.kx = 0; e.ky = 0; }
       }
       if (frozen) continue; // parados por Oct: no se mueven ni hacen daño
+      const edt = this.flood > 0 ? dt * ABILITIES.jely.enemySlow : dt;   // en el agua de Jely van más lentos
 
       // Solo te ven si no hay pared ni trasto alto en medio.
       const sees = e.recoil <= 0 && d < ENEMY.sightTiles * TILE * statMul(this.ch, 'sigilo') && canSee(L, e.x, e.y, p.x, p.y);
@@ -395,16 +405,16 @@ export class Game {
         // acaba de tocarte: se aparta un momento
         e.recoil -= dt;
         const dx = e.x - p.x, dy = e.y - p.y, l = Math.hypot(dx, dy) || 1;
-        move(L, e, dx / l * ENEMY.walk * dt, dy / l * ENEMY.walk * dt, 'enemy');
+        move(L, e, dx / l * ENEMY.walk * edt, dy / l * ENEMY.walk * edt, 'enemy');
       } else if (e.chasing && e.stuck < 0.6) {
         // va hacia donde te vio por última vez (si te escondes, va allí y luego se rinde)
         const tgt = e.lastSeen || p;
         const dx = tgt.x - e.x, dy = tgt.y - e.y, l = Math.hypot(dx, dy) || 1;
-        if (l > 4) move(L, e, dx / l * ENEMY.chase * dt, dy / l * ENEMY.chase * dt, 'enemy');
+        if (l > 4) move(L, e, dx / l * ENEMY.chase * edt, dy / l * ENEMY.chase * edt, 'enemy');
       } else {
         // paseo por los pasillos
         e.turn -= dt;
-        const hit = move(L, e, e.dir[0] * ENEMY.walk * dt, e.dir[1] * ENEMY.walk * dt, 'enemy');
+        const hit = move(L, e, e.dir[0] * ENEMY.walk * edt, e.dir[1] * ENEMY.walk * edt, 'enemy');
         if (hit || e.turn <= 0) this.pickDirection(e);
         if (e.stuck >= 0.6) { e.stuck = e.stuck > 1.4 ? 0 : e.stuck + dt; }
       }
@@ -553,8 +563,42 @@ export class Game {
     if (this.flash > 0) { ctx.fillStyle = `rgba(190,10,20,${this.flash * 0.7})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     // hielo de Oct
     if (frozen) { ctx.fillStyle = `rgba(120,200,255,${Math.min(0.18, this.freeze * 0.1)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    // agua de Jely
+    if (this.flood > 0) this.renderFlood(ctx);
 
     this.renderHUD(ctx);
+  }
+
+  // La sala inundada de Jely: agua azul por encima de todo, con ondas que se mueven y burbujas que suben.
+  // Entra y se va poco a poco (medio segundo).
+  renderFlood(ctx) {
+    const a = Math.min(1, this.flood / 0.5, (ABILITIES.jely.time - this.flood) / 0.5);
+    const tt = this.time;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = 'rgba(40,120,200,0.28)';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    // ondas claras
+    ctx.strokeStyle = 'rgba(170,225,255,0.35)';
+    ctx.lineWidth = 2;
+    for (let y = 20; y < VIEW_H; y += 46) {
+      ctx.beginPath();
+      for (let x = 0; x <= VIEW_W; x += 12) {
+        const yy = y + Math.sin(x * 0.03 + tt * 2 + y) * 4;
+        if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    // burbujas (cada una en su propio trazo)
+    ctx.strokeStyle = 'rgba(220,245,255,0.6)';
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 24; i++) {
+      const sx = ((i * 97.3) % VIEW_W) + Math.sin(tt * 2 + i) * 6;
+      const sy = VIEW_H - (((tt * (25 + (i % 5) * 8)) + i * 53) % (VIEW_H + 20));
+      const r = 2 + (i % 3);
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // Viñeta de estrés: oscura hacia fuera y roja en los bordes; late más fuerte cuanto más estrés.
@@ -924,6 +968,11 @@ export class Game {
     } else if (this.ch.ability === 'drake') {
       const name = t('ability.drake.name');
       if (p.fly > 0) { ctx.fillStyle = '#ffb070'; ctx.fillText(`${name}: ${Math.ceil(p.fly)}s`, x, y); }
+      else if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }
+      else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
+    } else if (this.ch.ability === 'jely') {
+      const name = t('ability.jely.name');
+      if (this.flood > 0) { ctx.fillStyle = '#8fd4ff'; ctx.fillText(`${name}: ${Math.ceil(this.flood)}s`, x, y); }
       else if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }
       else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
     } else if (this.ch.ability === 'tarda') {
