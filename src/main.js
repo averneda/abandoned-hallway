@@ -3,7 +3,7 @@
 import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
-import { UI } from './ui.js';
+import { UI, tapeName } from './ui.js';
 import { Game } from './game.js';
 import { Lobby } from './lobby.js';
 import { Intro } from './intro.js';
@@ -25,12 +25,20 @@ loadLang();
 // Carot y Froggy son los personajes iniciales: se pueden elegir desde el principio (Elora).
 const unlocked = new Set(['carot', 'froggy']);
 const wallet = { coins: 0, tapes: 0 };
+// La caja de cintas del lobby (Elora): los números de las cintas depositadas en la tienda de Tarda.
+// Las demás cintas que tienes están en el inventario. Se pueden recuperar desde la caja.
+const cajaCintas = new Set();
 const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false };
 const run = { character: characterById('carot'), level: 1, tapes: 0 };
 try {
   for (const id of JSON.parse(localStorage.getItem('holeway.unlocked') || '[]')) unlocked.add(id);
   wallet.coins = parseInt(localStorage.getItem('holeway.coins') || '0', 10) || 0;
   wallet.tapes = parseInt(localStorage.getItem('holeway.tapes') || '0', 10) || 0;
+  const caja = localStorage.getItem('holeway.tapeBox');
+  if (caja == null) {
+    // partida de antes de la caja: las cintas que ya tenías estaban en la caja del lobby y ahí siguen [PROVISIONAL]
+    for (let i = 1; i <= wallet.tapes; i++) cajaCintas.add(i);
+  } else for (const n of JSON.parse(caja)) if (n >= 1 && n <= wallet.tapes) cajaCintas.add(n);
   flags.introSeen = localStorage.getItem('holeway.introSeen') === '1';
   flags.tutorialSeen = localStorage.getItem('holeway.tutorialSeen') === '1';
   flags.lobbySeen = localStorage.getItem('holeway.lobbySeen') === '1';
@@ -42,6 +50,7 @@ function save() {
     localStorage.setItem('holeway.unlocked', JSON.stringify([...unlocked]));
     localStorage.setItem('holeway.coins', String(wallet.coins));
     localStorage.setItem('holeway.tapes', String(wallet.tapes));
+    localStorage.setItem('holeway.tapeBox', JSON.stringify([...cajaCintas].sort((a, b) => a - b)));
     localStorage.setItem('holeway.character', run.character.id);
     localStorage.setItem('holeway.introSeen', flags.introSeen ? '1' : '0');
     localStorage.setItem('holeway.tutorialSeen', flags.tutorialSeen ? '1' : '0');
@@ -61,7 +70,11 @@ const common = {
   onTape: () => { wallet.tapes += 1; save(); },
   totalCoins: () => wallet.coins,
   totalTapes: () => wallet.tapes,
+  cintasEnCaja: () => cajaCintas.size,
 };
+// Las cintas del inventario (las que no están en la caja), en orden.
+function inventarioCintas() { const r = []; for (let i = 1; i <= wallet.tapes; i++) if (!cajaCintas.has(i)) r.push(i); return r; }
+function cintasDeLaCaja() { return [...cajaCintas].sort((a, b) => a - b); }
 
 // ---------------- ajuste al tamaño de la ventana
 function fit() {
@@ -93,18 +106,35 @@ function gotoLobby() {
     onShop: () => {
       lobby.paused = true;
       const close = () => { ui.clear(); lobby.paused = false; input.clear(); };
+      // la tienda de Tarda (dibujo de Elora): Depositar cintas o Cambiar personaje
+      const menu = () => ui.showTarda({ onDeposit: depositar, onCharacters: () => open(), onClose: close });
+      const depositar = () => ui.showDeposit({
+        inventario: inventarioCintas(),
+        onDeposit: (nums) => {
+          for (const n of nums) cajaCintas.add(n);
+          save();
+          ui.toast('📦 ' + t('deposit.done', { n: nums.length }));
+          depositar();
+        },
+        onBack: menu,
+      });
       // focusId: a quién señalar al abrir (tras comprar, al recién comprado)
       const open = (focusId) => ui.showShop({
         unlocked, coins: wallet.coins, current: run.character, focusId,
         onChoose: (ch) => { run.character = ch; save(); lobby.setCharacter(ch); close(); },
         onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(ch.id); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
-        onClose: close,
+        onClose: menu,
       });
-      open();
+      menu();
     },
     onTapes: () => {
       lobby.paused = true;
-      ui.showTapes({ total: wallet.tapes, onClose: () => { ui.clear(); lobby.paused = false; input.clear(); } });
+      const verCaja = () => ui.showTapes({
+        caja: cintasDeLaCaja(),
+        onRecover: (n) => { cajaCintas.delete(n); save(); ui.toast('🎒 ' + t('tapes.recovered', { name: tapeName(n) })); verCaja(); },
+        onClose: () => { ui.clear(); lobby.paused = false; input.clear(); },
+      });
+      verCaja();
     },
     onStart: () => startLevel(1),
   });

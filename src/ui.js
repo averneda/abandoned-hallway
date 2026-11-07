@@ -36,7 +36,7 @@ export class UI {
   padNavigate() {
     const input = this.input;
     if (!input) return;
-    const items = [...this.root.querySelectorAll('button, .card, .dialog')];
+    const items = [...this.root.querySelectorAll('button, .card, .dialog')].filter((el) => !el.closest('[inert]') && !el.disabled);
     if (!items.length) { this.navIndex = 0; return; }
     this.navIndex = Math.min(this.navIndex, items.length - 1);
     const d = input.padDirPressed;
@@ -335,15 +335,18 @@ export class UI {
     this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyE') salir(); };
   }
 
-  // ---------------- estantería: las cintas que has conseguido
-  showTapes({ total, onClose }) {
+  // ---------------- la caja de cintas del lobby: las cintas que has depositado en la tienda de Tarda
+  // (Elora). Aquí se ven, se les pone nombre y se pueden recuperar (vuelven al inventario).
+  // opts: { caja: [números de cinta], onRecover(n), onClose }
+  showTapes(opts) {
+    const { caja, onRecover, onClose } = opts;
     this.clear();
     const s = this.el('div', 'screen dim');
-    s.appendChild(this.el('h2', '', t('tapes.title')));
-    s.appendChild(this.el('p', '', total ? t('tapes.count', { n: total }) : t('tapes.none')));
-    if (total) {
+    s.appendChild(this.el('h2', '', t('tapes.boxTitle')));
+    s.appendChild(this.el('p', '', caja.length ? t('tapes.boxCount', { n: caja.length }) : t('tapes.boxEmpty')));
+    if (caja.length) {
       const list = this.el('div', 'tapes');
-      for (let i = 1; i <= total; i++) {
+      for (const i of caja) {
         const row = this.el('div', 'tape');
         // el nombre de la cinta: el que le ponga quien juega (Elora) o, si no, el de siempre
         const nombre = this.el('div', 'tape-name', '📼 ' + tapeName(i));
@@ -354,22 +357,24 @@ export class UI {
         row.appendChild(this.el('div', 'tape-text', text === key ? t('tapes.placeholder') : text));
         // si la cinta ya tiene grabación, se puede ver en la tele (src/tapes.js)
         const botones = this.el('div', 'tape-buttons');
-        if (grab) botones.appendChild(this.button(t('tapes.play'), () => this.playTape(grab, { total, onClose })));
+        if (grab) botones.appendChild(this.button(t('tapes.play'), () => this.playTape(grab, opts)));
         botones.appendChild(this.button(t('tapes.rename'), () => {
           // se cambia el nombre ahí mismo: Enter guarda, Esc deja el que tenía; vacío = el de siempre
           const campo = document.createElement('input');
           campo.className = 'tape-input'; campo.maxLength = 40;
           campo.value = savedTapeNames()[i] || ''; campo.placeholder = defaultTapeName(i);
-          const guardar = () => { setTapeName(i, campo.value); this.showTapes({ total, onClose }); };
+          const guardar = () => { setTapeName(i, campo.value); this.showTapes(opts); };
           campo.addEventListener('keydown', (e) => {
             e.stopPropagation();
             if (e.key === 'Enter') guardar();
-            else if (e.key === 'Escape') this.showTapes({ total, onClose });
+            else if (e.key === 'Escape') this.showTapes(opts);
           });
           campo.addEventListener('blur', guardar);
           nombre.replaceChildren('📼 ', campo);
           campo.focus();
         }));
+        // recuperarla: vuelve al inventario (Elora)
+        botones.appendChild(this.button(t('tapes.recover'), () => { onRecover(i); }));
         row.appendChild(botones);
         list.appendChild(row);
       }
@@ -378,7 +383,91 @@ export class UI {
     s.appendChild(this.button(t('shop.close'), onClose, true));
     this.root.appendChild(s);
     // (si se está escribiendo el nombre de una cinta, las teclas son para escribir, no para cerrar)
-    this.keyHandler = (e) => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'KeyE') onClose(); };
+    this.keyHandler = (e) => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'Escape' || e.code === 'KeyE') onClose(); };
+  }
+
+  // ---------------- la tienda de Tarda (dibujo de Elora): "Depositar cintas" y "Cambiar personaje"
+  // Se ve el dibujo entero; las dos franjas de la izquierda son los botones.
+  showTarda({ onDeposit, onCharacters, onClose }) {
+    this.clear();
+    const s = this.el('div', 'screen dim tienda');
+    const hoja = this.el('div', 'tienda-hoja');
+    const img = this.el('img', 'tienda-dibujo'); img.src = 'assets/sprites/tienda/tienda.webp'; img.alt = "Tarda's shop";
+    hoja.appendChild(img);
+    // las franjas del dibujo (en % del dibujo; están torcidas, como las dibujó Elora)
+    const op1 = this.button(t('shop.deposit'), onDeposit);
+    op1.className = 'tienda-op'; op1.style.clipPath = 'polygon(0 0, 54.5% 0, 54.5% 10.6%, 0 25.8%)';
+    const op2 = this.button(t('shop.characters'), onCharacters);
+    op2.className = 'tienda-op'; op2.style.clipPath = 'polygon(0 26.4%, 54.5% 11.2%, 54.5% 25%, 0 44.6%)';
+    hoja.append(op1, op2);
+    hoja.appendChild(this.el('div', 'tienda-ayuda', t('shop.pick')));
+    s.append(hoja, this.button(t('shop.close'), onClose));
+    this.root.appendChild(s);
+    op1.focus();
+    this.keyHandler = (e) => {
+      if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { e.preventDefault(); op2.focus(); }
+      else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); op1.focus(); }
+      else if (e.code === 'Escape' || e.code === 'KeyE') onClose();
+    };
+  }
+
+  // ---------------- depositar cintas (Elora): salen todas las del inventario en orden; se marcan las
+  // que quieras y el botón "Depositar" pregunta antes de dejarlas en la caja.
+  showDeposit({ inventario, onDeposit, onBack }) {
+    this.clear();
+    const s = this.el('div', 'screen dim');
+    s.appendChild(this.el('h2', '', t('deposit.title')));
+    const marcadas = new Set();
+    const boton = this.button('', () => preguntar(), true);
+    const pintarBoton = () => { boton.textContent = t('deposit.button', { n: marcadas.size }); boton.disabled = marcadas.size === 0; };
+    if (!inventario.length) {
+      s.appendChild(this.el('p', '', t('deposit.empty')));
+    } else {
+      s.appendChild(this.el('p', '', t('deposit.help')));
+      const list = this.el('div', 'tapes');
+      for (const i of inventario) {
+        const fila = this.el('button', 'tape tape-pick');
+        fila.setAttribute('aria-pressed', 'false');
+        const marca = this.el('span', 'tape-check', '');
+        fila.append(marca, this.el('span', 'tape-name', '📼 ' + tapeName(i)));
+        fila.onclick = () => {
+          if (marcadas.has(i)) marcadas.delete(i); else marcadas.add(i);
+          const on = marcadas.has(i);
+          fila.classList.toggle('on', on); fila.setAttribute('aria-pressed', String(on));
+          marca.textContent = on ? '✓' : '';
+          pintarBoton();
+        };
+        list.appendChild(fila);
+      }
+      s.appendChild(list);
+    }
+    const fila = this.el('div', 'row');
+    if (inventario.length) fila.appendChild(boton);
+    fila.appendChild(this.button(t('tapes.back'), onBack));
+    s.appendChild(fila);
+    pintarBoton();
+    // el aviso: ¿seguro/segura? (en la caja se pueden recuperar)
+    const preguntar = () => {
+      if (!marcadas.size) return;
+      const capa = this.el('div', 'aviso-fondo');
+      const caja = this.el('div', 'aviso');
+      caja.appendChild(this.el('p', 'aviso-texto', t('deposit.confirm')));
+      caja.appendChild(this.el('p', 'aviso-nota', t('deposit.confirmNote')));
+      const si = this.button(t('deposit.yes'), () => onDeposit([...marcadas].sort((a, b) => a - b)), true);
+      const no = this.button(t('deposit.no'), () => { capa.remove(); this.keyHandler = teclas; boton.focus(); });
+      const r = this.el('div', 'row'); r.append(si, no);
+      caja.appendChild(r); capa.appendChild(caja); this.root.appendChild(capa);
+      // mientras está el aviso, el mando solo ve sus dos botones
+      s.inert = true;
+      const quitarInert = () => { s.inert = false; };
+      no.addEventListener('click', quitarInert);
+      si.focus();
+      this.navIndex = 0;
+      this.keyHandler = (e) => { if (e.code === 'Escape') no.click(); };
+    };
+    this.root.appendChild(s);
+    const teclas = (e) => { if (e.code === 'Escape') onBack(); };
+    this.keyHandler = teclas;
   }
 
   // ---------------- cinemática (solo botón de saltar y nota)

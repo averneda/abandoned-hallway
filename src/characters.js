@@ -29,29 +29,29 @@ export const CHARACTERS = [
     stats: { velocidad: 70, cordura: 31, sigilo: 70, resistencia: 60 }, corazones: 3, ficha: 'assets/sprites/fichas/carot.webp',
     fichaCuadro: { left: 61.5, top: 26, right: 4, bottom: 5 } },
   { id: 'froggy', name: 'Froggy', species: { es: 'Rana', en: 'Frog' }, color: '#7cc36a', dark: '#3f7f3a', shape: 'frog', price: 0, ability: 'carot',   // Elora: el mismo salto grande que Carot
-    stats: { velocidad: 40, cordura: 80, sigilo: 40, resistencia: 80 }, corazones: 3, ficha: 'assets/sprites/fichas/froggy.webp',
+    stats: { velocidad: 30, cordura: 80, sigilo: 40, resistencia: 80 }, corazones: 3, ficha: 'assets/sprites/fichas/froggy.webp',
     fichaCuadro: { left: 63.5, top: 29, right: 4.5, bottom: 5 } },
   { id: 'oct', name: 'Oct', species: { es: 'Pulpo', en: 'Octopus' }, color: '#7fd0ec', dark: '#3d8db3', shape: 'octopus', price: 150, ability: 'oct',   // Oct es no binarie (Elora)
     stats: { velocidad: 53, cordura: 30, sigilo: 70, resistencia: 30 }, corazones: 3, ficha: 'assets/sprites/fichas/oct.webp',
     fichaCuadro: { left: 62, top: 23, right: 4, bottom: 5 } },
-  { id: 'tarda', name: 'Tarda', species: { es: 'Tardígrado', en: 'Tardigrade' }, color: '#b07c52', dark: '#7a5232', shape: 'tardigrade', price: 50, ability: 'tarda',   // la que se compra es marrón; la de la tienda, amarilla (Elora)
-    stats: { velocidad: 84, cordura: 60, sigilo: 35, resistencia: 30 }, corazones: 3, ficha: 'assets/sprites/fichas/tarda.webp',
+  { id: 'tarda', name: 'Tarda', species: { es: 'Tardígrado', en: 'Tardigrade' }, color: '#b07c52', dark: '#7a5232', shape: 'tardigrade', price: 50, ability: 'tarda',   // la que se compra es marrón; la de la tienda, gris (Elora)
+    stats: { velocidad: 84, cordura: 60, sigilo: 60, resistencia: 30 }, corazones: 3, ficha: 'assets/sprites/fichas/tarda.webp',
     fichaCuadro: { left: 69.5, top: 25, right: 2.5, bottom: 4 } },
   { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#98cc84', dark: '#5e9a4c', shape: 'lizard', price: 80, ability: 'gek',   // hermano adoptivo de Draila (Elora)
-    stats: { velocidad: 80, cordura: 60, sigilo: 20, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/gek.webp',
+    stats: { velocidad: 80, cordura: 60, sigilo: 40, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/gek.webp',
     fichaCuadro: { left: 65.5, top: 33, right: 3, bottom: 5 } },
   { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: null, ability: 'drake', stats: { velocidad: 100, cordura: 100, sigilo: 100, resistencia: 100 }, corazones: 5 },
-  { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 100, ability: 'draila', stats: { velocidad: 30, cordura: 60, sigilo: 29, resistencia: 40 }, corazones: 3 },
+  { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 100, ability: 'draila', stats: { velocidad: 30, cordura: 60, sigilo: 50, resistencia: 40 }, corazones: 3 },
   { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 150, ability: 'katy',
     pequena: true,   // más pequeña que los demás: tiene 7 u 8 años (Elora)
     stats: { velocidad: 80, cordura: 35, sigilo: 60, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/katy.webp',
     fichaCuadro: { left: 62.5, top: 25, right: 3, bottom: 5 } },
   { id: 'jely', name: 'Jely', species: { es: 'Medusa', en: 'Jellyfish' }, color: '#3f9fe0', dark: '#2a78b8', shape: 'jellyfish', price: 160, ability: 'jely',   // no tiene boca: habla lengua de signos (Elora)
-    stats: { velocidad: 40, cordura: 60, sigilo: 30, resistencia: 76 }, corazones: 3, ficha: 'assets/sprites/fichas/jely.webp',
+    stats: { velocidad: 40, cordura: 60, sigilo: 30, resistencia: 75 }, corazones: 3, ficha: 'assets/sprites/fichas/jely.webp',
     fichaCuadro: { left: 65.5, top: 27, right: 2.5, bottom: 4 } },
   { id: 'hoppy', name: 'Hoppy', species: { es: 'Liebre', en: 'Hare' }, color: '#c49a7a', dark: '#93694c', shape: 'hare', price: 50, ability: 'hoppy',
     pequena: true,   // chica, más pequeña que los demás: tiene 7 u 8 años; enérgica, adoptada por humanos (Elora)
-    stats: { velocidad: 80, cordura: 41, sigilo: 25, resistencia: 70 }, corazones: 3, ficha: 'assets/sprites/fichas/hoppy.webp',
+    stats: { velocidad: 80, cordura: 41, sigilo: 30, resistencia: 70 }, corazones: 3, ficha: 'assets/sprites/fichas/hoppy.webp',
     fichaCuadro: { left: 65.5, top: 26, right: 2.5, bottom: 4 } },
 ];
 
@@ -874,7 +874,7 @@ function drawJely(ctx, pal, facing, walk, opts) {
   }
 }
 
-// Tarda (ficha de Elora): tardígrada marrón (la de la tienda del lobby es amarilla), con el cuerpo alto
+// Tarda (ficha de Elora): tardígrada marrón (la de la tienda del lobby es gris), con el cuerpo alto
 // como un rectángulo con rayas, un ojo guiñado y el otro abierto con la ceja, una sonrisa enorme con
 // dientes, y ocho patitas con garritas. En la ficha sujeta una cinta y lleva una moneda de oro.
 // De Bloodie le falta una pata.
@@ -884,7 +884,11 @@ function drawTarda(ctx, pal, facing, walk, opts) {
   const line = B ? '#2a0306' : '#3a2a1e';
   const claw = B ? '#2a0306' : '#5a5a5e';
   const ex = facing === 'left' ? -2 : facing === 'right' ? 2 : 0;
-  const top = -27, bot = 8;   // el cuerpo, de arriba abajo
+  // La Tarda de la tienda del lobby (opts.alta) es más alta y lleva su cinta; la jugable es más
+  // bajita y no lleva ni la cinta ni las monedas (Elora).
+  const alta = !!opts.alta;
+  const top = alta ? -34 : -22, bot = 8;   // el cuerpo, de arriba abajo
+  const fy = top + 27;   // la cara y la cinta se colocan respecto a lo alto del cuerpo
 
   // una pata: un tubito con tres garritas en la punta
   const pata = (x0, y0, x1, y1, w) => {
@@ -928,10 +932,11 @@ function drawTarda(ctx, pal, facing, walk, opts) {
   // las rayas del cuerpo, un poco torcidas como en la ficha
   ctx.strokeStyle = dark; ctx.lineWidth = 0.9;
   ctx.beginPath();
-  for (const y of [-11, -5, 1]) { ctx.moveTo(-7.6, y + 1); ctx.quadraticCurveTo(0, y - 1, 7.6, y); }
+  for (const y of [top + 16, top + 22, top + 28, top + 34]) { if (y > bot - 4) break; ctx.moveTo(-7.6, y + 1); ctx.quadraticCurveTo(0, y - 1, 7.6, y); }
   ctx.stroke();
-  if (B) bloodyMarks(ctx, ex, -20, facing);
+  if (B) bloodyMarks(ctx, ex, top + 7, facing);
   if (!back) {
+    ctx.save(); ctx.translate(0, fy);
     // la cara, arriba del todo: un ojo guiñado (el de la izquierda) y el otro abierto con su ceja
     const fx = ex;
     ctx.strokeStyle = line; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
@@ -946,16 +951,15 @@ function drawTarda(ctx, pal, facing, walk, opts) {
     ctx.fillStyle = B ? '#f0d0c8' : '#fff';
     ctx.fillRect(fx + 0.2, -18.2, 1.2, 1.2); ctx.fillRect(fx + 2, -18.6, 1.2, 1.3); ctx.fillRect(fx + 3.6, -18.9, 1, 1.2);
     ctx.fillRect(fx + 1.2, -15.6, 1.2, 1); ctx.fillRect(fx + 2.8, -15.8, 1.1, 1);
+    ctx.restore();
   }
-  if (!B && !back && opts.objetos !== false) {
-    // la cinta que lleva en una pata de arriba (la de la derecha), y una moneda de oro en la de en medio
+  if (alta && !B && !back) {
+    // la cinta que lleva en una pata de arriba (la de la derecha)
     ctx.save();
-    ctx.translate(13.5, -15); ctx.rotate(-0.25);
+    ctx.translate(13.5, -15 + fy * 0.5); ctx.rotate(-0.25);
     ctx.fillStyle = '#2b2b30'; rrect(ctx, -4.5, -2.2, 9, 4.4, 1); ctx.fill();
     ctx.fillStyle = '#e8e8ec'; ctx.fillRect(-3.4, -1.1, 1.8, 1.8); ctx.fillRect(1.6, -1.1, 1.8, 1.8);
     ctx.restore();
-    ctx.fillStyle = '#e2b93a'; dot(ctx, 13.6, -2.5, 2.1);
-    ctx.fillStyle = '#d42a2a'; dot(ctx, 13, -3.2, 0.6);
   }
 }
 

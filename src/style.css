@@ -137,3 +137,21 @@ button:disabled { opacity: 0.75; cursor: default; }
 @media (orientation: portrait) and (pointer: coarse) { #rotate-hint { display: flex; } }
 /* aviso breve (al comprar un personaje): arriba, pequeño, para no tapar los botones de la tienda */
 .dialog.toast { top: 6px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); padding: 6px 18px; font-size: 16px; white-space: nowrap; z-index: 3; border-color: #ffd95a; }
+
+/* la tienda de Tarda: el dibujo de Elora con sus dos franjas de la izquierda como botones */
+.tienda { gap: 12px; }
+.tienda-hoja { position: relative; width: min(820px, 92%); aspect-ratio: 1372 / 967; border-radius: 6px; overflow: hidden; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+.tienda-dibujo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.tienda-op { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: transparent; font-size: 0; cursor: pointer; }
+.tienda-op:hover, .tienda-op:focus-visible, .tienda-op:focus, .tienda-op.padfocus { background: rgba(255, 214, 80, 0.38); outline: none; box-shadow: none; }
+.tienda-ayuda { position: absolute; left: 6%; top: 58%; color: #6b6560; font: 700 20px "Comic Sans MS", "Chalkboard SE", "Segoe Print", "Segoe UI", sans-serif; }
+/* depositar cintas: cada cinta es un botón que se marca */
+.tape-pick { display: flex; align-items: center; gap: 10px; width: 100%; cursor: pointer; font: inherit; color: inherit; }
+.tape-pick .tape-check { width: 26px; height: 26px; flex: none; border: 2px solid #8a74a0; border-radius: 6px; display: grid; place-items: center; font-weight: 800; color: #1c1622; background: transparent; }
+.tape-pick.on { border-color: #ffd650; }
+.tape-pick.on .tape-check { background: #ffd650; border-color: #ffd650; }
+/* el aviso de "¿seguro/segura?" */
+.aviso-fondo { position: absolute; inset: 0; pointer-events: auto; background: rgba(0,0,0,0.6); display: grid; place-items: center; z-index: 5; }
+.aviso { background: var(--panel); border: 3px solid #ffd650; border-radius: 14px; padding: 20px 26px; max-width: min(560px, 90%); text-align: center; display: grid; gap: 8px; }
+.aviso-texto { font-size: 22px; font-weight: 800; margin: 0; }
+.aviso-nota { color: var(--muted); margin: 0 0 8px; }

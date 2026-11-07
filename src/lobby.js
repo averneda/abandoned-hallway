@@ -20,7 +20,7 @@ export class Lobby extends Game {
     this.level.items.forEach((it, i) => { if (callbacks.practiceTaken.has(i)) it.taken = true; });
     const m = this.level.markers;
     // La Tarda de la tienda es amarilla, para distinguirla de la Tarda personaje (verde). Decidido por Elora.
-    this.tarda = { ...characterById('tarda'), color: '#e8c840', dark: '#b89820' };
+    this.tarda = { ...characterById('tarda'), color: '#a9a8ad', dark: '#74737a' };   // la de la tienda: gris, como la Tarda de verdad del dibujo (Elora)
     this.npc = m.N[0];
     this.shelf = m.V;
     this.doors = m.D;
@@ -83,7 +83,7 @@ export class Lobby extends Game {
 
     // las cintas (Elora): una cajita de cartón con las cintas dentro y, a su izquierda, la tele marrón
     // donde se ven, en pequeñito (la misma que dibujó Elora)
-    const total = this.cb.totalTapes();
+    const total = this.cb.cintasEnCaja ? this.cb.cintasEnCaja() : this.cb.totalTapes();   // la caja enseña las cintas depositadas
     if (this.shelf.length) {
       const v0 = this.shelf[0], vN = this.shelf[this.shelf.length - 1];
       // la tele a la izquierda y la caja a la derecha (Elora)
@@ -91,15 +91,24 @@ export class Lobby extends Game {
       this.drawTapeBox(ctx, (vN.tx * TILE + TILE) - TILE / 2 - 4, vN.ty * TILE + TILE - 2, total);
     }
 
-    // mostrador de Tarda
+    // Tarda de la tienda: detrás de su mostrador, para vender (Elora); alta, gris y con su cinta
     const nx = this.npc.x, ny = this.npc.y;
-    ctx.fillStyle = '#4a3220'; ctx.fillRect(nx - 30, ny + 10, 60, 14);
-    ctx.fillStyle = '#6b4a2b'; ctx.fillRect(nx - 30, ny + 8, 60, 4);
-    ctx.fillStyle = '#ffd95a'; ctx.beginPath(); ctx.ellipse(nx + 18, ny + 12, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+    const tienda = () => {
+      drawCharacter(ctx, this.tarda, nx, ny - 6, 'down', this.time * 2, 0, false, { alta: true });
+      // el mostrador, delante de Tarda: le tapa las patas de abajo
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(nx - 32, ny + 1, 64, 5);     // la tabla de arriba
+      ctx.fillStyle = '#4a3220'; ctx.fillRect(nx - 30, ny + 6, 60, 18);    // el frente
+      ctx.fillStyle = '#3a2618'; ctx.fillRect(nx - 30, ny + 6, 60, 2);     // sombra bajo la tabla
+      ctx.strokeStyle = '#5a3d26'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(nx - 10, ny + 9); ctx.lineTo(nx - 10, ny + 22); ctx.moveTo(nx + 10, ny + 9); ctx.lineTo(nx + 10, ny + 22); ctx.stroke();
+      // un montoncito de monedas encima
+      ctx.fillStyle = '#ffd95a'; ctx.beginPath(); ctx.ellipse(nx + 20, ny + 2, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e8b83a'; ctx.beginPath(); ctx.ellipse(nx + 20, ny + 0.5, 4, 2, 0, 0, Math.PI * 2); ctx.fill();
+    };
 
     // actores ordenados por altura
     const actors = [
-      { y: ny, draw: () => drawCharacter(ctx, this.tarda, nx, ny, 'down', this.time * 2, 0, false) },
+      { y: ny + 12, draw: tienda },
       { y: p.y, draw: () => this.drawPlayer(ctx) },
     ];
     actors.sort((a, b) => a.y - b.y);
