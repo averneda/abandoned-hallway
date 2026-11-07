@@ -1,8 +1,8 @@
 // Niveles: todos son mapas dibujados por Elora (src/maps.js), que se van repitiendo.
 // La forma es siempre la suya; el botón, la salida y los objetos cambian en cada partida.
 
-import { TILE, LEVEL, MAP_RANDOM, BONUS_EVERY } from './config.js';
-import { MAPS, BONUS } from './maps.js';
+import { TILE, LEVEL, MAP_RANDOM, BONUS_EVERY, DRAKE } from './config.js';
+import { MAPS, BONUS, PASILLO_DRAKE } from './maps.js';
 import { pickCoinKind } from './coins.js';
 
 export const T = {
@@ -41,6 +41,8 @@ function shuffle(rand, arr) {
 export function generateLevel(n, seed) {
   const s = seed == null ? Math.floor(Math.random() * 1e9) : seed;
   // Cada BONUS_EVERY pasillos toca el Bonus: sin Bloodies, sin botón y con premios.
+  // El pasillo de Drake (Elora) va antes que el Bonus: el 50 también es múltiplo de 5.
+  if (n === DRAKE.level) return loadMap(n, PASILLO_DRAKE, s);
   if (n > 0 && n % BONUS_EVERY === 0) return loadMap(n, BONUS, s);
   return loadMap(n, mapForLevel(n), s);
 }
@@ -93,6 +95,7 @@ export function loadMap(n, map, seed = 0) {
   const rows = map.rows;
   const H = rows.length, W = Math.max(...rows.map((r) => r.length));
   const tiles = new Uint8Array(W * H).fill(T.WALL);
+  const refugio = new Uint8Array(W * H), seguro = new Uint8Array(W * H);
   const enemies = [], exitSpots = [], markers = {}, fixed = [];
   const counts = { tape: 0, food: 0, heart: 0, coin: 0, stamina: 0 };
   let spawn = null, startDoor = null;
@@ -109,6 +112,9 @@ export function loadMap(n, map, seed = 0) {
     }
     if (ch === 'X') { exitSpots.push({ tx, ty }); tiles[ty * W + tx] = T.WALL; continue; }
     if (ch === 'B') { tiles[ty * W + tx] = T.FLOOR; continue; } // solo marca una idea; el botón va al azar
+    // pasillo de Drake: suelo de un hueco con naranja (,) y zona segura (v)
+    if (ch === ',') { tiles[ty * W + tx] = T.FLOOR; refugio[ty * W + tx] = 1; continue; }
+    if (ch === 'v') { tiles[ty * W + tx] = T.FLOOR; seguro[ty * W + tx] = 1; continue; }
     tiles[ty * W + tx] = T.FLOOR;
     if (ch === 'P') spawn = center(tx, ty);
     else if (ch === 's') enemies.push(center(tx, ty));
@@ -123,6 +129,11 @@ export function loadMap(n, map, seed = 0) {
   const rand = rng(seed * 2654435761 + 12345);
   const stx = Math.floor(spawn.x / TILE), sty = Math.floor(spawn.y / TILE);
   const reach = reachableFrom(tiles, W, H, stx, sty);
+  // con las T se pasa a la otra hoja: lo que se alcanza desde ellas también cuenta
+  for (const tp of markers.T || []) {
+    const r2 = reachableFrom(tiles, W, H, tp.tx, tp.ty);
+    for (let i = 0; i < r2.length; i++) if (r2[i]) reach[i] = 1;
+  }
   const far = (tx, ty, tiles2) => Math.hypot(tx - stx, ty - sty);
 
   // Casillas de suelo a las que se llega desde la entrada: ahí van el botón y los objetos.
@@ -130,10 +141,12 @@ export function loadMap(n, map, seed = 0) {
   for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
     if (tiles[ty * W + tx] !== T.FLOOR || !reach[ty * W + tx]) continue;
     if (tx === stx && ty === sty) continue;
+    if (seguro[ty * W + tx] || refugio[ty * W + tx]) continue;   // ni botones ni cosas en los sitios seguros
+    if (Object.values(markers).some((ms) => ms.some((m) => m.tx === tx && m.ty === ty))) continue;
     free.push({ tx, ty });
   }
 
-  let button = null, exit = null, exits = [], items = [];
+  let button = null, buttons = [], exit = null, exits = [], items = [];
   if (map.noButton) {
     // Bonus: todas las puertas están abiertas desde el principio y no hay botón.
     exits = exitSpots.filter((e) => touchesWalkable(tiles, W, H, e.tx, e.ty));
@@ -157,22 +170,33 @@ export function loadMap(n, map, seed = 0) {
     const farExits = usable.filter((e) => far(e.tx, e.ty) >= MAP_RANDOM.exitMinTiles);
     const exitPool = farExits.length ? farExits : usable;
     exit = exitPool[Math.floor(rand() * exitPool.length)];
-    exits = [exit];
-    setTileRaw(tiles, W, H, exit.tx, exit.ty, T.EXIT_CLOSED);
+    // salidaFija (la supersalida del pasillo de Drake): todas las X son una sola salida grande
+    exits = map.salidaFija ? usable : [exit];
+    for (const e of exits) setTileRaw(tiles, W, H, e.tx, e.ty, T.EXIT_CLOSED);
 
     // --- botón: lejos de la entrada y de la salida
     const buttonPool = free.filter((c) => far(c.tx, c.ty) >= MAP_RANDOM.buttonMinTiles
       && Math.hypot(c.tx - exit.tx, c.ty - exit.ty) >= MAP_RANDOM.buttonExitMinTiles);
     const pool = buttonPool.length ? buttonPool : free;
     button = pool[Math.floor(rand() * pool.length)];
-    setTileRaw(tiles, W, H, button.tx, button.ty, T.BUTTON);
+    buttons = [button];
+    // el pasillo de Drake tiene varios botones (Elora: 5), repartidos y separados entre ellos
+    const quiero = map.buttons || 1;
+    for (let sep = DRAKE.buttonsApart; buttons.length < quiero && sep >= 0; sep--) {
+      const lejos = shuffle(rand, pool.filter((c) => buttons.every((b) => Math.hypot(c.tx - b.tx, c.ty - b.ty) >= Math.max(1, sep))));
+      for (const c of lejos) {
+        if (buttons.length >= quiero) break;
+        if (buttons.every((b) => Math.hypot(c.tx - b.tx, c.ty - b.ty) >= Math.max(1, sep))) buttons.push(c);
+      }
+    }
+    for (const b of buttons) setTileRaw(tiles, W, H, b.tx, b.ty, T.BUTTON);
 
     // --- objetos
     if (map.fixedItems) {
       items = fixed;
     } else {
       // tantos como dibujó Elora, pero repartidos al azar
-      const spots = free.filter((c) => !(c.tx === button.tx && c.ty === button.ty));
+      const spots = free.filter((c) => !buttons.some((b) => c.tx === b.tx && c.ty === b.ty));
       shuffle(rand, spots);
       let k = 0;
       for (const [type, howMany] of Object.entries(counts)) {
@@ -196,8 +220,8 @@ export function loadMap(n, map, seed = 0) {
     decals.push({ kind: 'blood', x: (floor[i].tx + 0.5) * TILE, y: (floor[i].ty + 0.5) * TILE, r: 6 + dRand() * 9, seed: dRand() });
   }
 
-  return { n, w: W, h: H, tiles, spawn, startDoor, exit, exits, button, items, enemies, decals, markers,
-    free, coinRush: map.coinRush || null,
+  return { n, w: W, h: H, tiles, spawn, startDoor, exit, exits, button, buttons, items, enemies, decals, markers,
+    free, coinRush: map.coinRush || null, refugio, seguro, fuego: !!map.fuego,
     name: map.name, theme: map.theme, lobby: !!map.lobby, noButton: !!map.noButton, seed };
 }
 

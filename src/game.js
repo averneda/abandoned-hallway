@@ -1,8 +1,8 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
-import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO } from './characters.js';
+import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS } from './characters.js';
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
@@ -118,6 +118,13 @@ export class Game {
       lastSeen: null, trail: [], trailDist: 0,
       look: CHARACTERS[(i + Math.floor(this.rand() * CHARACTERS.length)) % CHARACTERS.length],
     }));
+    // El pasillo de Drake (Elora): el fuego del Drake Sangriento, las T y Tarda explicándolo
+    this.fuego = L.fuego ? { fase: 'espera', t: 0 } : null;
+    this.enT = false;   // estás encima de una T (para no rebotar de una hoja a otra)
+    const n = (L.markers.N || [])[0];
+    this.npc = n ? { x: n.x, y: n.y, look: { ...characterById('tarda'), ...TARDA_GRIS } } : null;
+    // botones pulsados (en el pasillo de Drake hay 5 y hay que pulsarlos todos)
+    this.botonesPulsados = 0;
     this.tapes = 0;
     this.coins = 0;
     // En el Bonus no hay botón: las puertas ya están abiertas.
@@ -131,6 +138,7 @@ export class Game {
       const name = L.name ? (L.name[getLang()] || L.name.es) : null;
       this.say(name ? t('msg.levelStartNamed', { n: this.n, name }) : t('msg.levelStart', { n: this.n }), 3);
       if (L.noButton) this.say(t('msg.bonus'), 6);
+      if (L.fuego) this.say(t('msg.drakeLevel'), 8);
     }
 
     // La oscuridad es un degradado suave: se calcula a media resolución (4 veces menos trabajo)
@@ -369,19 +377,42 @@ export class Game {
     }
 
     // --- botón ---
-    if (L.button) {
-      const bx = (L.button.tx + 0.5) * TILE, by = (L.button.ty + 0.5) * TILE;
-      this.nearButton = !this.buttonPressed && dist(bx, by, p.x, p.y) < TILE * 1.4;
-      if (this.nearButton && input.wasPressed('interact')) {
-        this.buttonPressed = true;
-        setTile(L, L.button.tx, L.button.ty, T.BUTTON_PRESSED);
-        for (const e of L.exits) setTile(L, e.tx, e.ty, T.EXIT_OPEN);
+    if (L.buttons && L.buttons.length) {
+      // el botón sin pulsar que tienes al lado
+      const cerca = this.buttonPressed ? null : L.buttons.find((b) => tileAt(L, b.tx, b.ty) === T.BUTTON
+        && dist((b.tx + 0.5) * TILE, (b.ty + 0.5) * TILE, p.x, p.y) < TILE * 1.4);
+      this.nearButton = !!cerca;
+      if (cerca && input.wasPressed('interact')) {
+        setTile(L, cerca.tx, cerca.ty, T.BUTTON_PRESSED);
+        this.botonesPulsados++;
         p.anxiety += ANXIETY.button;
-        this.say(t('msg.buttonPressed'), 3.5);
-        this.say(t('msg.exitHint'), 3.5);
         sfx.button();
+        if (this.botonesPulsados >= L.buttons.length) {
+          this.buttonPressed = true;
+          for (const e of L.exits) setTile(L, e.tx, e.ty, T.EXIT_OPEN);
+          this.say(t('msg.buttonPressed'), 3.5);
+          this.say(t('msg.exitHint'), 3.5);
+        } else {
+          this.say(t('msg.buttonsLeft', { n: this.botonesPulsados, total: L.buttons.length }), 3.5);
+        }
       }
     }
+
+    // --- pasillo de Drake: zona segura, huecos, las T, Tarda y el fuego (Elora) ---
+    if (L.seguro) {
+      const i = Math.floor(p.y / TILE) * L.w + Math.floor(p.x / TILE);
+      p.seguro = !!L.seguro[i];     // zona verde: no te quitan vida pase lo que pase, ni la ansiedad
+      p.enHueco = !!L.refugio[i];   // hueco con naranja: el fuego no te hace nada
+      if (p.seguro) p.anxiety -= ANXIETY.calm * dt;
+    }
+    this.updateTeleport(p);
+    if (this.npc) {
+      this.nearNpc = !this.nearButton && dist(this.npc.x, this.npc.y, p.x, p.y) < TILE * 1.8;
+      if (this.nearNpc && input.wasPressed('interact') && this.cb.onDialogue) {
+        this.cb.onDialogue([1, 2, 3, 4, 5].map((k) => t('drake.tarda.' + k)));
+      }
+    }
+    if (this.fuego) this.updateFuego(dt, p);
 
     // --- salida ---
     if (this.buttonPressed && tileAt(L, Math.floor(p.x / TILE), Math.floor(p.y / TILE)) === T.EXIT_OPEN) {
@@ -450,7 +481,7 @@ export class Game {
       // te toca (Carot pasa por encima si está saltando)
       const overJump = this.ch.ability === 'carot' && p.jumping;
       const inmortal = p.capa > 0 || p.fly > 0;   // la capa Tun de Tarda o Drake volando
-      if (d < e.r + p.r && p.invuln <= 0 && e.recoil <= 0 && !overJump && !inmortal) {
+      if (d < e.r + p.r && p.invuln <= 0 && e.recoil <= 0 && !overJump && !inmortal && !p.seguro) {
         p.hearts -= 1;
         p.invuln = PLAYER.invuln;
         p.anxiety += ANXIETY.hit * statMul(this.ch, 'cordura');
@@ -465,7 +496,7 @@ export class Game {
 
     // --- ansiedad (sube con Bloodies cerca, baja cuando estás tranquilo) ---
     const nr = ANXIETY.nearRadiusTiles * TILE;
-    if (nearest < nr && !frozen) p.anxiety += (ANXIETY.nearGain * (1 - nearest / nr) + 2) * dt * statMul(this.ch, 'cordura');
+    if (nearest < nr && !frozen && !p.seguro) p.anxiety += (ANXIETY.nearGain * (1 - nearest / nr) + 2) * dt * statMul(this.ch, 'cordura');
     else p.anxiety -= ANXIETY.calm * dt;
     p.anxiety = Math.max(0, Math.min(ANXIETY.max, p.anxiety));
 
@@ -476,7 +507,7 @@ export class Game {
 
     // --- muerte ---
     if (p.hearts <= 0) { this.finished = true; sfx.death(); this.cb.onDeath('hearts'); return; }
-    if (p.anxiety >= ANXIETY.max) { this.finished = true; sfx.death(); this.cb.onDeath('anxiety'); return; }
+    if (p.anxiety >= ANXIETY.max && !p.seguro) { this.finished = true; sfx.death(); this.cb.onDeath('anxiety'); return; }
 
     this.updateCamera();
   }
@@ -559,6 +590,8 @@ export class Game {
     // Bloodies y jugador (ordenados por altura para que se tapen bien)
     const frozen = this.freeze > 0;
     const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null }) }));
+    // Tarda, en el pasillo de Drake (Elora: está ahí para explicarte cómo funciona)
+    if (this.npc) actors.push({ y: this.npc.y, draw: () => drawCharacter(ctx, this.npc.look, this.npc.x, this.npc.y - 6, 'down', this.time * 2, 0, false, { alta: true }) });
     actors.push({ y: p.y, draw: () => this.drawPlayer(ctx) });
     actors.sort((a, b) => a.y - b.y);
     for (const a of actors) a.draw();
@@ -581,8 +614,99 @@ export class Game {
     if (frozen) { ctx.fillStyle = `rgba(120,200,255,${Math.min(0.18, this.freeze * 0.1)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     // agua de Jely
     if (this.flood > 0) this.renderFlood(ctx);
+    // el fuego del Drake Sangriento
+    if (this.fuego) this.renderFuego(ctx);
 
     this.renderHUD(ctx);
+  }
+
+  // Las T del pasillo de Drake: al entrar en el cuadrado de una T pasas a la T de la otra hoja (y se
+  // puede volver, Elora). Las T de la mitad izquierda del mapa van con las de la derecha.
+  updateTeleport(p) {
+    const ts = this.level.markers.T;
+    if (!ts || !ts.length) return;
+    const tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE);
+    const aqui = ts.find((m) => m.tx === tx && m.ty === ty);
+    if (!aqui) { this.enT = false; return; }
+    if (this.enT) return;
+    const mitad = this.level.w / 2;
+    const otras = ts.filter((m) => (m.tx < mitad) !== (aqui.tx < mitad));
+    if (!otras.length) return;
+    const cx = otras.reduce((s, m) => s + m.x, 0) / otras.length, cy = otras.reduce((s, m) => s + m.y, 0) / otras.length;
+    p.x = cx; p.y = cy; p.kx = 0; p.ky = 0;
+    this.enT = true;
+    this.updateCamera(true);
+    sfx.button();
+    this.say(t('msg.teleport'), 2.5);
+  }
+
+  // El fuego del Drake Sangriento (Elora): cada DRAKE.fireEvery segundos sale el aviso "¡EL FUEGO SE
+  // ACERCA!" y tienes DRAKE.warn segundos para meterte en un hueco con naranja. Drake sube volando desde
+  // abajo, se para arriba del todo (fuera del mapa), escupe fuego y se vuelve a ir.
+  updateFuego(dt, p) {
+    const f = this.fuego;
+    f.t += dt;
+    if (f.fase === 'espera' && f.t >= DRAKE.fireEvery) {
+      f.fase = 'aviso'; f.t = 0;   // el aviso grande lo pinta renderFuego
+      sfx.hurt();
+    } else if (f.fase === 'aviso' && f.t >= DRAKE.warn) {
+      f.fase = 'fuego'; f.t = 0;
+      const libre = p.seguro || p.enHueco || p.capa > 0 || p.fly > 0;
+      if (libre) this.say(t('msg.fuegoSalvado'), 3);
+      else {
+        p.hearts = Math.max(0, p.hearts - DRAKE.damage);
+        p.anxiety += ANXIETY.hit * statMul(this.ch, 'cordura');
+        this.flash = 0.8;
+        sfx.hurt();
+        this.say(t('msg.fuegoQuema', { n: DRAKE.damage }), 3);
+      }
+    } else if (f.fase === 'fuego' && f.t >= DRAKE.fireTime) {
+      f.fase = 'vuelta'; f.t = 0;
+    } else if (f.fase === 'vuelta' && f.t >= DRAKE.flyTime) {
+      f.fase = 'espera'; f.t = 0;
+    }
+  }
+
+  // Drake (gigante, DRAKE.size veces un Bloody) volando por la pantalla, el aviso y las llamas.
+  renderFuego(ctx) {
+    const f = this.fuego;
+    if (f.fase === 'espera') return;
+    const arriba = -40, abajo = VIEW_H + 420;
+    let y;
+    if (f.fase === 'aviso') y = abajo + (arriba - abajo) * Math.min(1, f.t / DRAKE.flyTime);
+    else if (f.fase === 'fuego') y = arriba;
+    else y = arriba - (f.t / DRAKE.flyTime) * 500;
+    // las llamas, que bajan desde la boca de Drake hasta abajo del todo
+    if (f.fase === 'fuego') {
+      const k = Math.min(1, f.t / 0.35) * (1 - Math.max(0, (f.t - DRAKE.fireTime + 0.4) / 0.4));
+      const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+      g.addColorStop(0, `rgba(255,240,120,${0.85 * k})`); g.addColorStop(0.4, `rgba(255,120,20,${0.7 * k})`); g.addColorStop(1, `rgba(200,20,10,${0.55 * k})`);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      ctx.fillStyle = `rgba(255,200,60,${0.6 * k})`;
+      for (let i = 0; i < 26; i++) {
+        const x = (i / 25) * VIEW_W + Math.sin(this.time * 9 + i) * 18;
+        const h = VIEW_H * (0.55 + 0.45 * Math.abs(Math.sin(this.time * 6 + i * 1.7)));
+        ctx.beginPath(); ctx.moveTo(x - 22, 0); ctx.quadraticCurveTo(x + Math.sin(this.time * 12 + i) * 30, h * 0.6, x, h); ctx.quadraticCurveTo(x + 10, h * 0.5, x + 22, 0); ctx.fill();
+      }
+    }
+    // Drake gigante
+    ctx.save(); ctx.translate(VIEW_W / 2, y); ctx.scale(DRAKE.size, DRAKE.size);
+    drawCharacter(ctx, DRAKE_SANGRIENTO, 0, 0, f.fase === 'vuelta' ? 'up' : 'down', this.time * 6, 0, false, {});
+    ctx.restore();
+    // el aviso, grande y parpadeando, con la cuenta atrás
+    if (f.fase === 'aviso') {
+      const queda = Math.ceil(DRAKE.warn - f.t);
+      ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (Math.floor(this.time * 3) % 2 === 0) {
+        ctx.font = 'bold 44px system-ui, sans-serif'; ctx.lineWidth = 7; ctx.strokeStyle = '#000';
+        ctx.strokeText(t('msg.fuegoAviso'), VIEW_W / 2, VIEW_H * 0.3); ctx.fillStyle = '#ff5a1f'; ctx.fillText(t('msg.fuegoAviso'), VIEW_W / 2, VIEW_H * 0.3);
+      }
+      ctx.font = 'bold 30px system-ui, sans-serif'; ctx.lineWidth = 6; ctx.strokeStyle = '#000';
+      const linea = this.player.seguro || this.player.enHueco ? t('msg.fuegoBien') : t('msg.fuegoEscondete', { s: queda });
+      ctx.strokeText(linea, VIEW_W / 2, VIEW_H * 0.3 + 48); ctx.fillStyle = this.player.seguro || this.player.enHueco ? '#7dff9a' : '#ffe36b';
+      ctx.fillText(linea, VIEW_W / 2, VIEW_H * 0.3 + 48);
+      ctx.restore();
+    }
   }
 
   // La sala inundada de Jely: agua azul por encima de todo, con ondas que se mueven y burbujas que suben.
@@ -799,6 +923,9 @@ export class Game {
           ctx.fillStyle = `rgb(${theme.floor[0] + v},${theme.floor[1] + v},${theme.floor[2] + v})`;
         }
         ctx.fillRect(x, y, TILE, TILE);
+        // pasillo de Drake: la zona segura, verde; los huecos con naranja, un poco naranjas
+        if (L.seguro && L.seguro[ty * L.w + tx]) { ctx.fillStyle = 'rgba(60,200,110,0.45)'; ctx.fillRect(x, y, TILE, TILE); }
+        else if (L.refugio && L.refugio[ty * L.w + tx]) { ctx.fillStyle = 'rgba(255,150,60,0.18)'; ctx.fillRect(x, y, TILE, TILE); }
         ctx.strokeStyle = theme.grout;
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
@@ -829,6 +956,18 @@ export class Game {
         ctx.fillStyle = '#c4303a'; ctx.fillRect(x + 1, y + 1, TILE - 2, 7);
         ctx.strokeStyle = '#4a0b10'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(x + 5, y + 10); ctx.lineTo(x + TILE - 5, y + TILE - 6); ctx.moveTo(x + TILE - 5, y + 10); ctx.lineTo(x + 5, y + TILE - 6); ctx.stroke();
+      }
+    }
+    // las T del pasillo de Drake: un cuadrado morado con la T
+    const ts = L.markers.T || [];
+    if (ts.length) {
+      ctx.fillStyle = 'rgba(150,60,220,0.55)';
+      for (const m of ts) ctx.fillRect(m.tx * TILE + 1, m.ty * TILE + 1, TILE - 2, TILE - 2);
+      for (const lado of [ts.filter((m) => m.tx < L.w / 2), ts.filter((m) => m.tx >= L.w / 2)]) {
+        if (!lado.length) continue;
+        const cx = lado.reduce((a, m) => a + m.x, 0) / lado.length, cy = lado.reduce((a, m) => a + m.y, 0) / lado.length;
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 40px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('T', cx, cy + 2);
       }
     }
     return layer;
@@ -987,10 +1126,17 @@ export class Game {
     ctx.fillText(`${t('hud.tapes')}: ${this.tapes} / ${this.level.items.filter((i) => i.type === 'tape').length}`, VIEW_W - 18, 44);
     ctx.fillStyle = '#ffd95a';
     ctx.fillText(`${t('hud.coins')}: ${this.cb.totalCoins()}`, VIEW_W - 18, 66);
+    // en el pasillo de Drake: cuántos botones llevas (Elora: hay que pulsar los 5)
+    const nb = this.level.buttons ? this.level.buttons.length : 0;
+    if (nb > 1) {
+      ctx.fillStyle = this.buttonPressed ? '#7dff9a' : '#ff8a8a';
+      ctx.fillText(t('hud.buttons', { n: this.botonesPulsados, total: nb }), VIEW_W - 18, 88);
+    }
     // mensajes
     ctx.textAlign = 'center';
     let yy = VIEW_H - 40;
     if (this.nearButton) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.pressButton'), VIEW_W / 2, yy); yy -= 30; }
+    else if (this.nearNpc) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.talkTarda'), VIEW_W / 2, yy); yy -= 30; }
     this.renderMessages(ctx, yy, font);
     ctx.restore();
   }

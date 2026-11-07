@@ -185,7 +185,9 @@ export class UI {
   // ---------------- tienda de Tarda: elegir personaje o comprarlo con monedas (se abre encima del lobby)
   // Arriba, todos los personajes en fila; abajo, la ficha del que está señalado: la ficha de Elora
   // (su foto) con los parámetros escritos en el lado derecho, que ella dejó en blanco para eso.
-  showShop({ unlocked, coins, current, focusId, onChoose, onBuy, onClose }) {
+  // secretos: los personajes que aún no salen en la tienda (Drake, hasta escapar del pasillo 50: Elora)
+  showShop({ unlocked, coins, current, focusId, onChoose, onBuy, onClose, secretos }) {
+    const LISTA = CHARACTERS.filter((c) => !(c.secreto && !unlocked.has(c.id) && secretos && secretos.has(c.id)));
     this.clear();
     const s = this.el('div', 'screen dim shop');
     const head = this.el('div', 'shop-head');
@@ -196,7 +198,7 @@ export class UI {
     const ficha = this.el('div', 'ficha');
     const actions = this.el('div', 'row');
     const note = this.el('p', 'small note-inline', '');
-    let focus = Math.max(0, CHARACTERS.findIndex((c) => c.id === (focusId || current.id)));
+    let focus = Math.max(0, LISTA.findIndex((c) => c.id === (focusId || current.id)));
 
     const activate = (ch) => {
       if (unlocked.has(ch.id)) { onChoose(ch); return; }
@@ -205,7 +207,7 @@ export class UI {
       else { note.textContent = t('select.notEnough', { n: ch.price - coins }); note.classList.add('shake'); setTimeout(() => note.classList.remove('shake'), 400); }
     };
 
-    const cardEls = CHARACTERS.map((ch, i) => {
+    const cardEls = LISTA.map((ch, i) => {
       const locked = !unlocked.has(ch.id);
       const c = this.el('div', 'card mini' + (locked ? ' locked' : '') + (ch.id === current.id ? ' current' : ''));
       const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64;
@@ -223,7 +225,7 @@ export class UI {
     });
 
     const refresh = () => {
-      const ch = CHARACTERS[focus];
+      const ch = LISTA[focus];
       cardEls.forEach((c, i) => c.classList.toggle('focus', i === focus));
       note.textContent = '';
       this.fillFicha(ficha, ch);
@@ -243,9 +245,9 @@ export class UI {
     this.root.appendChild(s);
     refresh();
     this.keyHandler = (e) => {
-      if (e.code === 'ArrowRight') { focus = (focus + 1) % CHARACTERS.length; refresh(); }
-      else if (e.code === 'ArrowLeft') { focus = (focus + CHARACTERS.length - 1) % CHARACTERS.length; refresh(); }
-      else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); activate(CHARACTERS[focus]); }
+      if (e.code === 'ArrowRight') { focus = (focus + 1) % LISTA.length; refresh(); }
+      else if (e.code === 'ArrowLeft') { focus = (focus + LISTA.length - 1) % LISTA.length; refresh(); }
+      else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); activate(LISTA[focus]); }
       else if (e.code === 'Escape') onClose();
     };
   }

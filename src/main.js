@@ -1,6 +1,6 @@
 // Arranque del juego y paso entre pantallas: menú → lobby → (cinemática) → pasillos.
 
-import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS } from './config.js';
+import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
@@ -28,7 +28,8 @@ const wallet = { coins: 0, tapes: 0 };
 // La caja de cintas del lobby (Elora): los números de las cintas depositadas en la tienda de Tarda.
 // Las demás cintas que tienes están en el inventario. Se pueden recuperar desde la caja.
 const cajaCintas = new Set();
-const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false };
+// drakeEnTienda: ya escapaste del pasillo de Drake y Drake está en la tienda (Elora)
+const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false };
 const run = { character: characterById('carot'), level: 1, tapes: 0 };
 try {
   for (const id of JSON.parse(localStorage.getItem('holeway.unlocked') || '[]')) unlocked.add(id);
@@ -42,6 +43,7 @@ try {
   flags.introSeen = localStorage.getItem('holeway.introSeen') === '1';
   flags.tutorialSeen = localStorage.getItem('holeway.tutorialSeen') === '1';
   flags.lobbySeen = localStorage.getItem('holeway.lobbySeen') === '1';
+  flags.drakeEnTienda = localStorage.getItem('holeway.drakeEnTienda') === '1';
   const chId = localStorage.getItem('holeway.character');
   if (chId && unlocked.has(chId)) run.character = characterById(chId);
 } catch (e) { /* nada */ }
@@ -55,6 +57,7 @@ function save() {
     localStorage.setItem('holeway.introSeen', flags.introSeen ? '1' : '0');
     localStorage.setItem('holeway.tutorialSeen', flags.tutorialSeen ? '1' : '0');
     localStorage.setItem('holeway.lobbySeen', flags.lobbySeen ? '1' : '0');
+    localStorage.setItem('holeway.drakeEnTienda', flags.drakeEnTienda ? '1' : '0');
   } catch (e) { /* nada */ }
 }
 
@@ -121,6 +124,7 @@ function gotoLobby() {
       // focusId: a quién señalar al abrir (tras comprar, al recién comprado)
       const open = (focusId) => ui.showShop({
         unlocked, coins: wallet.coins, current: run.character, focusId,
+        secretos: flags.drakeEnTienda ? new Set() : new Set(['drake']),
         onChoose: (ch) => { run.character = ch; save(); lobby.setCharacter(ch); close(); },
         onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(ch.id); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
         onClose: menu,
@@ -166,6 +170,11 @@ function startLevel(n, reintento = false) {
   const game = new Game(run.character, n, {
     ...common,
     startHearts: run.hearts,
+    // Tarda explicando el pasillo de Drake (Elora)
+    onDialogue: (lines) => {
+      game.paused = true;
+      ui.showDialogue(lines, () => { game.paused = false; input.clear(); });
+    },
     onPause: () => {
       game.paused = true;
       ui.showPause({ onResume: () => { ui.clear(); game.paused = false; input.clear(); }, onMenu: () => gotoLobby() });
@@ -182,7 +191,12 @@ function startLevel(n, reintento = false) {
       practiceTaken.clear();
       run.hearts = game.player.hearts;   // pasan al pasillo siguiente tal cual
       run.tapes += tapes;
-      wallet.coins += COINS.levelBonus; save();
+      wallet.coins += COINS.levelBonus;
+      // escapaste del pasillo de Drake: Drake ya está en la tienda de Tarda (Elora)
+      const drakeNuevo = n === DRAKE.level && !flags.drakeEnTienda;
+      if (n === DRAKE.level) flags.drakeEnTienda = true;
+      save();
+      if (drakeNuevo) ui.toast('🐉 ' + t('msg.drakeShop', { n: DRAKE.price }));
       if (n % CONTINUE_EVERY === 0) {
         scene = null;
         ui.showContinue({ level: n, tapes: run.tapes, coins: wallet.coins, onContinue: () => startLevel(n + 1), onExit: () => gotoLobby() });
@@ -234,8 +248,15 @@ window.holewayDebug = { get scene() { return scene; }, run, unlocked, wallet, fl
 // index.html?cinta=1 (lo usa ver-cinta.bat). Primero hay que pulsar el botón, para que el
 // navegador deje sonar las voces y el "ffffff". Al salir, se va al menú.
 const cintaDirecta = parseInt(new URLSearchParams(location.search).get('cinta') || '0', 10);
+// Atajo para probar un pasillo directamente: index.html?pasillo=50 (el pasillo de Drake). Empiezas
+// con el personaje que tengas elegido; al salir o morir vuelves al lobby, como siempre.
+const pasilloDirecto = parseInt(new URLSearchParams(location.search).get('pasillo') || '0', 10);
 if (cintaDirecta) {
   ui.showTapeDirect(cintaDirecta, () => { location.href = location.pathname; });
+} else if (pasilloDirecto > 0) {
+  flags.introSeen = true; flags.lobbySeen = true; flags.tutorialSeen = true;
+  history.replaceState(null, '', location.pathname);   // para que al recargar no vuelva a entrar
+  startLevel(pasilloDirecto);
 } else {
   gotoMenu();
 }

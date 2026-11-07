@@ -40,7 +40,8 @@ export const CHARACTERS = [
   { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#98cc84', dark: '#5e9a4c', shape: 'lizard', price: 80, ability: 'gek',   // hermano adoptivo de Draila (Elora)
     stats: { velocidad: 80, cordura: 60, sigilo: 40, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/gek.webp',
     fichaCuadro: { left: 65.5, top: 33, right: 3, bottom: 5 } },
-  { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: null, ability: 'drake', stats: { velocidad: 100, cordura: 100, sigilo: 100, resistencia: 100 }, corazones: 5 },
+  { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: 200, secreto: true, ability: 'drake',   // sale en la tienda al escapar del pasillo 50 (Elora)
+    stats: { velocidad: 100, cordura: 100, sigilo: 100, resistencia: 100 }, corazones: 5 },
   { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 100, ability: 'draila', stats: { velocidad: 30, cordura: 60, sigilo: 50, resistencia: 40 }, corazones: 3 },
   { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 150, ability: 'katy',
     pequena: true,   // más pequeña que los demás: tiene 7 u 8 años (Elora)
@@ -1042,4 +1043,93 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
   if (!B) { ctx.save(); ctx.globalAlpha *= 0.45; ctx.fillStyle = '#f08aa8'; dot(ctx, hx - 5.2, hy + 3, 1.4); dot(ctx, hx + 5.2, hy + 3, 1.4); ctx.restore(); }
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy };
+// El Drake Sangriento: el que escupe fuego en el pasillo de Drake (pasillo 50), dibujado por Elora
+// (assets/referencias/bloodies/drake-sangriento.webp). Un dragón rosa-rojo con alas de murciélago,
+// cola larga enroscada, orejas puntiagudas, ojos grandes con un cuadrado (uno rojo y uno azul), lágrimas de sangre,
+// colmillos y la boca abierta. Usa sus propios colores (no los del Bloody normal).
+export const DRAKE_SANGRIENTO = { id: 'drake-sangriento', name: 'Drake', shape: 'drakeSangriento', color: '#e98d95', dark: '#b3343f' };
+function drawDrakeSangriento(ctx, pal, facing, walk, opts) {
+  const piel = '#e98d95', raya = '#c94a55', linea = '#3a2a2c', rojo = '#d8202c', azul = '#3a8fd8';
+  const de = facing === 'up';
+  if (facing === 'left') ctx.scale(-1, 1);
+  const aleteo = Math.sin(walk * 0.8) * 0.18;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // las alas, detrás (de murciélago, con el borde de picos)
+  for (const lado of [-1, 1]) {
+    ctx.save(); ctx.translate(lado * 5, -5); ctx.rotate(lado * aleteo); ctx.scale(lado, 1);
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(10, -15); ctx.lineTo(24, -12);
+    ctx.lineTo(21, -2); ctx.lineTo(17, 3); ctx.lineTo(13, -1); ctx.lineTo(9, 6); ctx.lineTo(5, 2); ctx.lineTo(2, 8); ctx.closePath();
+    ctx.fillStyle = piel; ctx.fill(); ctx.strokeStyle = linea; ctx.lineWidth = 1; ctx.stroke();
+    // los huesos del ala
+    ctx.strokeStyle = raya; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(10, -15); ctx.lineTo(17, 3); ctx.moveTo(10, -15); ctx.lineTo(9, 6); ctx.moveTo(10, -15); ctx.lineTo(21, -2); ctx.stroke();
+    ctx.restore();
+  }
+  // la cola larga y enroscada
+  ctx.strokeStyle = linea; ctx.lineWidth = 6.5;
+  const cola = () => { ctx.beginPath(); ctx.moveTo(3, 6); ctx.quadraticCurveTo(18, 14, 20, 2); ctx.quadraticCurveTo(21, -6, 15, -5); ctx.quadraticCurveTo(11, -3, 14, 1); };
+  cola(); ctx.stroke(); ctx.strokeStyle = piel; ctx.lineWidth = 4.5; cola(); ctx.stroke();
+  // las patas de atrás, con garras
+  for (const lado of [-1, 1]) {
+    const paso = Math.sin(walk + (lado > 0 ? Math.PI : 0)) * 1.5;
+    ctx.fillStyle = piel; ctx.strokeStyle = linea; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(lado * 4.5, 8 + paso, 3, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    for (let i = -1; i <= 1; i++) { ctx.moveTo(lado * 4.5 + i * 1.6, 11 + paso); ctx.lineTo(lado * 4.5 + i * 2.2, 13 + paso); }
+    ctx.stroke();
+  }
+  // el cuerpo, con las rayas de la tripa
+  ctx.fillStyle = piel; ctx.strokeStyle = linea; ctx.lineWidth = 1.1;
+  ctx.beginPath(); ctx.ellipse(0, 1, 7, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = raya; ctx.lineWidth = 0.9;
+  ctx.beginPath(); for (const yy of [-2, 2, 6]) { ctx.moveTo(-5, yy); ctx.quadraticCurveTo(0, yy + 1.5, 5, yy); } ctx.stroke();
+  // los bracitos con garras
+  for (const lado of [-1, 1]) {
+    ctx.strokeStyle = linea; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lado * 6, -3); ctx.lineTo(lado * 9, 1);
+    for (let i = -1; i <= 1; i++) { ctx.moveTo(lado * 9, 1); ctx.lineTo(lado * (9 + 1.5) + i * 1.3, 3.2); }
+    ctx.stroke();
+  }
+  // la cabeza: redonda, con las orejas puntiagudas (rojas por dentro)
+  for (const lado of [-1, 1]) {
+    ctx.beginPath(); ctx.moveTo(lado * 4, -19); ctx.lineTo(lado * 10, -26); ctx.lineTo(lado * 9, -16); ctx.closePath();
+    ctx.fillStyle = piel; ctx.fill(); ctx.strokeStyle = linea; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lado * 5.5, -19); ctx.lineTo(lado * 9, -23.5); ctx.lineTo(lado * 8.5, -17.5); ctx.closePath();
+    ctx.fillStyle = rojo; ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(0, -14, 9, 0, Math.PI * 2);
+  ctx.fillStyle = piel; ctx.fill(); ctx.strokeStyle = linea; ctx.lineWidth = 1.1; ctx.stroke();
+  if (de) return;   // de espaldas no se le ve la cara
+  // los ojos grandes, con un cuadrado dentro: uno rojo y uno azul (Elora)
+  for (const [ex, ey, col] of [[-3.6, -15.5, rojo], [3.6, -16.5, azul]]) {
+    ctx.beginPath(); ctx.arc(ex, ey, 3.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = linea; ctx.lineWidth = 0.8; ctx.stroke();
+    ctx.fillStyle = col; ctx.fillRect(ex - 1.3, ey - 1.3, 2.6, 2.6);
+  }
+  // lágrimas de sangre debajo de los ojos (Elora: no son mofletes, son lágrimas), que caen y vuelven
+  ctx.fillStyle = rojo;
+  for (const [lx, ly, fase] of [[-5.6, -12.6, 0], [5.8, -13.6, 1.7]]) {
+    const baja = ((walk * 0.35 + fase) % 2) * 1.4;
+    ctx.beginPath();
+    ctx.moveTo(lx, ly - 1 + baja);
+    ctx.quadraticCurveTo(lx + 2.2, ly + 2.6 + baja, lx, ly + 3.6 + baja);
+    ctx.quadraticCurveTo(lx - 2.2, ly + 2.6 + baja, lx, ly - 1 + baja);
+    ctx.fill();
+  }
+  // la nariz (dos puntitos), la boca abierta y los colmillos
+  ctx.fillStyle = '#7a1018';
+  ctx.beginPath(); ctx.arc(-0.8, -12.5, 0.45, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(0.8, -12.5, 0.45, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-3.5, -10.5); ctx.quadraticCurveTo(0, -9.5, 4, -10.8); ctx.lineTo(0.5, -7); ctx.closePath();
+  ctx.fillStyle = rojo; ctx.fill(); ctx.strokeStyle = linea; ctx.lineWidth = 0.8; ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(-3, -10.4); ctx.lineTo(-2, -8.4); ctx.lineTo(-1.2, -10.2); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(3.4, -10.6); ctx.lineTo(2.4, -8.6); ctx.lineTo(1.6, -10.4); ctx.closePath(); ctx.fill();
+  // una gota de sangre que le cae de la boca
+  const gota = (Math.sin(walk * 0.5) + 1) * 0.8;
+  ctx.fillStyle = '#a3141c';
+  ctx.beginPath(); ctx.ellipse(0.5, -6 + gota, 0.9, 1.4 + gota * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, drakeSangriento: drawDrakeSangriento };

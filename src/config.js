@@ -131,6 +131,21 @@ export const MAP_RANDOM = {
 };
 
 export const BONUS_EVERY = 5;   // cada cuántos pasillos toca el Bonus
+// El pasillo de Drake (Elora): en el pasillo 50 hay un mapa inmenso (dos hojas de Elora) sin Bloodies.
+// Cada 30 s el Drake Sangriento sube volando y escupe fuego: tienes 10 s para meterte en un hueco con
+// naranja o en la zona verde; si no, te quita 3 corazones. Hay 5 botones que abren la supersalida.
+// Al escapar, Drake aparece en la tienda de Tarda por 200 monedas.
+export const DRAKE = {
+  level: 50,        // en qué pasillo está (Elora)
+  price: 200,       // lo que cuesta Drake en la tienda después de escapar (Elora)
+  damage: 3,        // corazones que quita el fuego si te pilla fuera (Elora)
+  fireEvery: 30,    // segundos entre fuego y fuego (Elora)
+  warn: 10,         // segundos que tienes para esconderte desde que sale el aviso (Elora)
+  fireTime: 1.5,    // lo que dura el fuego en pantalla [PROVISIONAL]
+  flyTime: 2.5,     // lo que tarda Drake en subir volando y en irse [PROVISIONAL]
+  size: 10,         // el Drake Sangriento es 10 veces más grande que un Bloody normal (Elora)
+  buttonsApart: 8,  // casillas mínimas entre botón y botón, para que estén repartidos [PROVISIONAL]
+};
 export const CONTINUE_EVERY = 5;      // cada cuántos niveles sale "¿continuar o salir?"
 export const LIGHT_RADIUS_TILES = 6;  // hasta dónde ves en la oscuridad
 export const DOOR_CLOSE_DELAY = 1.6;  // segundos hasta que la puerta de entrada se cierra
