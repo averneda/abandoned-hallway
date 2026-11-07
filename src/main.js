@@ -156,11 +156,16 @@ function gotoIntro() {
   ui.showIntro({ onSkip: () => { if (!scene.finished) { scene.finished = true; done(); } } });
 }
 
-function startLevel(n) {
+function startLevel(n, reintento = false) {
   run.level = n;
   if (n === 1) run.tapes = 0;
+  // Los corazones que pierdes se quedan perdidos al pasar de pasillo; solo se curan cogiendo corazones
+  // (Elora). Al empezar en el pasillo 1 (desde el lobby) se empieza con todos. Al reintentar un pasillo,
+  // con los que tenías al entrar en él.
+  if (n === 1 && !reintento) run.hearts = null;
   const game = new Game(run.character, n, {
     ...common,
+    startHearts: run.hearts,
     onPause: () => {
       game.paused = true;
       ui.showPause({ onResume: () => { ui.clear(); game.paused = false; input.clear(); }, onMenu: () => gotoLobby() });
@@ -169,12 +174,13 @@ function startLevel(n) {
       music.stop();
       ui.showGameOver({
         reason, level: n, tapes: run.tapes + game.tapes, coins: wallet.coins,
-        onRetry: () => startLevel(n),
+        onRetry: () => startLevel(n, true),
         onMenu: () => gotoLobby(),
       });
     },
     onComplete: ({ tapes }) => {
       practiceTaken.clear();
+      run.hearts = game.player.hearts;   // pasan al pasillo siguiente tal cual
       run.tapes += tapes;
       wallet.coins += COINS.levelBonus; save();
       if (n % CONTINUE_EVERY === 0) {

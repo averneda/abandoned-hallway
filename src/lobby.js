@@ -29,6 +29,7 @@ export class Lobby extends Game {
     this.enemies = [];
     this.near = null;
     this.player.facing = 'up';
+    this.sinCansancio = true;   // en el lobby se corre sin cansarse (Elora)
     this.updateCamera();
   }
 

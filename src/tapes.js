@@ -28,8 +28,14 @@ const VOCES = {
   gec: { pitch: 1.9, rate: 1.15 },      // Elora: voz infantil
   draila: { pitch: 1.15, rate: 0.92 },  // [PROVISIONAL] un poco seria
   tarda: { pitch: 0.8, rate: 0.95 },    // [PROVISIONAL]
+  papa: { pitch: 0.65, rate: 1.08 },    // el padre de Hoppy (solo si no carga su voz grabada) [PROVISIONAL]
+  mama: { pitch: 1.25, rate: 1.08 },    // [PROVISIONAL] la madre de Hoppy
+  hoppy: { pitch: 1.9, rate: 1.05 },    // [PROVISIONAL] Hoppy de pequeña
 };
-const NOMBRES = { gec: 'Gec', draila: 'Draila', tarda: 'Tarda' };
+const NOMBRES = { gec: 'Gec', draila: 'Draila', tarda: 'Tarda', hoppy: 'Hoppy' };
+// el nombre que sale (en el idioma del juego): los padres de Hoppy, "Papá" y "Mamá" (o "???" al principio,
+// porque Tarda todavía no sabe quiénes son: paso.nombre)
+const nombreDe = (quien, clave) => clave ? t(clave) : (t('tapes.who.' + quien) !== 'tapes.who.' + quien ? t('tapes.who.' + quien) : (NOMBRES[quien] || quien));
 // Los que hablan por fuera de la cinta: Tarda ve las cintas contigo (Elora), así que su voz no sale
 // de la grabación: su texto va debajo de la tele, con su carita.
 const FUERA = { tarda: true };
@@ -56,7 +62,7 @@ const FUERA = { tarda: true };
 // según el porcentaje de cintas que tiene cada grabación (grabación: %). Si no suman 100, el resto
 // son cintas sin grabación (de momento). Una misma grabación puede salir en varias cintas.
 // Lo que le tocó a cada cinta se guarda en el navegador: no cambia al volver a mirarla.
-export const PORCENTAJES = { 1: 90 };   // Gec y Draila: el 90 % de las cintas (Elora)
+export const PORCENTAJES = { 1: 60, 2: 30 };   // Gec y Draila 60 %, Hoppy y sus padres 30 %, y el 10 % sin grabación (Elora)
 const SORTEO_KEY = 'holeway.tapeRecs';
 let sorteoEnMemoria = {};   // por si el navegador no deja guardar
 function leerSorteo() { try { return JSON.parse(localStorage.getItem(SORTEO_KEY) || '{}') || {}; } catch (e) { return sorteoEnMemoria; } }
@@ -101,6 +107,38 @@ export const GRABACIONES = {
       { cam: [118, 405, 3.2], mover: 0.9, quien: 'draila', texto: 'cinta.1.i', audio: 'assets/sonidos/cintas/cinta1-07-draila.mp3', t: 2.2 },   // ¡Oh! ¿Cuándo dejé la cámara encendida?...
       { cam: [130, 430, 4.5], mover: 1.5, t: 1.6, oscurecer: true,          // ...y viene a apagarla
         mueve: { draila: [{ s: 2.6, y: -80, x: 15, en: 1.5, andar: true, recorte: false }] } },
+      { apagar: true },
+    ],
+  },
+  // Cinta 2 (Elora): los padres de Hoppy discutiendo en la cocina, cuando Hoppy aún vivía con ellos.
+  // Hoppy se asoma por la puerta. Al final a la cámara se le acaba la batería.
+  2: {
+    src: 'assets/sprites/cintas/cinta-2.webp', w: 1372, h: 972,
+    leer: 0.07,   // cada frase se queda al menos 1 s + 0,07 s por letra, para que dé tiempo a leerla (Elora)
+    fondo: 'assets/sprites/cintas/cinta-2-fondo.webp',
+    actores: {
+      papa: { src: 'assets/sprites/cintas/cinta-2-papa.webp', ancla: [250, 335] },     // el brazo que señala (gira en el hombro)
+      mama: { src: 'assets/sprites/cintas/cinta-2-mama.webp', ancla: [1035, 410] },    // los brazos levantados
+      hoppy: { src: 'assets/sprites/cintas/cinta-2-hoppy.webp', ancla: [530, 640], x: -60,   // empieza escondida detrás de la puerta
+        recorte: [[505, 470, 48, 270]] },
+    },
+    pasos: [
+      // se enciende la tele: Hoppy todavía no se asoma
+      { cam: [686, 486, 1], t: 1.2 },
+      { quien: 'tarda', texto: 'cinta.2.tarda1', audio: 'assets/sonidos/cintas/cinta2-01-tarda.mp3', t: 1.8 },                                                   // Vaya, esas dos personas me suenan de algo...
+      { cam: [300, 330, 1.9], mover: 1, quien: 'papa', nombre: 'tapes.who.unknown', texto: 'cinta.2.a', audio: 'assets/sonidos/cintas/cinta2-02-papa.mp3', t: 2,   // ¿Tú ves normal a esa niña? ¡No tiene sentido cuidar a un monstruo!
+        mueve: { papa: [{ r: -0.12, en: 0.25 }, { r: 0.06, en: 0.25 }, { r: -0.12, en: 0.25 }, { r: 0.06, en: 0.25 }, { r: -0.12, en: 0.25 }, { r: 0, en: 0.3 }] } },
+      { cam: [1040, 360, 1.9], mover: 1, quien: 'mama', nombre: 'tapes.who.unknown', texto: 'cinta.2.b', audio: 'assets/sonidos/cintas/cinta2-03-mama.mp3', t: 2,  // ¿Qué estás diciendo? ¡No la llames así en tu vida!...
+        mueve: { mama: [{ r: 0.1, en: 0.3 }, { r: -0.06, en: 0.3 }, { r: 0.1, en: 0.3 }, { r: 0, en: 0.3 }] } },
+      { cam: [530, 580, 2.4], mover: 1, quien: 'hoppy', texto: 'cinta.2.c', audio: 'assets/sonidos/cintas/cinta2-04-hoppy.mp3', t: 1.4 },                       // ¿Oh? (desde detrás de la puerta)
+      { t: 1.6, mueve: { hoppy: [{ x: 0, en: 1.2 }] } },                                                    // Hoppy se asoma
+      { cam: [686, 486, 1.2], mover: 1.2, quien: 'tarda', texto: 'cinta.2.tarda2', audio: 'assets/sonidos/cintas/cinta2-05-tarda.mp3', t: 1.8 },                // ¡Ah, claro! Son los padres de Hoppy...
+      { cam: [300, 330, 1.9], mover: 0.9, quien: 'papa', texto: 'cinta.2.d', audio: 'assets/sonidos/cintas/cinta2-06-papa.mp3', t: 3,                           // ¡¿Cómo que no?! Es un monstruo...
+        mueve: { papa: [{ r: -0.12, en: 0.25 }, { r: 0.06, en: 0.25 }, { r: -0.12, en: 0.25 }, { r: 0.06, en: 0.25 }, { r: -0.12, en: 0.25 }, { r: 0.06, en: 0.25 }, { r: -0.12, en: 0.25 }, { r: 0, en: 0.3 }] } },
+      { cam: [1040, 360, 1.9], mover: 0.9, quien: 'mama', texto: 'cinta.2.e', audio: 'assets/sonidos/cintas/cinta2-07-mama.mp3', t: 2, aviso: 'cinta.2.bateria',  // ¡Pero qué quieres que le hagamos! ¡Es nuestra hija! (BATERÍA BAJA)
+        mueve: { mama: [{ r: 0.1, en: 0.3 }, { r: -0.06, en: 0.3 }, { r: 0, en: 0.3 }] } },
+      { cam: [300, 330, 1.9], mover: 0.7, quien: 'papa', texto: 'cinta.2.f', audio: 'assets/sonidos/cintas/cinta2-08-papa.mp3', t: 5, corta: 2,                     // ¡Pues a lo mejor la podríamos a...! (se acaba la batería)
+        mueve: { papa: [{ r: -0.14, en: 0.3 }, { r: 0.04, en: 0.3 }] } },
       { apagar: true },
     ],
   },
@@ -209,7 +247,7 @@ export class TapePlayer {
     this.fase = 'meter'; this.tf = 0;      // fase y tiempo dentro de la fase
     this.paso = -1; this.texto = null; this.quien = null;
     this.cam = { x: this.g.w / 2, y: this.g.h / 2, z: 1 }; this.camDe = null;
-    this.oscuro = 0;
+    this.oscuro = 0; this.aviso = null; this.nombre = null;
     sfx.tapeIn();
     let antes = performance.now();
     const bucle = (ahora) => {
@@ -246,7 +284,13 @@ export class TapePlayer {
       // el chisporroteo de la cinta sube y baja un poco
       if (this.sis) this.sis.g.gain.value = 0.03 + Math.random() * 0.012;
       // ¿se acabó el paso? (lo que dure como mínimo, lo que tarde la cámara y lo que tarde la voz)
-      const minimo = Math.max(p.t || 0, p.mover || 0);
+      // corta: el paso se acaba de golpe (a la cámara se le acaba la batería), aunque no haya terminado la voz
+      if (p.corta && this.tf >= p.corta) {
+        if (this.voz && this.voz.parar) this.voz.parar();
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        this.voz = null; this.siguiente(); return;
+      }
+      const minimo = Math.max(p.t || 0, p.mover || 0, this.lectura || 0);
       const vozLista = !this.voz || this.voz.done || this.tf > this.vozTope;
       if (this.tf >= minimo && vozLista) this.siguiente();
     } else if (this.fase === 'apagar' && this.tf > 0.7) { this.fase = 'nieve2'; this.tf = 0; sfx.staticNoise(0.9); }
@@ -305,10 +349,15 @@ export class TapePlayer {
       const a = this.actores && this.actores[id];
       if (a) { a.cola = movs.map((m) => ({ ...m })); a.mov = null; }
     }
+    // el aviso de la cámara (BATERÍA BAJA): se queda hasta el final
+    if (p.aviso) this.aviso = p.aviso;
+    this.nombre = p.nombre || null;
     // el texto de este paso (si no tiene, no sale ninguno); el de Tarda va fuera de la tele
     this.texto = null; this.quien = null; this.fuera = null;
     if (p.texto && FUERA[p.quien]) this.fuera = { texto: t(p.texto), quien: p.quien };
     else if (p.texto) { this.texto = t(p.texto); this.quien = p.quien || null; }
+    // tiempo para leerlo (Elora: "que el texto vaya más lento, que hay más texto"): leer = segundos por letra
+    this.lectura = (this.g.leer && p.texto) ? 1 + t(p.texto).length * this.g.leer : 0;
     this.voz = null;
     if (p.quien) {
       const dicho = t(p.voz || p.texto);
@@ -402,6 +451,16 @@ export class TapePlayer {
       x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(c.x, y + 6, c.w, 3);
     }
     if (this.oscuro) { x.fillStyle = `rgba(0,0,0,${this.oscuro})`; x.fillRect(c.x, c.y, c.w, c.h); }
+    // el aviso de la cámara en medio de la pantalla, parpadeando (Elora: "batería baja")
+    if (this.aviso && Math.floor(performance.now() / 450) % 2 === 0) {
+      const cx = c.x + c.w / 2, cy = c.y + c.h * 0.42;
+      x.font = 'bold 30px "Courier New", monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.lineWidth = 5; x.strokeStyle = '#000'; x.strokeText(t(this.aviso), cx, cy);
+      x.fillStyle = '#ff3b3b'; x.fillText(t(this.aviso), cx, cy);
+      // la pila casi vacía
+      x.strokeStyle = '#ff3b3b'; x.lineWidth = 3; x.strokeRect(cx - 26, cy + 26, 46, 22); x.fillStyle = '#ff3b3b';
+      x.fillRect(cx + 20, cy + 32, 5, 10); x.fillRect(cx - 22, cy + 30, 7, 14);
+    }
     // el punto rojo de "grabando"
     if (Math.floor(performance.now() / 600) % 2 === 0) {
       x.fillStyle = '#ff2a2a'; x.beginPath(); x.arc(c.x + c.w - 34, c.y + 30, 6, 0, Math.PI * 2); x.fill();
@@ -413,7 +472,7 @@ export class TapePlayer {
   subtitulo(x, texto, quien) {
     const c = this.m.caja;
     const narra = !quien;
-    const linea = quien ? `${NOMBRES[quien] || quien}: ${texto}` : texto;
+    const linea = quien ? `${nombreDe(quien, this.nombre)}: ${texto}` : texto;
     x.font = (narra ? 'italic ' : 'bold ') + '19px "Segoe UI", system-ui, Arial';
     x.textAlign = 'center'; x.textBaseline = 'middle';
     // se parte en líneas si no cabe
@@ -451,7 +510,7 @@ export class TapePlayer {
     x.restore();
     x.textAlign = 'left'; x.textBaseline = 'middle';
     x.fillStyle = '#6cc77f'; x.font = 'bold 17px "Segoe UI", system-ui, Arial';
-    x.fillText(NOMBRES[quien] || quien, x0 + 100, y0 + 20);
+    x.fillText(nombreDe(quien), x0 + 100, y0 + 20);
     x.fillStyle = '#ffffff'; x.font = '18px "Segoe UI", system-ui, Arial';
     lineas.forEach((ln, i) => x.fillText(ln, x0 + 100, y0 + 44 + i * 24));
   }

@@ -5,7 +5,7 @@ import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from '.
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO } from './characters.js';
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
-import { drawCoin, pickCoinKind, coinValue } from './coins.js';
+import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
 const ESTAMINA = '#2fe0a6';   // verde-turquesa de la estamina (barra y bolitas)
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -105,6 +105,8 @@ export class Game {
       agotado: false,          // se quedó a cero: hay que recuperar un poco antes de volver a correr
       sinCorrer: 0,            // segundos desde la última vez que corrió
     };
+    // corazones con los que llegas de otro pasillo (si no, todos)
+    if (callbacks && callbacks.startHearts != null) this.player.hearts = Math.max(1, Math.min(maxHearts(character), callbacks.startHearts));
     this.wave = null;  // onda del mordisco de Draila: {x, y, dir, len, max, golpeados}
     this.freeze = 0; // segundos que quedan de Bloodies parados (habilidad de Oct)
     this.flood = 0;  // segundos que quedan de sala inundada (habilidad de Jely)
@@ -133,9 +135,11 @@ export class Game {
 
     // La oscuridad es un degradado suave: se calcula a media resolución (4 veces menos trabajo)
     // y se estira al pintarla, sin que se note.
+    // En el Bonus la luz es enorme y suave: basta con un cuarto de resolución, y así no va con lag (Elora).
+    const res = L.noButton ? 0.25 : 0.5;
     this.dark = document.createElement('canvas');
-    this.dark.width = VIEW_W / 2; this.dark.height = VIEW_H / 2;
-    this.dark.getContext('2d').setTransform(0.5, 0, 0, 0.5, 0, 0);
+    this.dark.width = VIEW_W * res; this.dark.height = VIEW_H * res;
+    this.dark.getContext('2d').setTransform(res, 0, 0, res, 0, 0);
     this.updateCamera();
   }
 
@@ -151,8 +155,8 @@ export class Game {
     // correr gasta estamina; si se acaba, se anda hasta recuperar un poco
     const quiereCorrer = input.isDown('run') && len > 0;
     const turbo = p.supercarrera > 0;   // Supercarrera de Hoppy: corre sola, sin gastar estamina
-    const corriendo = turbo ? len > 0 : quiereCorrer && (p.agotado ? p.stamina >= STAMINA.minToRun : p.stamina > 0);
-    if (turbo) {
+    const corriendo = turbo ? len > 0 : quiereCorrer && (this.sinCansancio || (p.agotado ? p.stamina >= STAMINA.minToRun : p.stamina > 0));
+    if (turbo || (this.sinCansancio && corriendo)) {   // (en el lobby se corre sin cansarse: Elora)
       p.agotado = false;
     } else if (corriendo) {
       p.agotado = false;
@@ -842,15 +846,16 @@ export class Game {
         ctx.fillStyle = '#d9a04b'; ctx.beginPath(); ctx.arc(it.x, it.y + bob, 7, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#f3c477'; ctx.beginPath(); ctx.arc(it.x - 2, it.y - 2 + bob, 3, 0, Math.PI * 2); ctx.fill();
       } else if (it.type === 'heart') {
-        ctx.fillStyle = '#ff3b47'; ctx.shadowColor = '#ff3b47'; ctx.shadowBlur = 8;
-        this.heart(ctx, it.x, it.y + bob, 7); ctx.shadowBlur = 0;
+        this.brillo(ctx, it.x, it.y + bob, 14, '#ff3b47', 0.55);
+        ctx.fillStyle = '#ff3b47';
+        this.heart(ctx, it.x, it.y + bob, 7);
       } else if (it.type === 'stamina') {
         // bolita de estamina: una bola verde-turquesa con un rayito dentro
         const pulso = 1 + Math.sin(this.time * 5 + it.x) * 0.08;
         ctx.save();
-        ctx.fillStyle = ESTAMINA; ctx.shadowColor = ESTAMINA; ctx.shadowBlur = 10;
+        this.brillo(ctx, it.x, it.y + bob, 16, ESTAMINA, 0.6);
+        ctx.fillStyle = ESTAMINA;
         ctx.beginPath(); ctx.arc(it.x, it.y + bob, 7 * pulso, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
         ctx.fillStyle = '#eafff6';
         ctx.beginPath();
         ctx.moveTo(it.x + 1.5, it.y + bob - 5); ctx.lineTo(it.x - 2.5, it.y + bob + 0.5);
@@ -870,11 +875,19 @@ export class Game {
         ctx.globalAlpha = alfa;
         const w = (Math.abs(Math.cos(this.time * 4 + it.x)) * 7 + 1) * escala;
         const h = 7 * escala;
-        if (it.ttl != null) { ctx.shadowColor = '#ffe36b'; ctx.shadowBlur = 10; }
-        drawCoin(ctx, it.x, it.y + bob, it.kind, w, h);
+        if (it.ttl != null) this.brillo(ctx, it.x, it.y + bob, 16 * escala, '#ffe36b', 0.7);
+        drawCoinFast(ctx, it.x, it.y + bob, it.kind, w, h);
         ctx.restore();
       }
     }
+  }
+
+  // un brillo redondo de color (rápido: es un dibujito guardado, no shadowBlur)
+  brillo(ctx, x, y, r, color, alfa = 1) {
+    const a = ctx.globalAlpha;
+    ctx.globalAlpha = a * alfa;
+    ctx.drawImage(glowSprite(color), x - r, y - r, r * 2, r * 2);
+    ctx.globalAlpha = a;
   }
 
   drawTape(ctx, x, y) {

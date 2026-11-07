@@ -61,7 +61,7 @@ export function pickCoinKind(rand) {
 export function coinValue(kind) { return (COINS.kinds[kind] || COINS.kinds.bronce).value; }
 
 // Dibuja una moneda en (x, y). w y h son el ancho y el alto (la moneda gira: w cambia).
-export function drawCoin(ctx, x, y, kind, w, h) {
+export function drawCoin(ctx, x, y, kind, w, h, numero = true) {
   const L = LOOK[kind] || LOOK.bronce;
   const R = 7;
   ctx.save();
@@ -101,7 +101,7 @@ export function drawCoin(ctx, x, y, kind, w, h) {
   }
   ctx.restore();
   // el número (solo si se ve la moneda de frente, no de canto)
-  if (w > 3) {
+  if (numero && w > 3) {
     ctx.fillStyle = L.num;
     ctx.font = 'bold 10px "Segoe UI", system-ui, Arial';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -111,4 +111,38 @@ export function drawCoin(ctx, x, y, kind, w, h) {
   ctx.strokeStyle = 'rgba(30, 20, 15, 0.85)'; ctx.lineWidth = 0.9;
   ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
   ctx.restore();
+}
+
+// Para que el juego vaya ligero (Elora: el Bonus iba con lag): cada moneda se dibuja UNA vez, con su
+// óxido y su número, en un dibujito guardado, y luego solo se copia (estirada para que gire).
+const SPRITES = {};
+const ESCALA = 4;   // el dibujito guardado es 4 veces más grande, para que se vea nítido
+function coinSprite(kind, conNumero) {
+  const key = kind + (conNumero ? '#' : '');
+  if (SPRITES[key]) return SPRITES[key];
+  const R = 7, lado = Math.ceil((R + 1) * 2 * ESCALA);
+  const cv = document.createElement('canvas'); cv.width = lado; cv.height = lado;
+  const x = cv.getContext('2d');
+  x.scale(ESCALA, ESCALA);
+  drawCoin(x, lado / ESCALA / 2, lado / ESCALA / 2, kind, R, R, conNumero);   // sin número: para cuando se ve de canto
+  return (SPRITES[key] = cv);
+}
+
+export function drawCoinFast(ctx, x, y, kind, w, h) {
+  const spr = coinSprite(kind, w > 3);
+  const R = 7, s = spr.width / ESCALA / 2;   // medio lado del dibujito, en píxeles del juego
+  const sx = Math.max(0.05, w / R), sy = h / R;
+  ctx.drawImage(spr, x - s * sx, y - s * sy, s * 2 * sx, s * 2 * sy);
+}
+
+// Un brillo redondo ya hecho (en vez de shadowBlur, que es muy lento en las tablets)
+const BRILLOS = {};
+export function glowSprite(color) {
+  if (BRILLOS[color]) return BRILLOS[color];
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const x = cv.getContext('2d');
+  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, color); g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+  return (BRILLOS[color] = cv);
 }
