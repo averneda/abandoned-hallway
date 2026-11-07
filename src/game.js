@@ -3,6 +3,9 @@
 import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS } from './characters.js';
+// de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
+// para no descubrir la sorpresa
+const BLOODY_LOOKS = CHARACTERS.filter((c) => !c.navidad);
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
@@ -118,7 +121,7 @@ export class Game {
       chasing: false, lostFor: 0, stuck: 0, recoil: 0, phase: this.rand() * 10, facing: 'down', walk: 0,
       pintado: 0,  // segundos que le queda la pintura fosforita de Caty
       lastSeen: null, trail: [], trailDist: 0,
-      look: CHARACTERS[(i + Math.floor(this.rand() * CHARACTERS.length)) % CHARACTERS.length],
+      look: BLOODY_LOOKS[(i + Math.floor(this.rand() * BLOODY_LOOKS.length)) % BLOODY_LOOKS.length],
     }));
     // El pasillo de Drake (Elora): el fuego del Drake Sangriento, las T y Tarda explicándolo
     this.fuego = L.fuego ? { fase: 'espera', t: 0 } : null;

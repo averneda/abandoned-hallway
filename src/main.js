@@ -1,6 +1,6 @@
 // Arranque del juego y paso entre pantallas: menú → lobby → (cinemática) → pasillos.
 
-import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE } from './config.js';
+import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
@@ -11,6 +11,7 @@ import { Title } from './title.js';
 import { TouchControls } from './touch.js';
 import { music } from './music.js';
 import { characterById, conSkin, SKINS } from './characters.js';
+import { abrir as abrirAdviento, estadoVacio as advientoVacio } from './adviento.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -30,9 +31,14 @@ const wallet = { coins: 0, tapes: 0 };
 const cajaCintas = new Set();
 // drakeEnTienda: ya escapaste del pasillo de Drake y Drake está en la tienda (Elora)
 // modoPijama: se puso el código del modo pijama (Elora): las skins de pijama salen en la tienda, gratis
-const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false };
+// modoNavidad: se puso el código del modo Navidad (Elora): lobby de Navidad y el reno gratis
+const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false };
 // La skin que lleva puesta cada personaje (id del personaje → skin). Solo se ven en el modo pijama.
 const skinsElegidas = {};
+// El calendario de Adviento (Elora): qué casillas has abierto y si ya te dieron los regalos finales
+let adviento = advientoVacio();
+// Los personajes que tienes: los comprados y, en el modo Navidad, también el reno (gratis, sin guardarlo)
+function tienes() { return flags.modoNavidad ? new Set([...unlocked, 'reno']) : unlocked; }
 function aplicarSkin(ch) { return conSkin(ch, flags.modoPijama ? skinsElegidas[ch.id] : null); }
 const run = { character: characterById('carot'), level: 1, tapes: 0 };
 try {
@@ -49,9 +55,11 @@ try {
   flags.lobbySeen = localStorage.getItem('holeway.lobbySeen') === '1';
   flags.drakeEnTienda = localStorage.getItem('holeway.drakeEnTienda') === '1';
   flags.modoPijama = localStorage.getItem('holeway.modoPijama') === '1';
+  flags.modoNavidad = localStorage.getItem('holeway.modoNavidad') === '1';
   Object.assign(skinsElegidas, JSON.parse(localStorage.getItem('holeway.skins') || '{}'));
+  adviento = { ...advientoVacio(), ...JSON.parse(localStorage.getItem('holeway.adviento') || '{}') };
   const chId = localStorage.getItem('holeway.character');
-  if (chId && unlocked.has(chId)) run.character = aplicarSkin(characterById(chId));
+  if (chId && tienes().has(chId)) run.character = aplicarSkin(characterById(chId));
 } catch (e) { /* nada */ }
 function save() {
   try {
@@ -65,7 +73,9 @@ function save() {
     localStorage.setItem('holeway.lobbySeen', flags.lobbySeen ? '1' : '0');
     localStorage.setItem('holeway.drakeEnTienda', flags.drakeEnTienda ? '1' : '0');
     localStorage.setItem('holeway.modoPijama', flags.modoPijama ? '1' : '0');
+    localStorage.setItem('holeway.modoNavidad', flags.modoNavidad ? '1' : '0');
     localStorage.setItem('holeway.skins', JSON.stringify(skinsElegidas));
+    localStorage.setItem('holeway.adviento', JSON.stringify(adviento));
   } catch (e) { /* nada */ }
 }
 
@@ -108,6 +118,16 @@ function gotoMenu() {
       activo: () => flags.modoPijama,
       cambiar: (on) => { flags.modoPijama = on; run.character = aplicarSkin(run.character); save(); },
     },
+    // el modo Navidad secreto (Elora): lobby de Navidad y el reno gratis; al quitarlo, si llevabas el reno
+    // y no lo has ganado, vuelves a Carot
+    navidad: {
+      activo: () => flags.modoNavidad,
+      cambiar: (on) => {
+        flags.modoNavidad = on;
+        if (!tienes().has(run.character.id)) run.character = aplicarSkin(characterById('carot'));
+        save();
+      },
+    },
   });
 }
 
@@ -136,8 +156,9 @@ function gotoLobby() {
       });
       // focusId: a quién señalar al abrir (tras comprar, al recién comprado)
       const open = (focusId) => ui.showShop({
-        unlocked, coins: wallet.coins, current: run.character, focusId,
-        secretos: flags.drakeEnTienda ? new Set() : new Set(['drake']),
+        unlocked: tienes(), coins: wallet.coins, current: run.character, focusId,
+        // los secretos no salen hasta que los tienes (el reno: ganándolo en el calendario o en el modo Navidad)
+        secretos: flags.drakeEnTienda ? new Set(['reno']) : new Set(['drake', 'reno']),
         onChoose: (ch) => { run.character = aplicarSkin(ch); save(); lobby.setCharacter(run.character); close(); },
         // en el modo pijama, las skins (gratis); si es el personaje que llevas, se lo pone ya
         skins: flags.modoPijama ? {
@@ -162,6 +183,31 @@ function gotoLobby() {
         onClose: () => { ui.clear(); lobby.paused = false; input.clear(); },
       });
       verCaja();
+    },
+    // el calendario de Adviento (Elora): abrir la casilla de hoy y darte lo que toque
+    onAdviento: () => {
+      lobby.paused = true;
+      ui.showAdviento({
+        estado: adviento,
+        monedas: () => wallet.coins,
+        precio: ADVIENTO.precioRecuperar,
+        // fecha: un día que se te pasó y recuperas por 1.000 monedas (Elora)
+        onAbrir: (cual, fecha) => {
+          if (fecha && wallet.coins < ADVIENTO.precioRecuperar) return '';
+          const p = abrirAdviento(cual, adviento, undefined, fecha);
+          if (!p) return '';
+          if (fecha) wallet.coins -= ADVIENTO.precioRecuperar;
+          wallet.coins += p.monedas;
+          wallet.tapes += p.cintas;                         // las cintas van al inventario
+          if (p.personaje) unlocked.add(p.personaje);       // el personaje secreto (sale en la tienda cuando exista)
+          save();
+          if (p.final === 'grande') return (p.monedas ? t('adv.monedas', { n: p.monedas }) + ' ' : '') + t('adv.finalGrande') + ' ' + t('adv.finalGrandeLuego');
+          if (p.final === 'chico') return t('adv.finalChico');
+          if (fecha) return t('adv.recuperado');
+          return p.monedas ? t('adv.monedas', { n: p.monedas }) : t('adv.guardado');
+        },
+        onClose: () => { ui.clear(); lobby.paused = false; input.clear(); },
+      });
     },
     onStart: () => startLevel(1),
   });

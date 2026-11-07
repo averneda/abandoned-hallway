@@ -166,3 +166,29 @@ button:disabled { opacity: 0.75; cursor: default; }
 .aviso { background: var(--panel); border: 3px solid #ffd650; border-radius: 14px; padding: 20px 26px; max-width: min(560px, 90%); text-align: center; display: grid; gap: 8px; }
 .aviso-texto { font-size: 22px; font-weight: 800; margin: 0; }
 .aviso-nota { color: var(--muted); margin: 0 0 8px; }
+/* el calendario de Adviento (Elora): casillas de colores; la de hoy, brillando */
+.screen.adviento { gap: 14px; }
+.adv-bloque { display: flex; flex-direction: column; align-items: center; gap: 8px; background: #1f5e34; border: 3px solid #f2d24a; border-radius: 14px; padding: 12px 18px; }
+.adv-bloque.chico { background: #2a4a7a; padding: 8px 14px; }
+.screen .adv-titulo { color: #fff6dc; font-weight: 800; font-size: 18px; }
+.screen .adv-final { color: #ffe36b; font-size: 15px; font-weight: 700; }
+.adv-fila { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+button.adv-casilla { min-width: 0; width: 84px; height: 92px; padding: 6px; border-radius: 10px; border: 3px solid rgba(0,0,0,0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #2a2124; font-weight: 900; }
+.chico button.adv-casilla { width: 62px; height: 62px; }
+.adv-casilla.c0 { background: #e85a66; } .adv-casilla.c1 { background: #f2d24a; } .adv-casilla.c2 { background: #6aaef0; }
+.adv-casilla.c3 { background: #fff6dc; } .adv-casilla.c4 { background: #c88be8; }
+.adv-num { font-size: 28px; line-height: 1; } .chico .adv-num { font-size: 20px; }
+.adv-est { font-size: 20px; line-height: 1; } .chico .adv-est { font-size: 16px; }
+button.adv-casilla:disabled { cursor: default; }
+.adv-casilla.cerrada, .adv-casilla.perdida { filter: grayscale(0.7) brightness(0.75); }
+button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover { filter: grayscale(0.3) brightness(0.95); }
+.adv-pregunta { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; color: #fff6dc; font-weight: 800; font-size: 18px; }
+.adv-pregunta:empty { display: none; }
+.adv-pregunta button { min-width: 0; padding: 8px 18px; font-size: 17px; }
+.screen .adv-ayuda { color: #cbbfd6; }
+.adv-casilla.abierta { filter: saturate(0.6); }
+.adv-casilla.hoy { box-shadow: 0 0 0 3px #fff, 0 0 18px 6px rgba(255, 227, 107, 0.8); animation: advLatido 1.2s ease-in-out infinite; }
+@keyframes advLatido { 50% { transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .adv-casilla.hoy { animation: none; } }
+.screen .adv-nota { color: #b9f5c4; font-size: 17px; font-weight: 800; min-height: 22px; }
+.pijama-badge.navidad-badge { background: #1f7a3a; }

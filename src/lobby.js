@@ -10,10 +10,13 @@ import { drawCharacter, characterById, TARDA_GRIS } from './characters.js';
 import { t } from './i18n.js';
 import { sfx } from './sound.js';
 import { coinValue } from './coins.js';
+import { hoyJuego } from './adviento.js';
 
-// ¿Es Navidad? (NAVIDAD en src/config.js; con index.html?navidad=1 sale siempre, para probarlo)
-export function esNavidad(hoy = new Date()) {
+// ¿Es Navidad? (NAVIDAD en src/config.js). Sale siempre en el modo Navidad secreto (el código de Elora)
+// y con index.html?navidad=1, para probarlo.
+export function esNavidad(hoy = hoyJuego()) {
   try { if (new URLSearchParams(location.search).get('navidad') === '1') return true; } catch (e) { /* nada */ }
+  try { if (localStorage.getItem('holeway.modoNavidad') === '1') return true; } catch (e) { /* nada */ }
   const dia = (txt) => { const [a, m, d] = txt.split('-').map(Number); return new Date(a, m - 1, d); };
   const h = new Date(hoy); h.setHours(0, 0, 0, 0);
   return h >= dia(NAVIDAD.desde) && h <= dia(NAVIDAD.hasta);
@@ -21,7 +24,7 @@ export function esNavidad(hoy = new Date()) {
 
 // ¿Sale el cartel «¡La Navidad se acerca!»? Desde NAVIDAD.cartelDesde hasta el día antes del evento
 // (con index.html?cartelnavidad=1 sale siempre, para verlo)
-export function cartelNavidad(hoy = new Date()) {
+export function cartelNavidad(hoy = hoyJuego()) {
   try { if (new URLSearchParams(location.search).get('cartelnavidad') === '1') return true; } catch (e) { /* nada */ }
   if (!NAVIDAD.cartelDesde) return false;
   const dia = (txt) => { const [a, m, d] = txt.split('-').map(Number); return new Date(a, m - 1, d); };
@@ -48,6 +51,8 @@ export class Lobby extends Game {
     // Es grande (Elora: "es muy pequeño"): ocupa 4 casillas de ancho, de la 22 a la 25, y no se atraviesa
     // (una fila más abajo que la pared, para que la estrella no tape los números de arriba)
     this.arbol = esNavidad() ? { tx: 23.5, ty: 4 } : null;
+    // y el calendario de Adviento (Elora), colgado en la pared de arriba, entre Tarda y el árbol [PROVISIONAL el sitio]
+    this.calendario = esNavidad() && callbacks.onAdviento ? { x: 21 * TILE + TILE / 2, y: TILE * 0.5 } : null;
     if (this.arbol) {
       // el suelo se pinta antes de bloquear sus casillas, para que debajo no salgan baldosas de pared
       this.staticLayer = this.buildStaticLayer();
@@ -86,8 +91,11 @@ export class Lobby extends Game {
     this.near = null;
     if (dist(p.x, p.y, this.npc.x, this.npc.y) < TILE * 1.9) this.near = 'tarda';
     else if (this.shelf.some((v) => dist(p.x, p.y, v.x, v.y + TILE) < TILE * 1.3)) this.near = 'tapes';
+    else if (this.calendario && dist(p.x, p.y, this.calendario.x, this.calendario.y + TILE * 1.5) < TILE * 1.4) this.near = 'adviento';
     if (this.near && input.wasPressed('interact')) {
-      if (this.near === 'tarda') this.cb.onShop(); else this.cb.onTapes();
+      if (this.near === 'tarda') this.cb.onShop();
+      else if (this.near === 'adviento') this.cb.onAdviento();
+      else this.cb.onTapes();
       return;
     }
 
@@ -160,6 +168,7 @@ export class Lobby extends Game {
 
     // el cartel de «¡La Navidad se acerca!» (Elora) va en el mismo sitio que el de las skins, que para
     // entonces ya se habrá quitado (al probarlo con ?cartelnavidad=1, lo tapa)
+    if (this.calendario) this.drawCalendario(ctx, this.calendario.x, this.calendario.y);
     if (cartelNavidad()) this.drawCartelNavidad(ctx, d0.tx * TILE - 12 - 70, d0.ty * TILE - 8);
     else if (!SKINS_LISTAS) cartel();   // cuando las skins estén puestas, el cartel se va (Elora)
 
@@ -190,6 +199,35 @@ export class Lobby extends Game {
     ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     this.renderHUD(ctx);
+  }
+
+  // El calendario de Adviento colgado en la pared (Elora): una tabla verde con una cinta roja arriba y
+  // casillas con número; las del calendario grande, más grandes. (cx, top): el centro de arriba.
+  drawCalendario(ctx, cx, top) {
+    const w = 58, h = 46, x0 = cx - w / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(x0 + 3, top + 4, w, h);
+    ctx.fillStyle = '#1f6e38'; ctx.fillRect(x0, top, w, h);
+    ctx.strokeStyle = '#f2d24a'; ctx.lineWidth = 2; ctx.strokeRect(x0 + 1, top + 1, w - 2, h - 2);
+    // el lazo rojo de arriba
+    ctx.fillStyle = '#d42a36';
+    ctx.beginPath(); ctx.ellipse(cx - 6, top + 1, 6, 3.5, -0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 6, top + 1, 6, 3.5, 0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#a81f2a'; ctx.beginPath(); ctx.arc(cx, top + 1, 2.6, 0, Math.PI * 2); ctx.fill();
+    // las casillas: 5 grandes (21 a 25) y 5 chiquitas (26 a 30), con su número
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let i = 0; i < 5; i++) {
+      const bx = x0 + 5 + i * 10, by = top + 9;
+      ctx.fillStyle = ['#e23b4a', '#f2d24a', '#3a8ee8', '#fff6dc', '#b65fe0'][i];
+      ctx.fillRect(bx, by, 8.5, 12);
+      ctx.fillStyle = '#2a2124'; ctx.font = 'bold 6px "Segoe UI", Arial'; ctx.fillText(String(21 + i), bx + 4.25, by + 6.5);
+    }
+    for (let i = 0; i < 5; i++) {
+      const bx = x0 + 7 + i * 9.5, by = top + 27;
+      ctx.fillStyle = '#fff6dc'; ctx.fillRect(bx, by, 6.5, 7);
+      ctx.fillStyle = '#2a2124'; ctx.font = 'bold 4.5px "Segoe UI", Arial'; ctx.fillText(String(26 + i), bx + 3.25, by + 3.8);
+    }
+    ctx.fillStyle = '#fff6dc'; ctx.font = 'bold 5px "Segoe UI", Arial'; ctx.fillText('ADVIENTO', cx, top + 41);
+    ctx.textBaseline = 'alphabetic';
   }
 
   // El cartel de «¡La Navidad se acerca!» (Elora): una tabla roja con el borde verde, nieve encima,
@@ -370,7 +408,7 @@ export class Lobby extends Game {
     // avisos
     ctx.textAlign = 'center';
     let yy = VIEW_H - 40;
-    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t(this.near === 'tarda' ? 'lobby.talk' : 'lobby.tapes'), VIEW_W / 2, yy); yy -= 30; }
+    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
     else { ctx.font = `16px ${font}`; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText(t('lobby.door'), VIEW_W / 2, yy); yy -= 30; }
     this.renderMessages(ctx, yy, font);
     ctx.restore();

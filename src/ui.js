@@ -6,6 +6,7 @@ import { CHARACTERS, drawCharacter, SKINS, skinsDe, conSkin } from './characters
 import { PAD_ACTIONS } from './input.js';
 import { TapePlayer, grabacionDeCinta } from './tapes.js';
 import { music } from './music.js';
+import { casillas, estadoCasilla } from './adviento.js';
 
 // ---- nombres de las cintas (Elora): quien juega puede ponerle nombre a cada cinta; se guarda en
 // el navegador. Si no le pone ninguno, sale el de siempre ('tape.G.name' en src/i18n.js, o "Cinta").
@@ -28,6 +29,9 @@ const CODIGO_3D = 'a2a89abb';
 // La huella del código del pasillo 50 (Elora): te lleva directo al pasillo de Drake (index.html?pasillo=50).
 // Este sí mira las mayúsculas (Elora): todo en minúscula menos la P de pasillo.
 const CODIGO_P50 = '39138241';
+// La huella del código del modo Navidad (Elora): el lobby de Navidad (árbol y calendario) y el reno gratis.
+// Mira las mayúsculas, como lo escribió Elora.
+const CODIGO_NAVIDAD = 'e3b0eab2';
 // La huella del código del modo pijama (Elora; también vale escrito con holeway/hallway y pijama/pijamas).
 const CODIGO_PIJAMA = new Set(['a9e7a80e', 'f4ae3cc7', 'a35c150d', 'a7f5d55a', 'a64e4d24', '2443bff5', '2a22be4a', '8db173bb', 'db61d337', '9eff940c']);
 function huellaCodigo(texto, mayusculas = false) {
@@ -109,15 +113,16 @@ export class UI {
   // El título lo dibuja la escena Title en el canvas (el cartel de Elora);
   // aquí solo van los botones, abajo del todo.
   // pijama: el modo pijama secreto (Elora) = { activo(), cambiar(on) }
-  showMenu({ onPlay, onPad, pijama }) {
+  showMenu({ onPlay, onPad, pijama, navidad }) {
     this.clear();
-    const otraVez = () => this.showMenu({ onPlay, onPad, pijama });
+    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad });
     const s = this.el('div', 'screen titlemenu');
     s.appendChild(this.el('p', 'subtitle', t('menu.subtitle')));
     if (pijama && pijama.activo()) s.appendChild(this.el('p', 'pijama-badge', t('menu.pijama')));
+    if (navidad && navidad.activo()) s.appendChild(this.el('p', 'pijama-badge navidad-badge', t('menu.navidad')));
     const row = this.el('div', 'row');
     const play = this.button(t('menu.play'), onPlay, true);
-    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama)));
+    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad)));
     s.appendChild(row);
     s.appendChild(this.langRow(otraVez));
     this.root.appendChild(s);
@@ -132,7 +137,7 @@ export class UI {
   // Con el del pasillo 50 (Elora), vas directo al pasillo de Drake. Con el del modo pijama (Elora), las skins de pijama salen en la tienda de Tarda, gratis; se queda puesto
   // en este navegador hasta que se quita con el botón de aquí.
   // Los códigos no están escritos aquí (para que sigan siendo secretos): se compara su "huella".
-  showCode(onBack, pijama) {
+  showCode(onBack, pijama, navidad) {
     this.clear();
     const s = this.el('div', 'screen');
     s.appendChild(this.el('h2', '', '🔑 ' + t('code.title')));
@@ -150,6 +155,10 @@ export class UI {
       } else if (huellaCodigo(campo.value, true) === CODIGO_P50) {
         nota.textContent = t('code.p50');
         setTimeout(() => { location.href = location.pathname + '?pasillo=50'; }, 1200);
+      } else if (navidad && CODIGO_NAVIDAD && huellaCodigo(campo.value, true) === CODIGO_NAVIDAD) {
+        navidad.cambiar(true);
+        nota.textContent = t('code.navidadOn');
+        setTimeout(onBack, 1800);
       } else if (pijama && CODIGO_PIJAMA.has(huella)) {
         pijama.cambiar(true);
         nota.textContent = t('code.pijamaOn');
@@ -165,6 +174,9 @@ export class UI {
     s.append(campo, row);
     if (pijama && pijama.activo()) {
       s.appendChild(this.button(t('code.pijamaOff'), () => { pijama.cambiar(false); this.toast(t('code.pijamaOffDone')); onBack(); }));
+    }
+    if (navidad && navidad.activo()) {
+      s.appendChild(this.button(t('code.navidadOff'), () => { navidad.cambiar(false); this.toast(t('code.navidadOffDone')); onBack(); }));
     }
     s.appendChild(nota);
     this.root.appendChild(s);
@@ -643,6 +655,55 @@ export class UI {
   }
 
   // Aviso breve entre niveles (nuevo personaje) sin pantalla completa.
+  // ---------------- el calendario de Adviento (Elora): las 5 casillas grandes (21 a 25) y las 5 chiquitas
+  // (26 a 30). Se abre la de hoy; las que se te pasaron se recuperan por 1.000 monedas (Elora).
+  // estado: { abiertas: [fechas] }; onAbrir(cual, fecha?) abre la de hoy (o recupera esa fecha) y devuelve el
+  // texto de lo que te dan; monedas(): las que tienes.
+  showAdviento({ estado, onAbrir, onClose, monedas, precio }) {
+    const otraVez = (texto) => {
+      this.showAdviento({ estado, onAbrir, onClose, monedas, precio });
+      if (texto) { const n = this.root.querySelector('.adv-nota'); if (n) n.textContent = texto; }
+    };
+    this.clear();
+    const s = this.el('div', 'screen dim adviento');
+    s.appendChild(this.el('h2', '', '🎁 ' + t('adv.title')));
+    const nota = this.el('p', 'small note-inline adv-nota', '');
+    const bloque = (cual, titulo, final) => {
+      const b = this.el('div', 'adv-bloque ' + cual);
+      b.appendChild(this.el('p', 'adv-titulo', t(titulo)));
+      const fila = this.el('div', 'adv-fila');
+      casillas(cual).forEach((c, i) => {
+        const est = estadoCasilla(c.fecha, estado.abiertas);
+        const btn = this.el('button', 'adv-casilla ' + est + ' c' + i);
+        btn.appendChild(this.el('span', 'adv-num', String(c.dia)));
+        btn.appendChild(this.el('span', 'adv-est', { abierta: '✓', hoy: '🎁', perdida: '✗', cerrada: '🔒' }[est]));
+        btn.title = t('adv.' + est);
+        if (est !== 'hoy' && est !== 'perdida') btn.disabled = true;
+        btn.onclick = () => {
+          if (this.input) this.input.clear();
+          if (est === 'hoy') { otraVez(onAbrir(cual)); return; }
+          // un día que se te pasó: se recupera por 1.000 monedas, después de preguntar (Elora)
+          nota.textContent = '';
+          pregunta.innerHTML = '';
+          if (monedas() < precio) { nota.textContent = t('adv.faltan', { dia: c.dia, n: precio - monedas() }); return; }
+          pregunta.appendChild(this.el('span', '', t('adv.recuperar', { dia: c.dia, n: precio.toLocaleString(getLang() === 'en' ? 'en-US' : 'de-DE') })));
+          pregunta.appendChild(this.button(t('adv.si'), () => otraVez(onAbrir(cual, c.fecha)), true));
+          pregunta.appendChild(this.button(t('adv.no'), () => { pregunta.innerHTML = ''; }));
+        };
+        fila.appendChild(btn);
+      });
+      b.appendChild(fila);
+      b.appendChild(this.el('p', 'adv-final', t(final)));
+      return b;
+    };
+    const pregunta = this.el('div', 'adv-pregunta');
+    s.append(bloque('grande', 'adv.grande', 'adv.grandeFinal'), bloque('chico', 'adv.chico', 'adv.chicoFinal'), pregunta, nota);
+    s.appendChild(this.el('p', 'small adv-ayuda', t('adv.ayuda', { n: precio.toLocaleString(getLang() === 'en' ? 'en-US' : 'de-DE') })));
+    s.appendChild(this.button(t('adv.cerrar'), onClose));
+    this.root.appendChild(s);
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyE') onClose(); };
+  }
+
   toast(text, ms = 3500) {
     const n = this.el('div', 'dialog toast', text);
     n.style.pointerEvents = 'none';

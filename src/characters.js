@@ -55,6 +55,12 @@ export const CHARACTERS = [
     pequena: true,   // chica, más pequeña que los demás: tiene 7 u 8 años; enérgica, adoptada por humanos (Elora)
     stats: { velocidad: 80, cordura: 41, sigilo: 30, resistencia: 70 }, corazones: 3, ficha: 'assets/sprites/fichas/hoppy.webp',
     fichaCuadro: { left: 65.5, top: 26, right: 2.5, bottom: 4 } },
+  // El reno (Elora): el personaje secreto de Navidad. Se gana abriendo los 5 días del calendario de
+  // Adviento grande (src/adviento.js) o se juega gratis en el modo Navidad (código). De momento es un reno de
+  // prueba que dibuja Clad [PROVISIONAL]: sin habilidad, sin ficha y con los números normales hasta que
+  // Elora dibuje su ficha y decida su nombre, sus números y su habilidad.
+  { id: 'reno', name: 'Reno', species: { es: 'Reno', en: 'Reindeer' }, color: '#a8703f', dark: '#74471f', shape: 'reindeer', price: null, secreto: true, navidad: true, ability: null,
+    stats: { velocidad: 50, cordura: 50, sigilo: 50, resistencia: 50 }, corazones: 3 },
 ];
 
 // La Tarda de verdad (la de la tienda del lobby y la que habla en las grabaciones) es gris, como la
@@ -1435,6 +1441,86 @@ function drawDraila(ctx, pal, facing, walk, opts) {
   }
 }
 
+// El reno de prueba (Clad, hasta que Elora dibuje su ficha) [PROVISIONAL]: marrón con la tripa y el hocico
+// clarito, cuernos de ramas, orejas, una bufanda roja con rayas verdes, colita blanca y pezuñas oscuras.
+// De Bloodie le falta un trozo de cuerno.
+function drawReno(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
+  const skin = pal.color, skinDark = pal.dark;
+  const claro = B ? '#c9a0a0' : '#e8cfa6', cuerno = B ? '#3a0408' : '#d9b98a', cuernoOsc = B ? '#2a0306' : '#a88a5c';
+  const bufanda = B ? '#5e0810' : '#d42a36', raya = B ? '#3a0408' : '#2e9a4c';
+  const pezuna = B ? '#2a0306' : '#3a2618', line = B ? '#2a0306' : '#2a1a10';
+  const hx = facing === 'left' ? -1.5 : facing === 'right' ? 1.5 : 0, hy = -15;
+  const step = Math.sin(walk) * 1.5;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // colita blanca (detrás, salvo de espaldas)
+  const cola = () => { ctx.fillStyle = B ? '#c9a0a0' : '#fff7ee'; dot(ctx, 0, 4, 2.4); };
+  if (!back) { ctx.fillStyle = B ? '#c9a0a0' : '#fff7ee'; dot(ctx, -7, 4, 2); }
+  // patas con pezuñas
+  for (const side of [-1, 1]) {
+    const lift = side * step > 0 ? -side * step * 0.6 : 0;
+    girado(ctx, piernaPose(opts, side), side * 3.6, 3, () => {
+      ctx.fillStyle = skin; ctx.fillRect(side * 3.6 - 1.8, 3, 3.6, 7 + lift);
+      ctx.fillStyle = pezuna; rrect(ctx, side * 3.6 - 2.3, 9 + lift, 4.6, 2.6, 1); ctx.fill();
+    });
+  }
+  // brazos (de Bloodie que persigue, arriba), con las manos-pezuña
+  for (const side of [-1, 1]) {
+    const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.4);
+    const h = girar(chasing ? [side * 13 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 2], [side * 5.5, -6], brazoPose(opts, side));
+    ctx.strokeStyle = skin; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(side * 5.5, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
+    ctx.fillStyle = pezuna; dot(ctx, h[0], h[1], 1.6);
+  }
+  // el cuerpo, con la tripa clarita
+  ctx.fillStyle = skin; rrect(ctx, -6.5, -9, 13, 14, 4); ctx.fill();
+  if (!back) { ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(0, -1, 4, 5, 0, 0, Math.PI * 2); ctx.fill(); }
+  ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = skinDark; ctx.fillRect(3.5, -8, 2.5, 12); ctx.restore();
+  if (back) cola();
+  // los cuernos: un tronco y dos ramitas a cada lado (de Bloodie, a uno le falta un trozo)
+  for (const side of [-1, 1]) {
+    const x0 = hx + side * 3.5, y0 = hy - 6.5;
+    const roto = B && side === 1;
+    ctx.strokeStyle = cuerno; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x0 + side * 3, y0 - 6);
+    if (!roto) { ctx.lineTo(x0 + side * 4.5, y0 - 11); }
+    ctx.moveTo(x0 + side * 1.6, y0 - 3); ctx.lineTo(x0 + side * 5.5, y0 - 5);
+    if (!roto) { ctx.moveTo(x0 + side * 3.3, y0 - 7); ctx.lineTo(x0 + side * 7, y0 - 9); ctx.moveTo(x0 + side * 3.8, y0 - 8.5); ctx.lineTo(x0 + side * 2.4, y0 - 12); }
+    ctx.stroke();
+    ctx.strokeStyle = cuernoOsc; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + side * 3, y0 - 6); ctx.stroke();
+  }
+  // las orejas, de lado
+  for (const side of [-1, 1]) {
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(hx + side * 8.5, hy - 2.5, 3.6, 1.8, side * 0.5, 0, Math.PI * 2); ctx.fill();
+    if (!back) { ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(hx + side * 8.6, hy - 2.5, 2, 0.9, side * 0.5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // la cabeza
+  ctx.fillStyle = skin; dot(ctx, hx, hy, 8);
+  // la bufanda roja con rayas verdes, y la punta que cuelga
+  ctx.fillStyle = bufanda; rrect(ctx, -6.5, -10, 13, 3.4, 1.6); ctx.fill();
+  ctx.fillRect(back ? -4.5 : 2.5, -8, 2.6, 7);
+  if (!B) {
+    ctx.fillStyle = raya;
+    for (const x of [-4, -0.5, 3]) ctx.fillRect(x, -10, 1.1, 3.4);
+    ctx.fillRect(back ? -4.5 : 2.5, -4, 2.6, 1);
+  }
+  if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (back) return;
+  // el hocico clarito con la nariz marrón oscuro, los ojos y una sonrisita
+  const mx = hx + (facing === 'left' ? -1.5 : facing === 'right' ? 1.5 : 0);
+  ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(mx, hy + 3.5, 4.2, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = B ? '#2a0306' : '#4a2a18'; ctx.beginPath(); ctx.ellipse(mx, hy + 1.6, 1.8, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+  for (const side of [-1, 1]) {
+    const ex = hx + side * 3.3 + (mx - hx) * 0.5;
+    ctx.fillStyle = B ? (chasing ? '#ffe36b' : '#7a0b12') : '#1a1210'; dot(ctx, ex, hy - 1.8, 1.4);
+    if (!B) { ctx.fillStyle = '#fff'; dot(ctx, ex + 0.5, hy - 2.3, 0.45); }
+  }
+  ctx.strokeStyle = line; ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.moveTo(mx - 1.6, hy + 4.4); ctx.quadraticCurveTo(mx, hy + 5.8, mx + 1.6, hy + 4.4); ctx.stroke();
+}
+
 // El Drake Sangriento: el que escupe fuego en el pasillo de Drake (pasillo 50), dibujado por Elora
 // (assets/referencias/bloodies/drake-sangriento.webp). Un dragón rosa-rojo con alas de murciélago,
 // cola larga enroscada, orejas puntiagudas, ojos grandes con un cuadrado (uno rojo y uno azul), lágrimas de sangre,
@@ -1524,4 +1610,4 @@ function drawDrakeSangriento(ctx, pal, facing, walk, opts) {
   ctx.beginPath(); ctx.ellipse(0.5, -6 + gota, 0.9, 1.4 + gota * 0.4, 0, 0, Math.PI * 2); ctx.fill();
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, crocodile: drawDraila, drakeSangriento: drawDrakeSangriento };
+const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, crocodile: drawDraila, reindeer: drawReno, drakeSangriento: drawDrakeSangriento };
