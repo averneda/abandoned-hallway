@@ -22,8 +22,9 @@ function setTapeName(n, name) {
 function defaultTapeName(n) { const k = 'tape.' + (grabacionDeCinta(n) || n) + '.name'; const v = t(k); return v === k ? t('tapes.item', { n }) : v; }
 export function tapeName(n) { return savedTapeNames()[n] || defaultTapeName(n); }
 
-// La huella del código secreto del 3D (Elora): sin mayúsculas, sin acentos y sin signos.
-const CODIGO_3D = 'e94801bf';
+// La huella del código secreto del 3D (Elora; código nuevo de noviembre de 2026, el de antes se olvidó).
+// Mira las mayúsculas, como lo escribió Elora (solo la D de 3D en mayúscula).
+const CODIGO_3D = 'a2a89abb';
 // La huella del código del pasillo 50 (Elora): te lleva directo al pasillo de Drake (index.html?pasillo=50).
 // Este sí mira las mayúsculas (Elora): todo en minúscula menos la P de pasillo.
 const CODIGO_P50 = '39138241';
@@ -143,7 +144,7 @@ export class UI {
     const nota = this.el('p', 'small note-inline', '');
     const probar = () => {
       const huella = huellaCodigo(campo.value);
-      if (huella === CODIGO_3D) {
+      if (huellaCodigo(campo.value, true) === CODIGO_3D) {
         nota.textContent = t('code.ok');
         setTimeout(() => { location.href = '3d/'; }, 900);
       } else if (huellaCodigo(campo.value, true) === CODIGO_P50) {
