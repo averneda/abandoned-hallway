@@ -55,11 +55,11 @@ export const CHARACTERS = [
     pequena: true,   // chica, más pequeña que los demás: tiene 7 u 8 años; enérgica, adoptada por humanos (Elora)
     stats: { velocidad: 80, cordura: 41, sigilo: 30, resistencia: 70 }, corazones: 3, ficha: 'assets/sprites/fichas/hoppy.webp',
     fichaCuadro: { left: 65.5, top: 26, right: 2.5, bottom: 4 } },
-  // El reno (Elora): el personaje secreto de Navidad. Se gana abriendo los 5 días del calendario de
+  // Chop, el reno (Elora; el nombre lo eligió ella): el personaje secreto de Navidad. Su id sigue siendo 'reno'. Se gana abriendo los 5 días del calendario de
   // Adviento grande (src/adviento.js) o se juega gratis en el modo Navidad (código). De momento es un reno de
   // prueba que dibuja Clad [PROVISIONAL]: sin habilidad, sin ficha y con los números normales hasta que
-  // Elora dibuje su ficha y decida su nombre, sus números y su habilidad.
-  { id: 'reno', name: 'Reno', species: { es: 'Reno', en: 'Reindeer' }, color: '#a8703f', dark: '#74471f', shape: 'reindeer', price: null, secreto: true, navidad: true, ability: null,
+  // Elora dibuje su ficha y decida sus números y su habilidad.
+  { id: 'reno', name: 'Chop', species: { es: 'Reno', en: 'Reindeer' }, color: '#a8703f', dark: '#74471f', shape: 'reindeer', price: null, secreto: true, navidad: true, ability: null,
     stats: { velocidad: 50, cordura: 50, sigilo: 50, resistencia: 50 }, corazones: 3 },
 ];
 
