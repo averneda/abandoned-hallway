@@ -130,6 +130,10 @@ export const MAP_RANDOM = {
   buttonExitMinTiles: 6,  // ni justo al lado de la salida
 };
 
+// El día que salen las skins nuevas (Elora, el 7-11-2026: "faltan 3 días"): el cartel del lobby cuenta los días que faltan
+export const SKINS_DIA = '2026-11-10';
+// Cuando las skins nuevas ya estén en el juego, poner true: el cartel desaparece (Elora)
+export const SKINS_LISTAS = false;
 export const BONUS_EVERY = 5;   // cada cuántos pasillos toca el Bonus
 // El pasillo de Drake (Elora): en el pasillo 50 hay un mapa inmenso (dos hojas de Elora) sin Bloodies.
 // Cada 30 s el Drake Sangriento sube volando y escupe fuego: tienes 10 s para meterte en un hueco con

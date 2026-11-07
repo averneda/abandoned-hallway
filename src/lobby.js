@@ -2,7 +2,7 @@
 // (y la tele en pequeñito al lado; antes era una estantería)
 // y una puerta para entrar a los pasillos.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, SKINS_LISTAS } from './config.js';
 import { T, loadMap, setTile } from './level.js';
 import { LOBBY } from './maps.js';
 import { Game, dist } from './game.js';
@@ -120,12 +120,17 @@ export class Lobby extends Game {
       for (const [px, py] of [[-w / 2 + 5, 5], [w / 2 - 5, 5], [-w / 2 + 5, h - 5], [w / 2 - 5, h - 5]]) { ctx.beginPath(); ctx.arc(cx + px, top + py, 1.5, 0, Math.PI * 2); ctx.fill(); }
       ctx.fillStyle = '#fff6dc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 11px "Segoe UI", Arial';
-      const [l1, l2] = t('lobby.skins').split('\n');
+      // cuántos días faltan para las skins nuevas (cuenta sola, según la fecha de hoy)
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const [a, m, d] = SKINS_DIA.split('-').map(Number);
+      const faltan = Math.round((new Date(a, m - 1, d) - hoy) / 86400000);
+      const l1 = t('lobby.skins');
+      const l2 = faltan > 1 ? t('lobby.skinsDias', { n: faltan }) : faltan === 1 ? t('lobby.skinsDia') : t('lobby.skinsYa');
       ctx.fillText(l1, cx, top + h * 0.3); ctx.fillText(l2 || '', cx, top + h * 0.72);
       ctx.textBaseline = 'alphabetic';
     };
 
-    cartel();
+    if (!SKINS_LISTAS) cartel();   // cuando las skins estén puestas, el cartel se va (Elora)
 
     // actores ordenados por altura
     const actors = [
