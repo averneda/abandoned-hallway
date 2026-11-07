@@ -2,7 +2,7 @@
 // (y la tele en pequeñito al lado; antes era una estantería)
 // y una puerta para entrar a los pasillos.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, SKINS_LISTAS } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, SKINS_LISTAS, NAVIDAD } from './config.js';
 import { T, loadMap, setTile } from './level.js';
 import { LOBBY } from './maps.js';
 import { Game, dist } from './game.js';
@@ -10,6 +10,24 @@ import { drawCharacter, characterById, TARDA_GRIS } from './characters.js';
 import { t } from './i18n.js';
 import { sfx } from './sound.js';
 import { coinValue } from './coins.js';
+
+// ¿Es Navidad? (NAVIDAD en src/config.js; con index.html?navidad=1 sale siempre, para probarlo)
+export function esNavidad(hoy = new Date()) {
+  try { if (new URLSearchParams(location.search).get('navidad') === '1') return true; } catch (e) { /* nada */ }
+  const dia = (txt) => { const [a, m, d] = txt.split('-').map(Number); return new Date(a, m - 1, d); };
+  const h = new Date(hoy); h.setHours(0, 0, 0, 0);
+  return h >= dia(NAVIDAD.desde) && h <= dia(NAVIDAD.hasta);
+}
+
+// ¿Sale el cartel «¡La Navidad se acerca!»? Desde NAVIDAD.cartelDesde hasta el día antes del evento
+// (con index.html?cartelnavidad=1 sale siempre, para verlo)
+export function cartelNavidad(hoy = new Date()) {
+  try { if (new URLSearchParams(location.search).get('cartelnavidad') === '1') return true; } catch (e) { /* nada */ }
+  if (!NAVIDAD.cartelDesde) return false;
+  const dia = (txt) => { const [a, m, d] = txt.split('-').map(Number); return new Date(a, m - 1, d); };
+  const h = new Date(hoy); h.setHours(0, 0, 0, 0);
+  return h >= dia(NAVIDAD.cartelDesde) && h < dia(NAVIDAD.desde);
+}
 
 export class Lobby extends Game {
   // callbacks: { onPause(), onShop(), onTapes(), onStart(), onCoin(n), totalCoins(), totalTapes(),
@@ -26,6 +44,16 @@ export class Lobby extends Game {
     this.doors = m.D;
     // la estantería es sólida
     for (const v of this.shelf) setTile(this.level, v.tx, v.ty, T.WALL);
+    // en Navidad, el árbol (Elora): en la esquina de arriba a la derecha, al lado de la tienda de Tarda.
+    // Es grande (Elora: "es muy pequeño"): ocupa 4 casillas de ancho, de la 22 a la 25, y no se atraviesa
+    // (una fila más abajo que la pared, para que la estrella no tape los números de arriba)
+    this.arbol = esNavidad() ? { tx: 23.5, ty: 4 } : null;
+    if (this.arbol) {
+      // el suelo se pinta antes de bloquear sus casillas, para que debajo no salgan baldosas de pared
+      this.staticLayer = this.buildStaticLayer();
+      for (let tx = 22; tx <= 25; tx++) setTile(this.level, tx, 4, T.WALL);
+      for (let tx = 23; tx <= 24; tx++) setTile(this.level, tx, 3, T.WALL);
+    }
     this.enemies = [];
     this.near = null;
     this.player.facing = 'up';
@@ -130,13 +158,20 @@ export class Lobby extends Game {
       ctx.textBaseline = 'alphabetic';
     };
 
-    if (!SKINS_LISTAS) cartel();   // cuando las skins estén puestas, el cartel se va (Elora)
+    // el cartel de «¡La Navidad se acerca!» (Elora) va en el mismo sitio que el de las skins, que para
+    // entonces ya se habrá quitado (al probarlo con ?cartelnavidad=1, lo tapa)
+    if (cartelNavidad()) this.drawCartelNavidad(ctx, d0.tx * TILE - 12 - 70, d0.ty * TILE - 8);
+    else if (!SKINS_LISTAS) cartel();   // cuando las skins estén puestas, el cartel se va (Elora)
 
     // actores ordenados por altura
     const actors = [
       { y: ny + 12, draw: tienda },
       { y: p.y, draw: () => this.drawPlayer(ctx) },
     ];
+    if (this.arbol) {
+      const ax = this.arbol.tx * TILE + TILE / 2, ay = this.arbol.ty * TILE + TILE - 2;
+      actors.push({ y: ay - 8, draw: () => this.drawArbol(ctx, ax, ay) });
+    }
     actors.sort((a, b) => a.y - b.y);
     for (const a of actors) a.draw();
 
@@ -155,6 +190,101 @@ export class Lobby extends Game {
     ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     this.renderHUD(ctx);
+  }
+
+  // El cartel de «¡La Navidad se acerca!» (Elora): una tabla roja con el borde verde, nieve encima,
+  // acebo con bolitas rojas en las esquinas y lucecitas de colores; cuenta los días que faltan para el
+  // evento de Navidad (NAVIDAD.desde). (cx, top): el centro de arriba.
+  drawCartelNavidad(ctx, cx, top) {
+    const w = 140, h = 46, x0 = cx - w / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(x0 + 3, top + 4, w, h);   // sombra en la pared
+    ctx.fillStyle = '#1f7a3a'; ctx.fillRect(x0 - 3, top - 3, w + 6, h + 6);     // el borde verde
+    ctx.fillStyle = '#b8232f'; ctx.fillRect(x0, top, w, h);                     // la tabla roja
+    ctx.fillStyle = '#9a1a25'; ctx.fillRect(x0, top + h - 4, w, 4);
+    // la nieve de arriba, con bultitos (cada uno, su trazo)
+    ctx.fillStyle = '#f4f8ff'; ctx.fillRect(x0 - 3, top - 5, w + 6, 4);
+    for (let i = 0; i <= 12; i++) { ctx.beginPath(); ctx.arc(x0 - 1 + i * (w + 2) / 12, top - 2, 2.6 + (i % 3) * 0.6, 0, Math.PI * 2); ctx.fill(); }
+    // las lucecitas de colores colgando por debajo, que se encienden y se apagan
+    ctx.strokeStyle = '#2b3a2b'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(x0 - 2, top + h + 3); ctx.quadraticCurveTo(cx, top + h + 9, x0 + w + 2, top + h + 3); ctx.stroke();
+    for (let i = 0; i < 9; i++) {
+      const k = i / 8, lx = x0 - 2 + k * (w + 4), ly = top + h + 3 + Math.sin(k * Math.PI) * 3.2 + 2;
+      const on = Math.sin(this.time * 3 + i * 1.9) > -0.3;
+      ctx.fillStyle = on ? ['#ffe36b', '#5ec8ff', '#ff6b8a', '#7dff8a'][i % 4] : 'rgba(255,255,255,0.25)';
+      ctx.beginPath(); ctx.arc(lx, ly, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+    // acebo en las dos esquinas de arriba: dos hojas y tres bolitas rojas
+    for (const side of [-1, 1]) {
+      const hx = cx + side * (w / 2 - 7), hy = top + 6;
+      ctx.fillStyle = '#2e9a4c';
+      ctx.beginPath(); ctx.ellipse(hx - 4, hy, 4.5, 2, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(hx + 4, hy, 4.5, 2, 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ff2e3e';
+      for (const [bx, by] of [[-1.2, -1], [1.2, -1], [0, 1]]) { ctx.beginPath(); ctx.arc(hx + bx, hy + by, 1.4, 0, Math.PI * 2); ctx.fill(); }
+    }
+    // el texto
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const [a, m, d] = NAVIDAD.desde.split('-').map(Number);
+    const faltan = Math.round((new Date(a, m - 1, d) - hoy) / 86400000);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff6dc'; ctx.font = 'bold 11.5px "Segoe UI", Arial';
+    ctx.fillText(t('lobby.navidad'), cx, top + h * 0.34);
+    ctx.fillStyle = '#ffe36b'; ctx.font = 'bold 11px "Segoe UI", Arial';
+    ctx.fillText(faltan > 1 ? t('lobby.navidadDias', { n: faltan }) : t('lobby.navidadDia'), cx, top + h * 0.72);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // El árbol de Navidad del lobby (Elora pidió el árbol; lo dibuja Clad): tres pisos verdes, la estrella
+  // amarilla arriba, bolas de colores y lucecitas que se encienden y apagan, en una maceta roja.
+  // (x, y): el centro de abajo.
+  drawArbol(ctx, x, y) {
+    const tt = this.time;
+    // grande, mucho más alto que los personajes (Elora)
+    ctx.save(); ctx.translate(x, y); ctx.scale(2.5, 2.5); ctx.translate(-x, -y);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x + 2, y, 24, 6, 0, 0, Math.PI * 2); ctx.fill();   // sombra
+    // la maceta y el tronco
+    ctx.fillStyle = '#6b4226'; ctx.fillRect(x - 4, y - 16, 8, 8);
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath(); ctx.moveTo(x - 11, y - 12); ctx.lineTo(x + 11, y - 12); ctx.lineTo(x + 8, y); ctx.lineTo(x - 8, y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e8c547'; ctx.fillRect(x - 11, y - 12, 22, 3);
+    // los tres pisos de ramas (de abajo arriba, cada uno más pequeño)
+    const pisos = [[y - 14, 26, 24], [y - 30, 21, 22], [y - 45, 15, 20]];
+    for (const [base, ancho, alto] of pisos) {
+      ctx.fillStyle = '#1f7a3a';
+      ctx.beginPath(); ctx.moveTo(x - ancho, base); ctx.lineTo(x, base - alto); ctx.lineTo(x + ancho, base); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#2e9a4c';   // el lado con luz
+      ctx.beginPath(); ctx.moveTo(x - ancho, base); ctx.lineTo(x, base - alto); ctx.lineTo(x - 2, base); ctx.closePath(); ctx.fill();
+    }
+    // la guirnalda dorada
+    ctx.strokeStyle = '#f2d24a'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(x - 18, y - 24); ctx.quadraticCurveTo(x, y - 18, x + 20, y - 27); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 13, y - 41); ctx.quadraticCurveTo(x + 2, y - 35, x + 14, y - 43); ctx.stroke();
+    // bolas de colores (cada una, su trazo)
+    const bolas = [[-14, -19, '#e23b4a'], [9, -22, '#3a8ee8'], [-3, -27, '#f2d24a'], [15, -17, '#b65fe0'],
+      [-8, -36, '#3a8ee8'], [8, -38, '#e23b4a'], [-1, -50, '#e23b4a']];
+    for (const [bx, by, c] of bolas) {
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + bx, y + by, 2.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(x + bx - 0.8, y + by - 0.8, 0.8, 0, Math.PI * 2); ctx.fill();
+    }
+    // lucecitas que se encienden y se apagan
+    const luces = [[-20, -16], [-6, -18], [4, -16], [20, -18], [-12, -30], [12, -31], [-6, -44], [6, -46], [0, -58]];
+    luces.forEach(([lx, ly], i) => {
+      const on = Math.sin(tt * 3 + i * 1.7) > -0.2;
+      ctx.fillStyle = on ? ['#fff3a0', '#ffb3c8', '#b3e6ff'][i % 3] : 'rgba(255,255,255,0.25)';
+      ctx.beginPath(); ctx.arc(x + lx, y + ly, on ? 1.5 : 1, 0, Math.PI * 2); ctx.fill();
+    });
+    // la estrella de arriba, que brilla
+    const r = 7 + Math.sin(tt * 2.5) * 0.6;
+    ctx.fillStyle = 'rgba(255, 230, 120, 0.25)'; ctx.beginPath(); ctx.arc(x, y - 66, r + 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffd83a';
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * 0.45 : r;
+      const px = x + Math.cos(a) * rr, py = y - 66 + Math.sin(a) * rr;
+      if (k) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
 
   // Caja de cartón abierta con las cintas asomando (cuantas más tengas, más asoman; como mucho 6).

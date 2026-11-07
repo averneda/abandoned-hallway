@@ -134,6 +134,12 @@ export const MAP_RANDOM = {
 export const SKINS_DIA = '2026-11-10';
 // Cuando las skins nuevas ya estén en el juego, poner true: el cartel desaparece (Elora)
 export const SKINS_LISTAS = false;
+// El evento de Navidad (Elora): de momento, un árbol de Navidad en el lobby. Sale el 21 de diciembre,
+// cuando empieza el invierno (Elora). Hasta cuándo se queda es [PROVISIONAL] (después de Reyes).
+// Para verlo antes de tiempo: index.html?navidad=1
+// cartelDesde: el día que sale el cartel «¡La Navidad se acerca!» con la cuenta atrás hasta 'desde' (Elora:
+// el día después de poner las skins de pijama para todos). null = todavía no. Para verlo: index.html?cartelnavidad=1
+export const NAVIDAD = { desde: '2026-12-21', hasta: '2027-01-07', cartelDesde: null };
 export const BONUS_EVERY = 5;   // cada cuántos pasillos toca el Bonus
 // El pasillo de Drake (Elora): en el pasillo 50 hay un mapa inmenso (dos hojas de Elora) sin Bloodies.
 // Cada 30 s el Drake Sangriento sube volando y escupe fuego: tienes 10 s para meterte en un hueco con
