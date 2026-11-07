@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO } from './characters.js';
 import { t, getLang } from './i18n.js';
@@ -95,11 +95,12 @@ export class Game {
     this.jumpTime = character.ability === 'carot' ? ABILITIES.carot.jumpTime : PLAYER.jumpTime;
     this.player = {
       x: L.spawn.x, y: L.spawn.y, r: PLAYER.radius, facing: 'up', walk: 0,
-      hearts: PLAYER.hearts, anxiety: ANXIETY.start, invuln: 0, jump: 0, jumping: false,
+      hearts: maxHearts(character), anxiety: ANXIETY.start, invuln: 0, jump: 0, jumping: false,
       kx: 0, ky: 0, moving: false, cooldown: 0,
       tongue: null,  // lengua de Gec: {dir, len, max, phase, target}
       capa: 0,       // segundos que le queda la capa Tun de Tarda (inmortal, pero más lento)
       fly: 0,        // segundos que le quedan a Drake volando (pasa por encima de trastos y nadie le coge)
+      supercarrera: 0, // segundos que le quedan a Hoppy corriendo a toda velocidad (sin cansarse)
       stamina: STAMINA.start,  // se gasta corriendo y se recupera parando
       agotado: false,          // se quedó a cero: hay que recuperar un poco antes de volver a correr
       sinCorrer: 0,            // segundos desde la última vez que corrió
@@ -149,11 +150,14 @@ export class Game {
     if (len > 0) { vx /= len; vy /= len; }
     // correr gasta estamina; si se acaba, se anda hasta recuperar un poco
     const quiereCorrer = input.isDown('run') && len > 0;
-    const corriendo = quiereCorrer && (p.agotado ? p.stamina >= STAMINA.minToRun : p.stamina > 0);
-    if (corriendo) {
+    const turbo = p.supercarrera > 0;   // Supercarrera de Hoppy: corre sola, sin gastar estamina
+    const corriendo = turbo ? len > 0 : quiereCorrer && (p.agotado ? p.stamina >= STAMINA.minToRun : p.stamina > 0);
+    if (turbo) {
+      p.agotado = false;
+    } else if (corriendo) {
       p.agotado = false;
       p.sinCorrer = 0;
-      p.stamina -= STAMINA.runCost * dt;
+      p.stamina -= STAMINA.runCost * dt * statMul(this.ch, 'resistencia');
       if (p.stamina <= 0) { p.stamina = 0; p.agotado = true; this.say(t('msg.tired'), 1.5); }
     } else {
       p.sinCorrer += dt;
@@ -161,6 +165,7 @@ export class Game {
     }
     let speed = (corriendo ? PLAYER.run : PLAYER.walk) * statMul(this.ch, 'velocidad');
     if (p.capa > 0) speed *= ABILITIES.tarda.slow;   // con la capa Tun se va más despacio
+    if (turbo) speed = PLAYER.run * ABILITIES.hoppy.speed * statMul(this.ch, 'velocidad');   // Supercarrera de Hoppy
     if (this.flood > 0) speed *= ABILITIES.jely.playerFast;   // Jely nada más rápido en el agua
     p.moving = len > 0;
     p.corriendo = corriendo;   // (Gec va en monopatín cuando corre)
@@ -186,6 +191,13 @@ export class Game {
       sfx.capa();
     }
     if (this.ch.ability === 'katy' && input.wasPressed('ability') && p.cooldown <= 0) this.paint();
+    if (this.ch.ability === 'hoppy' && input.wasPressed('ability') && p.cooldown <= 0 && p.supercarrera <= 0) {
+      p.supercarrera = ABILITIES.hoppy.time;
+      p.cooldown = ABILITIES.hoppy.cooldown;
+      this.say(t('msg.supercarrera'), 2);
+      sfx.supercarrera();
+    }
+    if (p.supercarrera > 0) p.supercarrera -= dt;
     if (this.ch.ability === 'drake' && input.wasPressed('ability') && p.cooldown <= 0 && p.fly <= 0) {
       p.fly = ABILITIES.drake.time;
       p.cooldown = ABILITIES.drake.cooldown;
@@ -343,7 +355,7 @@ export class Game {
       it.taken = true;
       if (it.type === 'tape') { this.tapes++; p.anxiety += ANXIETY.tape; this.say(t('msg.tape'), 1.5); sfx.tape(); this.cb.onTape(); }
       else if (it.type === 'food') { p.anxiety += ANXIETY.food; this.say(t('msg.food'), 1.5); sfx.food(); }
-      else if (it.type === 'heart') { p.hearts = Math.min(PLAYER.hearts, p.hearts + 1); this.say(t('msg.heart'), 1.5); sfx.heart(); }
+      else if (it.type === 'heart') { p.hearts = Math.min(maxHearts(this.ch), p.hearts + 1); this.say(t('msg.heart'), 1.5); sfx.heart(); }
       else if (it.type === 'coin') { const v = coinValue(it.kind); this.coins += v; this.cb.onCoin(v); sfx.coin(); }
       else if (it.type === 'stamina') {
         p.stamina = Math.min(STAMINA.max, p.stamina + STAMINA.ball);
@@ -660,6 +672,8 @@ export class Game {
       p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null, skate: !!p.corriendo, lengua: !!p.tongue });
     // sin estamina: gotas de sudor de cansancio (Elora)
     if (p.agotado) this.drawSweat(ctx, p.x, p.y - jumpH);
+    // Supercarrera de Hoppy: rayas de velocidad detrás
+    if (p.supercarrera > 0 && p.moving) this.drawSpeedLines(ctx, p, jumpH);
     // la onda del mordisco de Draila
     if (this.wave) {
       const w = this.wave;
@@ -678,6 +692,21 @@ export class Game {
       }
       ctx.restore();
     }
+  }
+
+  // Rayas de velocidad detrás del jugador (Supercarrera de Hoppy): salen hacia atrás y se borran.
+  drawSpeedLines(ctx, p, jumpH) {
+    const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[p.facing] || [0, 1];
+    const px = -d[1], py = d[0];   // de lado
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineCap = 'round'; ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i++) {
+      const off = (i - 1.5) * 6, fase = (this.time * 6 + i * 0.37) % 1;
+      const x0 = p.x - d[0] * (14 + fase * 10) + px * off, y0 = p.y - 8 - jumpH - d[1] * (14 + fase * 10) + py * off;
+      ctx.globalAlpha = 1 - fase;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 - d[0] * 12, y0 - d[1] * 12); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // Tres gotas de sudor que salen de la cabeza y caen, una detrás de otra.
@@ -909,7 +938,7 @@ export class Game {
     ctx.save();
     ctx.textBaseline = 'top';
     // corazones
-    for (let i = 0; i < PLAYER.hearts; i++) {
+    for (let i = 0; i < maxHearts(this.ch); i++) {
       ctx.fillStyle = i < p.hearts ? '#ff3b47' : 'rgba(255,255,255,0.18)';
       this.heart(ctx, 26 + i * 30, 26, 11);
     }
@@ -968,6 +997,11 @@ export class Game {
     } else if (this.ch.ability === 'drake') {
       const name = t('ability.drake.name');
       if (p.fly > 0) { ctx.fillStyle = '#ffb070'; ctx.fillText(`${name}: ${Math.ceil(p.fly)}s`, x, y); }
+      else if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }
+      else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
+    } else if (this.ch.ability === 'hoppy') {
+      const name = t('ability.hoppy.name');
+      if (p.supercarrera > 0) { ctx.fillStyle = '#ffd36b'; ctx.fillText(`${name}: ${Math.ceil(p.supercarrera)}s`, x, y); }
       else if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }
       else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
     } else if (this.ch.ability === 'jely') {

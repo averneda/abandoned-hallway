@@ -92,16 +92,18 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
   color: #33302e; font-family: "Comic Sans MS", "Chalkboard SE", "Segoe Print", "Segoe UI", sans-serif; }
 .ficha-especie { font-size: 16px; color: #6b6560; }
 /* cada parámetro: el nombre y el número arriba, la barra entera debajo */
-.ficha-stat { display: grid; grid-template-columns: 1fr auto; align-items: end; row-gap: 3px; font-size: 15px; font-weight: 700; }
+.ficha-stat { display: grid; grid-template-columns: 1fr auto; align-items: end; row-gap: 2px; font-size: 14px; font-weight: 700; }
 .ficha-stat > .ficha-nombre { grid-row: 1; grid-column: 1; }
 .ficha-stat > .ficha-num { grid-row: 1; grid-column: 2; }
-.ficha-barra { grid-row: 2; grid-column: 1 / -1; height: 12px; border: 2px solid #4a4542; border-radius: 6px; background: rgba(255,255,255,0.55); overflow: hidden; }
+.ficha-barra { grid-row: 2; grid-column: 1 / -1; height: 10px; border: 2px solid #4a4542; border-radius: 6px; background: rgba(255,255,255,0.55); overflow: hidden; }
 .ficha-relleno { height: 100%; }
 .ficha-barra.velocidad .ficha-relleno { background: #4f8fe0; }
 .ficha-barra.cordura .ficha-relleno { background: #4caa5c; }
 .ficha-barra.sigilo .ficha-relleno { background: #9a6ad0; }
-.ficha-num { text-align: right; font-size: 15px; }
-.ficha-habilidad { font-size: 14px; line-height: 1.3; }
+.ficha-barra.resistencia .ficha-relleno { background: #e08a2c; }
+.ficha-corazones { color: #e0344c; letter-spacing: 1px; white-space: nowrap; }
+.ficha-num { text-align: right; font-size: 14px; }
+.ficha-habilidad { font-size: 13px; line-height: 1.25; }
 button:disabled { opacity: 0.75; cursor: default; }
 
 .screen.pad { gap: 12px; }

@@ -1,3 +1,4 @@
+import { maxHearts } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
@@ -199,6 +200,7 @@ export class UI {
 
     const activate = (ch) => {
       if (unlocked.has(ch.id)) { onChoose(ch); return; }
+      if (ch.price == null) { note.textContent = t('shop.specialNote'); return; }   // Drake: no se compra con monedas
       if (coins >= ch.price) { onBuy(ch); }
       else { note.textContent = t('select.notEnough', { n: ch.price - coins }); note.classList.add('shake'); setTimeout(() => note.classList.remove('shake'), 400); }
     };
@@ -230,6 +232,7 @@ export class UI {
       let label;
       if (ch.id === current.id) label = t('shop.current');
       else if (!locked) label = t('select.choose');
+      else if (ch.price == null) label = '🔒 ' + t('shop.special');
       else label = '🔒 ' + t('shop.buy', { n: ch.price });
       const main = this.button(label, () => activate(ch), true);
       if (ch.id === current.id) main.disabled = true;
@@ -261,8 +264,12 @@ export class UI {
     const side = this.el('div', 'ficha-datos');
     // el cuadro que dejó Elora en su ficha (en % de la ficha); si no hay, el de style.css
     if (ch.fichaCuadro) for (const k of ['left', 'top', 'right', 'bottom']) side.style[k] = ch.fichaCuadro[k] + '%';
-    side.appendChild(this.el('div', 'ficha-especie', ch.species[getLang()] || ch.species.es));
-    for (const [stat, key] of [['velocidad', 'stat.speed'], ['cordura', 'stat.sanity'], ['sigilo', 'stat.stealth']]) {
+    // la especie y los corazones que tiene (Elora)
+    const esp = this.el('div', 'ficha-especie', ch.species[getLang()] || ch.species.es);
+    esp.appendChild(this.el('span', 'ficha-corazones', ' ' + '❤'.repeat(maxHearts(ch))));
+    esp.title = t('stat.hearts', { n: maxHearts(ch) });
+    side.appendChild(esp);
+    for (const [stat, key] of [['velocidad', 'stat.speed'], ['cordura', 'stat.sanity'], ['sigilo', 'stat.stealth'], ['resistencia', 'stat.endurance']]) {
       const v = ch.stats ? ch.stats[stat] : 50;
       const row = this.el('div', 'ficha-stat');
       const bar = this.el('div', 'ficha-barra ' + stat);

@@ -77,6 +77,9 @@ export const ABILITIES = {
   // Jely: inunda la sala 10 s. Con el agua los Bloodies van un 30% más lentos y ella un 20% más rápida.
   // Se puede volver a usar a los 20 s (Elora).
   jely: { time: 10, cooldown: 20, enemySlow: 0.7, playerFast: 1.2 },
+  // Hoppy: Supercarrera (Elora). Corre el doble de rápido que corriendo normal y no se cansa.
+  // Dura 5 s y se puede volver a usar a los 15 s (Elora).
+  hoppy: { time: 5, cooldown: 15, speed: 2 },
 };
 
 export const COINS = {
@@ -97,11 +100,17 @@ export const COINS = {
 //   Velocidad: lo rápido que anda y corre (0 → la mitad, 100 → 1,5 veces).
 //   Cordura:   lo que se estresa (más cordura, menos sube la ansiedad: 0 → 1,5 veces, 100 → la mitad).
 //   Sigilo:    desde cuántas casillas le ven los Bloodies (0 → 1,5 veces más lejos, 100 → la mitad).
+//   Resistencia: lo que aguanta corriendo [PROVISIONAL, Elora decide qué hace]: cuánta estamina gasta
+//              al correr (0 → 1,5 veces más, 100 → la mitad).
 export const STAT_EFFECTS = {
   velocidad: (v) => 0.5 + v / 100,
   cordura: (v) => 1.5 - v / 100,
   sigilo: (v) => 1.5 - v / 100,
+  resistencia: (v) => 1.5 - v / 100,
 };
+
+// Corazones con los que empieza cada personaje (Elora los elige: campo corazones; si no tiene, PLAYER.hearts).
+export function maxHearts(ch) { return ch && typeof ch.corazones === 'number' ? ch.corazones : PLAYER.hearts; }
 
 // Multiplicador de un parámetro para un personaje (si no tiene ese parámetro, 50 = normal).
 export function statMul(ch, stat) {

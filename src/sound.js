@@ -53,6 +53,8 @@ export const sfx = {
   bite() { tone({ type: 'sawtooth', from: 180, to: 60, time: 0.18, gain: 0.16 }); tone({ type: 'square', from: 900, to: 200, time: 0.3, gain: 0.08, delay: 0.05 }); },
   // Drake despega: un "fuush" que sube y un aleteo
   fly() { tone({ type: 'sawtooth', from: 150, to: 520, time: 0.35, gain: 0.1 }); tone({ type: 'triangle', from: 300, to: 260, time: 0.08, gain: 0.1, delay: 0.3 }); tone({ type: 'triangle', from: 300, to: 260, time: 0.08, gain: 0.1, delay: 0.45 }); },
+  // pasos rapidísimos que suben (Supercarrera de Hoppy)
+  supercarrera() { for (let i = 0; i < 5; i++) tone({ type: 'square', from: 300 + i * 90, to: 360 + i * 90, time: 0.05, gain: 0.07, delay: i * 0.06 }); tone({ type: 'sawtooth', from: 200, to: 900, time: 0.35, gain: 0.06, delay: 0.3 }); },
   capa() { tone({ type: 'sine', from: 300, to: 700, time: 0.45, gain: 0.12 }); tone({ type: 'triangle', from: 450, to: 900, time: 0.45, gain: 0.08, delay: 0.08 }); },
   paint() { tone({ type: 'square', from: 700, to: 1300, time: 0.16, gain: 0.1 }); tone({ type: 'triangle', from: 400, to: 260, time: 0.25, gain: 0.08, delay: 0.1 }); },
   tongue() { tone({ type: 'square', from: 300, to: 900, time: 0.12, gain: 0.08 }); },

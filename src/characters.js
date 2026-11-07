@@ -21,30 +21,38 @@ export const PINTURAS_FOSFORITO = [
   { id: 'lila', c: '#b56bff', claro: '#dcb8ff' },
 ];
 
-const S50 = { velocidad: 50, cordura: 50, sigilo: 50 };   // todos a 50 de momento (Elora los ajustará)
+// Los parámetros (stats, de 0 a 100; 50 = normal) y los corazones de cada personaje los eligió Elora
+// en su menú de números (noviembre de 2026).
 
 export const CHARACTERS = [
   { id: 'carot', name: 'Carot', species: { es: 'Coneja', en: 'Rabbit' }, color: '#f2b38e', dark: '#c47d5a', shape: 'carot', price: 0, ability: 'carot',
-    stats: { ...S50 }, ficha: 'assets/sprites/fichas/carot.webp',
+    stats: { velocidad: 70, cordura: 31, sigilo: 70, resistencia: 60 }, corazones: 3, ficha: 'assets/sprites/fichas/carot.webp',
     fichaCuadro: { left: 61.5, top: 26, right: 4, bottom: 5 } },
   { id: 'froggy', name: 'Froggy', species: { es: 'Rana', en: 'Frog' }, color: '#7cc36a', dark: '#3f7f3a', shape: 'frog', price: 0, ability: 'carot',   // Elora: el mismo salto grande que Carot
-    stats: { ...S50 }, ficha: 'assets/sprites/fichas/froggy.webp',
+    stats: { velocidad: 40, cordura: 80, sigilo: 40, resistencia: 80 }, corazones: 3, ficha: 'assets/sprites/fichas/froggy.webp',
     fichaCuadro: { left: 63.5, top: 29, right: 4.5, bottom: 5 } },
-  { id: 'oct', name: 'Oct', species: { es: 'Pulpo', en: 'Octopus' }, color: '#7fd0ec', dark: '#3d8db3', shape: 'octopus', price: 30, ability: 'oct',   // Oct es no binarie (Elora)
-    stats: { ...S50 }, ficha: 'assets/sprites/fichas/oct.webp',
+  { id: 'oct', name: 'Oct', species: { es: 'Pulpo', en: 'Octopus' }, color: '#7fd0ec', dark: '#3d8db3', shape: 'octopus', price: 150, ability: 'oct',   // Oct es no binarie (Elora)
+    stats: { velocidad: 53, cordura: 30, sigilo: 70, resistencia: 30 }, corazones: 3, ficha: 'assets/sprites/fichas/oct.webp',
     fichaCuadro: { left: 62, top: 23, right: 4, bottom: 5 } },
-  { id: 'tarda', name: 'Tarda', species: { es: 'Tardígrado', en: 'Tardigrade' }, color: '#a9d68b', dark: '#6f9f57', shape: 'tardigrade', price: 60, ability: 'tarda', stats: { ...S50 } },
+  { id: 'tarda', name: 'Tarda', species: { es: 'Tardígrado', en: 'Tardigrade' }, color: '#b07c52', dark: '#7a5232', shape: 'tardigrade', price: 50, ability: 'tarda',   // la que se compra es marrón; la de la tienda, amarilla (Elora)
+    stats: { velocidad: 84, cordura: 60, sigilo: 35, resistencia: 30 }, corazones: 3, ficha: 'assets/sprites/fichas/tarda.webp',
+    fichaCuadro: { left: 69.5, top: 25, right: 2.5, bottom: 4 } },
   { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#98cc84', dark: '#5e9a4c', shape: 'lizard', price: 80, ability: 'gek',   // hermano adoptivo de Draila (Elora)
-    stats: { ...S50 }, ficha: 'assets/sprites/fichas/gek.webp',
+    stats: { velocidad: 80, cordura: 60, sigilo: 20, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/gek.webp',
     fichaCuadro: { left: 65.5, top: 33, right: 3, bottom: 5 } },
-  { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: 100, ability: 'drake', stats: { ...S50 } },
-  { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 120, ability: 'draila', stats: { ...S50 } },
-  { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 140, ability: 'katy',
-    stats: { ...S50 }, ficha: 'assets/sprites/fichas/katy.webp',
+  { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: null, ability: 'drake', stats: { velocidad: 100, cordura: 100, sigilo: 100, resistencia: 100 }, corazones: 5 },
+  { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 100, ability: 'draila', stats: { velocidad: 30, cordura: 60, sigilo: 29, resistencia: 40 }, corazones: 3 },
+  { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 150, ability: 'katy',
+    pequena: true,   // más pequeña que los demás: tiene 7 u 8 años (Elora)
+    stats: { velocidad: 80, cordura: 35, sigilo: 60, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/katy.webp',
     fichaCuadro: { left: 62.5, top: 25, right: 3, bottom: 5 } },
   { id: 'jely', name: 'Jely', species: { es: 'Medusa', en: 'Jellyfish' }, color: '#3f9fe0', dark: '#2a78b8', shape: 'jellyfish', price: 160, ability: 'jely',   // no tiene boca: habla lengua de signos (Elora)
-    stats: { ...S50 }, ficha: 'assets/sprites/fichas/jely.webp',
+    stats: { velocidad: 40, cordura: 60, sigilo: 30, resistencia: 76 }, corazones: 3, ficha: 'assets/sprites/fichas/jely.webp',
     fichaCuadro: { left: 65.5, top: 27, right: 2.5, bottom: 4 } },
+  { id: 'hoppy', name: 'Hoppy', species: { es: 'Liebre', en: 'Hare' }, color: '#c49a7a', dark: '#93694c', shape: 'hare', price: 50, ability: 'hoppy',
+    pequena: true,   // chica, más pequeña que los demás: tiene 7 u 8 años; enérgica, adoptada por humanos (Elora)
+    stats: { velocidad: 80, cordura: 41, sigilo: 25, resistencia: 70 }, corazones: 3, ficha: 'assets/sprites/fichas/hoppy.webp',
+    fichaCuadro: { left: 65.5, top: 26, right: 2.5, bottom: 4 } },
 ];
 
 export function characterById(id) { return CHARACTERS.find((c) => c.id === id) || CHARACTERS[0]; }
@@ -78,6 +86,9 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
       ctx.beginPath(); ctx.ellipse(i * 7, 8 + drip, 2.5, 4 + drip * 0.5, 0, 0, Math.PI * 2); ctx.fill();
     }
   }
+
+  // Caty y Hoppy son más pequeñas que los demás (7 u 8 años, Elora): se dibujan un poco más bajitas
+  if (ch.pequena) { ctx.translate(0, 11); ctx.scale(0.86, 0.86); ctx.translate(0, -11); }
 
   if (OWN_DRAW[ch.shape]) {
     // personajes con dibujo propio, hecho a partir de la ficha de Elora
@@ -863,4 +874,164 @@ function drawJely(ctx, pal, facing, walk, opts) {
   }
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely };
+// Tarda (ficha de Elora): tardígrada marrón (la de la tienda del lobby es amarilla), con el cuerpo alto
+// como un rectángulo con rayas, un ojo guiñado y el otro abierto con la ceja, una sonrisa enorme con
+// dientes, y ocho patitas con garritas. En la ficha sujeta una cinta y lleva una moneda de oro.
+// De Bloodie le falta una pata.
+function drawTarda(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
+  const skin = pal.color, dark = pal.dark;
+  const line = B ? '#2a0306' : '#3a2a1e';
+  const claw = B ? '#2a0306' : '#5a5a5e';
+  const ex = facing === 'left' ? -2 : facing === 'right' ? 2 : 0;
+  const top = -27, bot = 8;   // el cuerpo, de arriba abajo
+
+  // una pata: un tubito con tres garritas en la punta
+  const pata = (x0, y0, x1, y1, w) => {
+    ctx.strokeStyle = skin; ctx.lineCap = 'round'; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.fillStyle = claw;
+    const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l;
+    for (const a of [-0.7, 0, 0.7]) {
+      const c = Math.cos(a), s = Math.sin(a);
+      const vx = ux * c - uy * s, vy = ux * s + uy * c;
+      dot(ctx, x1 + vx * (w * 0.55 + 0.6), y1 + vy * (w * 0.55 + 0.6), 0.7);
+    }
+  };
+  // las patas de los lados (tres por lado) se mueven un poco al andar; de Bloodie que persigue, arriba
+  const lados = [[-12, -3], [-6, 0], [0, 3]];
+  for (const side of [-1, 1]) {
+    lados.forEach(([y, fase], k) => {
+      if (B && side === 1 && k === 2) return;   // de Bloodie le falta una pata
+      const sw = Math.sin(walk * (chasing ? 2 : 1) + fase + (side > 0 ? 1.5 : 0)) * (chasing ? 2.5 : 1.2);
+      const yEnd = chasing ? y - 7 + sw : y + 2 + sw;
+      pata(side * 6.5, y, side * 12.5, yEnd, 3.2);
+    });
+  }
+  // las dos de abajo, andando
+  for (const side of [-1, 1]) {
+    const st = Math.sin(walk + (side > 0 ? Math.PI : 0)) * 1.6;
+    pata(side * 4, bot - 2, side * 5 + st, bot + 4, 3.6);
+  }
+  // el cuerpo: un rectángulo alto (un poco más ancho abajo) con las esquinas redondeadas
+  ctx.fillStyle = skin;
+  ctx.beginPath();
+  ctx.moveTo(-7, top + 2); ctx.quadraticCurveTo(-7, top, -5, top);
+  ctx.lineTo(5, top); ctx.quadraticCurveTo(7, top, 7, top + 2);
+  ctx.lineTo(8, bot - 1); ctx.quadraticCurveTo(8, bot + 1, 6, bot + 1);
+  ctx.lineTo(-6, bot + 1); ctx.quadraticCurveTo(-8, bot + 1, -8, bot - 1);
+  ctx.closePath(); ctx.fill();
+  // sombra de un lado
+  ctx.save(); ctx.globalAlpha *= 0.3; ctx.fillStyle = dark;
+  ctx.fillRect(4, top + 1, 3.5, bot - top);
+  ctx.restore();
+  // las rayas del cuerpo, un poco torcidas como en la ficha
+  ctx.strokeStyle = dark; ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  for (const y of [-11, -5, 1]) { ctx.moveTo(-7.6, y + 1); ctx.quadraticCurveTo(0, y - 1, 7.6, y); }
+  ctx.stroke();
+  if (B) bloodyMarks(ctx, ex, -20, facing);
+  if (!back) {
+    // la cara, arriba del todo: un ojo guiñado (el de la izquierda) y el otro abierto con su ceja
+    const fx = ex;
+    ctx.strokeStyle = line; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(fx - 5, -22.6); ctx.lineTo(fx - 2.6, -21.4); ctx.lineTo(fx - 5, -20.4); ctx.stroke();
+    ctx.fillStyle = B ? (chasing ? '#ffe36b' : '#7a0b12') : '#141414';
+    dot(ctx, fx + 3, -21.4, 1.5);
+    ctx.beginPath(); ctx.moveTo(fx + 1.2, -24.6); ctx.lineTo(fx + 4.6, -23.6); ctx.stroke();
+    // la sonrisa enorme, abierta, con dientes
+    ctx.fillStyle = B ? '#3a0408' : '#2a1a14';
+    ctx.beginPath(); ctx.moveTo(fx - 1, -18); ctx.quadraticCurveTo(fx + 2.5, -18.6, fx + 5, -19.4);
+    ctx.quadraticCurveTo(fx + 4.6, -14, fx + 1, -14.2); ctx.quadraticCurveTo(fx - 1.2, -15, fx - 1, -18); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = B ? '#f0d0c8' : '#fff';
+    ctx.fillRect(fx + 0.2, -18.2, 1.2, 1.2); ctx.fillRect(fx + 2, -18.6, 1.2, 1.3); ctx.fillRect(fx + 3.6, -18.9, 1, 1.2);
+    ctx.fillRect(fx + 1.2, -15.6, 1.2, 1); ctx.fillRect(fx + 2.8, -15.8, 1.1, 1);
+  }
+  if (!B && !back && opts.objetos !== false) {
+    // la cinta que lleva en una pata de arriba (la de la derecha), y una moneda de oro en la de en medio
+    ctx.save();
+    ctx.translate(13.5, -15); ctx.rotate(-0.25);
+    ctx.fillStyle = '#2b2b30'; rrect(ctx, -4.5, -2.2, 9, 4.4, 1); ctx.fill();
+    ctx.fillStyle = '#e8e8ec'; ctx.fillRect(-3.4, -1.1, 1.8, 1.8); ctx.fillRect(1.6, -1.1, 1.8, 1.8);
+    ctx.restore();
+    ctx.fillStyle = '#e2b93a'; dot(ctx, 13.6, -2.5, 2.1);
+    ctx.fillStyle = '#d42a2a'; dot(ctx, 13, -3.2, 0.6);
+  }
+}
+
+// Hoppy (ficha de Elora): liebre marrón clarito, chica y pequeñita (7 u 8 años, como Caty), con las
+// orejas largas amarillas por dentro (una tiesa y la otra doblada hacia un lado), los ojos cerrados
+// de contenta, una sonrisita, camiseta roja con un dibujo azul clarito (un corazón con brazos y
+// piernas, de "HAPPY HOPPY"), los brazos abiertos, las patas de liebre grandes y la colita.
+function drawHoppy(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
+  const skin = pal.color, skinDark = pal.dark;
+  const shirt = B ? '#5e0810' : '#d8344a', shirtDark = B ? '#3a0408' : '#a8202f';
+  const panel = B ? '#c9a0a0' : '#cfe9f6';
+  const earIn = B ? '#7a0b12' : '#f2d23c';
+  const line = B ? '#2a0306' : '#4a2e22';
+  const hx = 0, hy = back ? -15 : -14;
+  const step = Math.sin(walk) * 1.8;
+
+  // colita (detrás si mira de frente)
+  if (!back) { ctx.fillStyle = skinDark; dot(ctx, -9.5, 4, 2.6); }
+  // piernas con las patas de liebre grandes
+  ctx.fillStyle = skin;
+  for (const side of [-1, 1]) {
+    const lift = side * step > 0 ? -side * step * 0.7 : 0;
+    ctx.fillRect(side * 3.5 - 1.8, 3, 3.6, 7 + lift);
+    ctx.beginPath(); ctx.ellipse(side * 4.5, 10.5 + lift, 4.2, 2, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // brazos abiertos (de Bloodie que persigue, arriba)
+  ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  for (const side of [-1, 1]) {
+    const sw = Math.sin(walk * (chasing ? 2 : 0.8) + side) * (chasing ? 4 : 1.5);
+    ctx.beginPath(); ctx.moveTo(side * 5.5, -4);
+    if (B && chasing) ctx.lineTo(side * 13 + sw, -17 + Math.abs(sw));
+    else ctx.lineTo(side * 11 + sw * 0.4, -1 + sw * 0.3);
+    ctx.stroke();
+    if (!(B && chasing)) { ctx.fillStyle = skin; dot(ctx, side * 11.5 + sw * 0.4, -1 + sw * 0.3, 2); }
+  }
+  // camiseta roja
+  ctx.fillStyle = shirt;
+  rrect(ctx, -6.5, -8, 13, 12.5, 2.5); ctx.fill();
+  for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 4.5 : -8.5, -8, 4, 4);
+  ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = shirtDark; ctx.fillRect(3.5, -7, 3, 11); ctx.restore();
+  if (!back) {
+    // el dibujo azul clarito con el corazón con brazos y piernas
+    ctx.fillStyle = panel; ctx.fillRect(-4, -6, 8, 9);
+    if (!B) {
+      ctx.fillStyle = '#ef8fb0';
+      ctx.beginPath(); ctx.moveTo(0, 0.2); ctx.lineTo(-2.4, -2.4); ctx.quadraticCurveTo(-2.6, -4.6, -0.8, -4.2);
+      ctx.lineTo(0, -3.4); ctx.lineTo(0.8, -4.2); ctx.quadraticCurveTo(2.6, -4.6, 2.4, -2.4); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#7a5a6a'; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(-1.6, -2.6); ctx.lineTo(-3.2, -4); ctx.moveTo(1.6, -2.6); ctx.lineTo(3.2, -4);
+      ctx.moveTo(-0.8, -0.6); ctx.lineTo(-1.4, 1.6); ctx.moveTo(0.8, -0.6); ctx.lineTo(1.4, 1.6); ctx.stroke();
+      ctx.fillStyle = '#4ea84a'; ctx.fillRect(1, 3, 4, 1.4);   // el trocito verde de abajo
+    }
+  }
+  // orejas largas: la de la izquierda tiesa y la de la derecha doblada hacia un lado
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.ellipse(hx - 3.5, hy - 13, 2.8, 8.5, -0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx + 8.5, hy - 7, 2.7, 7, 1.0, 0, Math.PI * 2); ctx.fill();
+  if (!back) {
+    ctx.fillStyle = earIn;
+    ctx.beginPath(); ctx.ellipse(hx - 3.4, hy - 13.5, 1.3, 6, -0.15, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hx + 8.8, hy - 7.2, 1.2, 4.8, 1.0, 0, Math.PI * 2); ctx.fill();
+  }
+  // cabeza
+  ctx.fillStyle = skin; dot(ctx, hx, hy, 9);
+  if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (back) return;
+  // ojos cerrados de contenta (como dos arquitos), naricita y sonrisita
+  ctx.strokeStyle = B && chasing ? '#ffe36b' : line; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+  for (const side of [-1, 1]) {
+    ctx.beginPath(); ctx.arc(hx + side * 3.6, hy + 0.5, 2, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+  }
+  ctx.strokeStyle = line; ctx.lineWidth = 0.9;
+  ctx.fillStyle = B ? '#2a0306' : '#8a5a48'; dot(ctx, hx, hy + 3.3, 0.8);
+  ctx.beginPath(); ctx.moveTo(hx - 2, hy + 4.6); ctx.quadraticCurveTo(hx - 1, hy + 6, hx, hy + 4.8); ctx.quadraticCurveTo(hx + 1, hy + 6, hx + 2, hy + 4.6); ctx.stroke();
+  if (!B) { ctx.save(); ctx.globalAlpha *= 0.45; ctx.fillStyle = '#f08aa8'; dot(ctx, hx - 5.2, hy + 3, 1.4); dot(ctx, hx + 5.2, hy + 3, 1.4); ctx.restore(); }
+}
+
+const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy };
