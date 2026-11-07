@@ -6,7 +6,7 @@ import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES } from './config.js';
 import { T, loadMap, setTile } from './level.js';
 import { LOBBY } from './maps.js';
 import { Game, dist } from './game.js';
-import { drawCharacter, characterById } from './characters.js';
+import { drawCharacter, characterById, TARDA_GRIS } from './characters.js';
 import { t } from './i18n.js';
 import { sfx } from './sound.js';
 import { coinValue } from './coins.js';
@@ -20,7 +20,7 @@ export class Lobby extends Game {
     this.level.items.forEach((it, i) => { if (callbacks.practiceTaken.has(i)) it.taken = true; });
     const m = this.level.markers;
     // La Tarda de la tienda es amarilla, para distinguirla de la Tarda personaje (verde). Decidido por Elora.
-    this.tarda = { ...characterById('tarda'), color: '#a9a8ad', dark: '#74737a' };   // la de la tienda: gris, como la Tarda de verdad del dibujo (Elora)
+    this.tarda = { ...characterById('tarda'), ...TARDA_GRIS };   // la de la tienda: gris, como la Tarda de verdad del dibujo (Elora)
     this.npc = m.N[0];
     this.shelf = m.V;
     this.doors = m.D;
@@ -205,8 +205,12 @@ export class Lobby extends Game {
     ctx.textAlign = 'right'; ctx.font = `16px ${font}`;
     ctx.fillStyle = '#ffd95a';
     ctx.fillText(`${t('hud.coins')}: ${this.cb.totalCoins()}`, VIEW_W - 18, 16);
+    // las cintas de tu inventario y, debajo, las que hay en la caja (Elora)
     ctx.fillStyle = '#e8e2c8';
-    ctx.fillText(`${t('hud.tapes')}: ${this.cb.totalTapes()}`, VIEW_W - 18, 40);
+    const caja = this.cb.cintasEnCaja ? this.cb.cintasEnCaja() : 0;
+    ctx.fillText(`${t('hud.tapes')}: ${this.cb.totalTapes() - caja}`, VIEW_W - 18, 40);
+    ctx.fillStyle = '#b8b0a0';
+    ctx.fillText(`${t('hud.box')}: ${caja}`, VIEW_W - 18, 62);
     // avisos
     ctx.textAlign = 'center';
     let yy = VIEW_H - 40;

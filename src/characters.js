@@ -55,6 +55,10 @@ export const CHARACTERS = [
     fichaCuadro: { left: 65.5, top: 26, right: 2.5, bottom: 4 } },
 ];
 
+// La Tarda de verdad (la de la tienda del lobby y la que habla en las grabaciones) es gris, como la
+// dibujó Elora; la Tarda que se compra es marrón (Elora).
+export const TARDA_GRIS = { color: '#a9a8ad', dark: '#74737a' };
+
 export function characterById(id) { return CHARACTERS.find((c) => c.id === id) || CHARACTERS[0]; }
 
 const BLOODY = { color: '#a3141c', dark: '#5e0810' };

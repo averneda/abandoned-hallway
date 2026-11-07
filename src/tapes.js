@@ -12,7 +12,7 @@
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { audioContext } from './audio.js';
-import { characterById, drawCharacter } from './characters.js';
+import { characterById, drawCharacter, TARDA_GRIS } from './characters.js';
 
 const W = 960, H = 600;   // tamaño del lienzo
 
@@ -445,7 +445,9 @@ export class TapePlayer {
     x.arcTo(x0, y0 + h, x0, y0, 12); x.arcTo(x0, y0, x0 + w, y0, 12); x.closePath(); x.fill(); x.stroke();
     // su carita
     x.save(); x.translate(x0 + 50, y0 + h / 2 + 8); x.scale(1.7, 1.7);
-    drawCharacter(x, characterById(quien), 0, 0, 'down', performance.now() / 300, 0, false);
+    // Tarda, la de verdad: gris, como en la tienda (Elora)
+    const ch = quien === 'tarda' ? { ...characterById('tarda'), ...TARDA_GRIS } : characterById(quien);
+    drawCharacter(x, ch, 0, 0, 'down', performance.now() / 300, 0, false);
     x.restore();
     x.textAlign = 'left'; x.textBaseline = 'middle';
     x.fillStyle = '#6cc77f'; x.font = 'bold 17px "Segoe UI", system-ui, Arial';
