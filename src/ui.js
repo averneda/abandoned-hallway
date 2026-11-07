@@ -22,6 +22,15 @@ function setTapeName(n, name) {
 function defaultTapeName(n) { const k = 'tape.' + (grabacionDeCinta(n) || n) + '.name'; const v = t(k); return v === k ? t('tapes.item', { n }) : v; }
 export function tapeName(n) { return savedTapeNames()[n] || defaultTapeName(n); }
 
+// La huella del código secreto del 3D (Elora): sin mayúsculas, sin acentos y sin signos.
+const CODIGO_3D = 'e94801bf';
+function huellaCodigo(texto) {
+  const n = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  let h = 0x811c9dc5;
+  for (const c of n) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+  return h.toString(16);
+}
+
 export class UI {
   constructor(root, input) {
     this.root = root;
@@ -98,7 +107,7 @@ export class UI {
     s.appendChild(this.el('p', 'subtitle', t('menu.subtitle')));
     const row = this.el('div', 'row');
     const play = this.button(t('menu.play'), onPlay, true);
-    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad));
+    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(() => this.showMenu({ onPlay, onPad }))));
     s.appendChild(row);
     s.appendChild(this.langRow(() => this.showMenu({ onPlay, onPad })));
     this.root.appendChild(s);
@@ -107,6 +116,34 @@ export class UI {
     info.appendChild(this.el('div', '', t('menu.version')));
     this.root.appendChild(info);
     play.focus();
+  }
+
+  // ---------------- código secreto (Elora): con el código bueno se abre Abandoned Holeway en 3D (3d/).
+  // El código no está escrito aquí (para que siga siendo secreto): se compara su "huella".
+  showCode(onBack) {
+    this.clear();
+    const s = this.el('div', 'screen');
+    s.appendChild(this.el('h2', '', '🔑 ' + t('code.title')));
+    const campo = document.createElement('input');
+    campo.type = 'text'; campo.id = 'codigo-secreto'; campo.autocomplete = 'off'; campo.spellcheck = false;
+    campo.placeholder = t('code.placeholder'); campo.className = 'code-input';
+    const nota = this.el('p', 'small note-inline', '');
+    const probar = () => {
+      if (huellaCodigo(campo.value) === CODIGO_3D) {
+        nota.textContent = t('code.ok');
+        setTimeout(() => { location.href = '3d/'; }, 900);
+      } else {
+        nota.textContent = t('code.wrong');
+        nota.classList.remove('shake'); void nota.offsetWidth; nota.classList.add('shake');
+      }
+    };
+    campo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); probar(); } e.stopPropagation(); });
+    const row = this.el('div', 'row');
+    row.append(this.button(t('code.enter'), probar, true), this.button(t('code.back'), onBack));
+    s.append(campo, row, nota);
+    this.root.appendChild(s);
+    this.keyHandler = (e) => { if (e.code === 'Escape') onBack(); };
+    campo.focus();
   }
 
   // ---------------- configurar el mando USB

@@ -1,0 +1,108 @@
+:root {
+  --bg: #07060a;
+  --panel: rgba(16, 12, 20, 0.92);
+  --text: #f1ecf4;
+  --muted: #a99db3;
+  --accent: #d6202b;
+  --accent2: #6be07a;
+  --btn: #2a2233;
+  --btn-hover: #3b2f47;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, Arial, sans-serif; overflow: hidden; }
+#stage { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 960px; height: 600px; transform-origin: center; }
+#game { display: block; width: 100%; height: 100%; background: #000; image-rendering: auto; }
+#ui { position: absolute; inset: 0; pointer-events: none; }
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; pointer-events: auto; text-align: center; padding: 24px; }
+.screen.opaque { background: radial-gradient(ellipse at center, #1a0d12 0%, #07060a 70%); }
+.screen.dim { background: rgba(0, 0, 0, 0.6); }
+/* Menú principal: transparente para que se vea el cartel del canvas; los botones van abajo. */
+.screen.titlemenu { background: transparent; justify-content: flex-end; gap: 12px; padding-bottom: 26px; }
+.screen.titlemenu .subtitle { color: #cbbfd6; font-size: 16px; text-shadow: 1px 1px 0 #000; }
+.titleinfo { position: absolute; left: 14px; bottom: 12px; max-width: 340px; text-align: left; font-size: 11px; color: var(--muted); line-height: 1.35; pointer-events: none; text-shadow: 1px 1px 0 #000; }
+.screen h1 { font-size: 56px; margin: 0; letter-spacing: 3px; color: var(--accent); text-shadow: 0 0 18px rgba(214, 32, 43, 0.6), 2px 2px 0 #000; font-weight: 900; }
+.screen h2 { font-size: 34px; margin: 0; }
+.screen p { margin: 0; max-width: 700px; font-size: 18px; color: var(--muted); line-height: 1.4; }
+.screen .small { font-size: 14px; }
+button { font: inherit; font-size: 20px; padding: 12px 28px; border-radius: 12px; border: 2px solid #55445f; background: var(--btn); color: var(--text); cursor: pointer; min-width: 180px; }
+button:hover, button:focus { background: var(--btn-hover); outline: none; border-color: var(--accent2); }
+button.primary { background: var(--accent); border-color: #ff6b73; }
+button.primary:hover, button.primary:focus { background: #ee2a36; }
+.row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.lang { display: flex; gap: 8px; align-items: center; font-size: 15px; color: var(--muted); }
+.lang button { min-width: 0; padding: 6px 12px; font-size: 15px; }
+.lang button.on { border-color: var(--accent2); color: var(--accent2); }
+
+.cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.card { width: 170px; padding: 14px 10px; border-radius: 14px; background: var(--panel); border: 3px solid #3b2f47; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.card:hover, .card.focus { border-color: var(--accent2); transform: translateY(-3px); }
+.card.locked { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.6); }
+.card canvas { width: 96px; height: 96px; }
+.card .name { font-size: 22px; font-weight: 700; }
+.card .species { font-size: 14px; color: var(--muted); }
+.card .ability { font-size: 12px; color: var(--muted); }
+.card .lock { font-size: 12px; color: #ffb3b8; }
+
+.dialog { position: absolute; left: 40px; right: 40px; bottom: 30px; background: var(--panel); border: 3px solid #55445f; border-radius: 14px; padding: 16px 22px; pointer-events: auto; text-align: left; display: flex; flex-direction: column; gap: 6px; }
+.dialog .who { color: var(--accent2); font-weight: 700; font-size: 16px; }
+.dialog .text { font-size: 20px; line-height: 1.35; min-height: 54px; }
+.dialog .next { align-self: flex-end; color: var(--muted); font-size: 14px; animation: blink 1.2s infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+
+.corner { position: absolute; right: 16px; bottom: 12px; pointer-events: auto; }
+.corner button { min-width: 0; font-size: 15px; padding: 8px 16px; }
+.note { position: absolute; left: 16px; bottom: 14px; color: var(--muted); font-size: 13px; }
+
+.coins { color: #ffd95a !important; font-size: 20px !important; font-weight: 700; }
+.note-inline { min-height: 22px; color: #ffb3b8 !important; }
+.shake { animation: shake 0.4s; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+.card.current { border-color: #ffd95a; }
+.card .chosen { font-size: 12px; color: #ffd95a; font-weight: 700; }
+.tapes { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; width: min(700px, 90%); }
+.tape { background: var(--panel); border: 2px solid #55445f; border-radius: 10px; padding: 8px 14px; text-align: left; }
+.tape-name { font-weight: 700; color: #e8e2c8; }
+.tape-text { font-size: 14px; color: var(--muted); }
+
+.screen.shop { gap: 10px; padding: 14px 20px; }
+.screen.shop h2 { font-size: 24px; }
+.screen.shop .coins { font-size: 17px !important; }
+/* 2 filas de 4 para que quepan los 8 personajes y el botón de cerrar */
+.screen.shop .cards { gap: 10px; flex-wrap: wrap; max-width: 860px; }
+.screen.shop .card { width: 200px; padding: 6px 8px; gap: 2px; }
+.screen.shop .card canvas { width: 68px; height: 68px; }
+.screen.shop .card .name { font-size: 17px; }
+.screen.shop .card .species { font-size: 12px; }
+.screen.shop .card .ability { font-size: 11px; line-height: 1.25; }
+.screen.shop .card .lock, .screen.shop .card .chosen { font-size: 11px; }
+
+.screen.pad { gap: 12px; }
+.padrows { display: flex; flex-direction: column; gap: 8px; width: min(560px, 92%); }
+.padrow { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 2px solid #3b2f47; border-radius: 10px; padding: 8px 14px; }
+.padrow.waiting { border-color: var(--accent2); animation: blink 1s infinite; }
+.padrow.active { border-color: #ffd95a; background: rgba(255, 217, 90, 0.12); }
+.padname { flex: 1; text-align: left; font-size: 17px; }
+.padval { width: 110px; color: var(--muted); font-size: 15px; }
+.padrow button { min-width: 0; padding: 6px 16px; font-size: 15px; }
+
+.padfocus { outline: 3px solid var(--accent2); outline-offset: 2px; }
+.card.padfocus { outline-offset: 0; }
+
+/* ---- Controles táctiles (móvil y tablet). Los crea src/touch.js solo en pantallas táctiles. */
+#touch { position: fixed; inset: 0; pointer-events: none; z-index: 5; user-select: none; -webkit-user-select: none; }
+#touch.hidden { display: none; }
+#touch > * { pointer-events: auto; touch-action: none; }
+.tpad { position: absolute; left: 18px; bottom: 18px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.22); }
+.tstick { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: rgba(255, 255, 255, 0.28); pointer-events: none; }
+.tbtn { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(214, 32, 43, 0.55); border: 2px solid rgba(255, 255, 255, 0.35); color: #fff; font-weight: 800; font-size: 22px; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5); }
+.tbtn.on { background: rgba(238, 42, 54, 0.95); }
+.tbtn.ta { right: 20px; bottom: 84px; width: 68px; height: 68px; }
+.tbtn.tb { right: 100px; bottom: 20px; width: 68px; height: 68px; }
+.tbtn.tpill { border-radius: 16px; background: rgba(42, 34, 51, 0.7); font-size: 11px; letter-spacing: 1px; width: 74px; height: 30px; }
+.tbtn.tpill.on { background: rgba(85, 68, 95, 0.95); }
+.tbtn.tstart { right: 24px; bottom: 172px; }
+.tbtn.tselect { right: 108px; bottom: 108px; }
+.tbtn.tpause { right: 14px; top: 14px; width: 42px; height: 42px; font-size: 14px; background: rgba(42, 34, 51, 0.7); }
+#rotate-hint { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(7, 6, 10, 0.92); color: var(--text); font-size: 22px; text-align: center; padding: 24px; z-index: 20; pointer-events: none; }
+@media (orientation: portrait) and (pointer: coarse) { #rotate-hint { display: flex; } }

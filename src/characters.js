@@ -42,7 +42,8 @@ export const CHARACTERS = [
     fichaCuadro: { left: 65.5, top: 33, right: 3, bottom: 5 } },
   { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: 200, secreto: true, ability: 'drake',   // sale en la tienda al escapar del pasillo 50 (Elora)
     stats: { velocidad: 100, cordura: 100, sigilo: 100, resistencia: 100 }, corazones: 5 },
-  { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 100, ability: 'draila', stats: { velocidad: 30, cordura: 60, sigilo: 50, resistencia: 40 }, corazones: 3 },
+  { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 100, ability: 'draila', stats: { velocidad: 30, cordura: 60, sigilo: 50, resistencia: 40 }, corazones: 3,
+    ficha: 'assets/sprites/fichas/draila.webp', fichaCuadro: { left: 67.5, top: 22, right: 3, bottom: 5 } },
   { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 150, ability: 'katy',
     pequena: true,   // más pequeña que los demás: tiene 7 u 8 años (Elora)
     stats: { velocidad: 80, cordura: 35, sigilo: 60, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/katy.webp',
@@ -64,12 +65,35 @@ export function characterById(id) { return CHARACTERS.find((c) => c.id === id) |
 
 const BLOODY = { color: '#a3141c', dark: '#5e0810' };
 
+// Poses (el editor de andar y correr de Elora): opts.pose = { bi, bd, pi, pd, cuerpo, sube }, en grados
+// (sube en píxeles). bi/bd: brazo izquierdo/derecho (el de la izquierda de la pantalla mirando de frente);
+// pi/pd: las piernas; cuerpo: inclinar todo el cuerpo; sube: subir o bajar. 0 = la postura de siempre.
+// Positivo = girar en el sentido de las agujas del reloj.
+export const PARTES_POSE = ['bi', 'bd', 'pi', 'pd', 'cuerpo', 'sube'];
+const angPose = (opts, k) => (opts.pose && opts.pose[k] ? opts.pose[k] * Math.PI / 180 : 0);
+const brazoPose = (opts, side) => angPose(opts, side < 0 ? 'bi' : 'bd');
+const piernaPose = (opts, side) => angPose(opts, side < 0 ? 'pi' : 'pd');
+// gira el punto p alrededor de piv
+function girar(p, piv, a) {
+  if (!a) return p;
+  const c = Math.cos(a), sn = Math.sin(a), dx = p[0] - piv[0], dy = p[1] - piv[1];
+  return [piv[0] + dx * c - dy * sn, piv[1] + dx * sn + dy * c];
+}
+// dibuja algo girado alrededor de (px, py)
+function girado(ctx, a, px, py, fn) {
+  if (!a) { fn(); return; }
+  ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.translate(-px, -py); fn(); ctx.restore();
+}
+
 // Dibuja un personaje visto desde arriba/atrás (vista tres cuartos).
 // facing: 'up' | 'down' | 'left' | 'right'.  walk: fase de animación.  jumpH: altura del salto en px.
 // opts.bloody = versión Bloodie (rota y sangrando). opts.chasing = enfadado, brazos arriba. opts.frozen = parado por Oct.
 export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 0, blink = false, opts = {}) {
   const chasing = !!opts.chasing;
-  const bob = Math.sin(walk) * (chasing ? 2.5 : 1.5);
+  // con una pose, los brazos y las piernas los pone la pose (no se balancean solos)
+  const conPose = !!opts.pose;
+  const bob = conPose ? -(opts.pose.sube || 0) : Math.sin(walk) * (chasing ? 2.5 : 1.5);
+  if (conPose) walk = 0;
   const s = 1 - Math.min(jumpH, 40) / 110;
   const pal = opts.bloody ? BLOODY : ch;
   const body = pal.color, dark = pal.dark;
@@ -80,6 +104,8 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
 
   if (blink) ctx.globalAlpha = 0.45;
   ctx.translate(x, y - jumpH + bob);
+  // inclinar todo el cuerpo (pose), desde los pies
+  if (conPose && opts.pose.cuerpo) { ctx.translate(0, 11); ctx.rotate(opts.pose.cuerpo * Math.PI / 180); ctx.translate(0, -11); }
   if (chasing) ctx.translate(Math.sin(walk * 3) * 1.2, 0); // temblor de rabia
 
   // charco y goteo de los Bloodies
@@ -328,17 +354,22 @@ function drawCarot(ctx, pal, facing, walk, opts) {
   ctx.fillStyle = skin;
   for (const side of [-1, 1]) {
     const lift = side * step > 0 ? -side * step * 0.6 : 0;
-    ctx.fillRect(side * 3.5 - 1.6, 4, 3.2, 7 + lift);
-    ctx.beginPath(); ctx.ellipse(side * 4, 11 + lift, 3, 1.8, 0, 0, Math.PI * 2); ctx.fill();
+    girado(ctx, piernaPose(opts, side), side * 3.5, 4, () => {
+      ctx.fillRect(side * 3.5 - 1.6, 4, 3.2, 7 + lift);
+      ctx.beginPath(); ctx.ellipse(side * 4, 11 + lift, 3, 1.8, 0, 0, Math.PI * 2); ctx.fill();
+    });
   }
+  // con pose: los dos brazos sueltos, para poder moverlos (sin pose, uno va cruzado sobre la tripa)
+  const brazosSueltos = !!opts.pose && !B;
   // brazos: de Bloodie, colgando o arriba al perseguir
-  if (B) {
+  if (B || brazosSueltos) {
     ctx.strokeStyle = skinDark; ctx.lineWidth = 3; ctx.lineCap = 'round';
     for (const side of [-1, 1]) {
       const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 5 : 2);
-      ctx.beginPath(); ctx.moveTo(side * 6, -4);
-      if (chasing) ctx.lineTo(side * 14 + sw, -18 + Math.abs(sw)); else ctx.lineTo(side * 10 + sw * 0.5, 6);
-      ctx.stroke();
+      const mano = girar(chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : [side * 9 + sw * 0.5, 5], [side * 6, -4], brazoPose(opts, side));
+      if (brazosSueltos) { ctx.strokeStyle = skin; ctx.lineWidth = 2.6; }
+      ctx.beginPath(); ctx.moveTo(side * 6, -4); ctx.lineTo(mano[0], mano[1]); ctx.stroke();
+      if (brazosSueltos) { ctx.fillStyle = skin; dot(ctx, mano[0], mano[1], 1.6); }
     }
   }
   // vestido trapecio con la tira de corazones abajo
@@ -349,7 +380,7 @@ function drawCarot(ctx, pal, facing, walk, opts) {
   if (!B) { ctx.fillStyle = '#ffd6e6'; for (let x = -8; x <= 8; x += 4) ctx.fillRect(x - 0.6, 5, 1.2, 1.2); }
   if (!back) {
     // un brazo cruzado sobre la tripa (como en el dibujo) y el bolsito colgado
-    if (!B) {
+    if (!B && !brazosSueltos) {
       ctx.strokeStyle = skin; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(-6, -5); ctx.quadraticCurveTo(-7, 1, -1, 1); ctx.stroke();
     }
@@ -412,8 +443,10 @@ function drawFroggy(ctx, pal, facing, walk, opts) {
   ctx.strokeStyle = skin; ctx.lineWidth = 3.6; ctx.lineCap = 'round';
   for (const side of [-1, 1]) {
     const lift = side * step > 0 ? -side * step * 0.6 : 0;
-    ctx.beginPath(); ctx.moveTo(side * 4, 5); ctx.quadraticCurveTo(side * 9, 8, side * 6, 11 + lift); ctx.stroke();
-    ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(side * 7, 11.5 + lift, 3.4, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+    girado(ctx, piernaPose(opts, side), side * 4, 5, () => {
+      ctx.beginPath(); ctx.moveTo(side * 4, 5); ctx.quadraticCurveTo(side * 9, 8, side * 6, 11 + lift); ctx.stroke();
+      ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(side * 7, 11.5 + lift, 3.4, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+    });
   }
   // colita (el triangulito de abajo del dibujo)
   ctx.fillStyle = skinDark;
@@ -421,11 +454,13 @@ function drawFroggy(ctx, pal, facing, walk, opts) {
   // brazos largos y curvos con deditos (de Bloodie que persigue, arriba)
   for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.5);
-    const hand = chasing ? [side * 15 + sw, -17 + Math.abs(sw)] : [side * 14 + sw * 0.4, 3];
+    const aF = brazoPose(opts, side), hombroF = [side * 6, -5];
+    const hand = girar(chasing ? [side * 15 + sw, -17 + Math.abs(sw)] : [side * 14 + sw * 0.4, 3], hombroF, aF);
+    const ctlF = girar([side * 15, chasing ? -8 : -6], hombroF, aF);
     ctx.strokeStyle = skin; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(side * 6, -5); ctx.quadraticCurveTo(side * 15, chasing ? -8 : -6, hand[0], hand[1]); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(side * 6, -5); ctx.quadraticCurveTo(ctlF[0], ctlF[1], hand[0], hand[1]); ctx.stroke();
     ctx.fillStyle = skinDark;
-    for (let k = -1; k <= 1; k++) dot(ctx, hand[0] + k * 1.6, hand[1] + (chasing ? -1.6 : 1.8), 1.1);
+    girado(ctx, aF, hand[0], hand[1], () => { for (let k = -1; k <= 1; k++) dot(ctx, hand[0] + k * 1.6, hand[1] + (chasing ? -1.6 : 1.8), 1.1); });
   }
   // camiseta larga azul verdoso con mangas cortas (Elora), que tapa todo el cuerpo hasta las piernas
   const shirt = B ? '#5e0810' : '#6fd0c4', shirtDark = B ? '#3a0408' : '#3f9e93';
@@ -482,8 +517,9 @@ function drawOct(ctx, pal, facing, walk, opts) {
   // levantado solo porque saluda). De Bloodie que persigue, arriba y agitándolos.
   const brazo = (side, fase) => {
     const sw = Math.sin(walk * (chasing ? 2 : 0.8) + fase) * (chasing ? 3 : 1.2);
-    const ctl = chasing ? [side * 15, -8] : [side * 13, -4];
-    const end = chasing ? [side * 13 + sw, -24] : [side * 12 + sw * 0.4, 2];
+    const aO = brazoPose(opts, side);
+    const ctl = girar(chasing ? [side * 15, -8] : [side * 13, -4], [side * 6, -5], aO);
+    const end = girar(chasing ? [side * 13 + sw, -24] : [side * 12 + sw * 0.4, 2], [side * 6, -5], aO);
     ctx.strokeStyle = skin; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(side * 6, -5); ctx.quadraticCurveTo(ctl[0], ctl[1], end[0], end[1]); ctx.stroke();
     ctx.fillStyle = sucker;
@@ -585,18 +621,21 @@ function drawCaty(ctx, pal, facing, walk, opts) {
   ctx.fillStyle = skin;
   for (const side of [-1, 1]) {
     const lift = side * step > 0 ? -side * step * 0.6 : 0;
-    ctx.fillRect(side * 3.5 - 1.7, 3, 3.4, 8 + lift);
-    ctx.beginPath(); ctx.ellipse(side * 4.2, 11 + lift, 3, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+    girado(ctx, piernaPose(opts, side), side * 3.5, 3, () => {
+      ctx.fillRect(side * 3.5 - 1.7, 3, 3.4, 8 + lift);
+      ctx.beginPath(); ctx.ellipse(side * 4.2, 11 + lift, 3, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+    });
   }
   // brazos (de Bloodie que persigue, arriba)
   const brazos = [];
   for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.5);
-    brazos.push([side, chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 3]]);
+    brazos.push([side, girar(chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 3], [side * 6, -6], brazoPose(opts, side))]);
   }
   for (const [side, h] of brazos) {
+    const ctlC = girar([side * 10, -3], [side * 6, -6], brazoPose(opts, side));
     ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(side * 6, -6); ctx.quadraticCurveTo(side * 10, -3, h[0], h[1]); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(side * 6, -6); ctx.quadraticCurveTo(ctlC[0], ctlC[1], h[0], h[1]); ctx.stroke();
   }
   // camiseta clarita con mangas cortas
   ctx.fillStyle = shirt;
@@ -711,15 +750,17 @@ function drawGec(ctx, pal, facing, walk, opts) {
   ctx.fillStyle = skin;
   for (const side of [-1, 1]) {
     const lift = !skate && side * step > 0 ? -side * step * 0.6 : 0;   // en el monopatín no da pasos
-    ctx.fillRect(side * 3.6 - 1.8, 3, 3.6, 8 + lift);
-    ctx.beginPath(); ctx.ellipse(side * 4.4, 11 + lift, 3.2, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+    girado(ctx, piernaPose(opts, side), side * 3.6, 3, () => {
+      ctx.fillRect(side * 3.6 - 1.8, 3, 3.6, 8 + lift);
+      ctx.beginPath(); ctx.ellipse(side * 4.4, 11 + lift, 3.2, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+    });
   }
   // brazos un poco abiertos, con la mano de deditos (de Bloodie que persigue, arriba;
   // en el monopatín, más abiertos para mantener el equilibrio)
   const manos = [];
   for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.2);
-    const h = chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : agarra ? [side * 8, -26] : skate ? [side * 14, -6 + side * sw * 0.8] : [side * 12 + sw * 0.4, -1];
+    const h = girar(chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : agarra ? [side * 8, -26] : skate ? [side * 14, -6 + side * sw * 0.8] : [side * 12 + sw * 0.4, -1], [side * 6, -6], brazoPose(opts, side));
     manos.push([side, h]);
     ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(side * 6, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
@@ -807,10 +848,12 @@ function drawJely(ctx, pal, facing, walk, opts) {
   };
   ctx.strokeStyle = fin; ctx.lineCap = 'round';
   for (const side of [-1, 1]) {
-    for (let k = 0; k < 2; k++) {
-      if (B && side === 1 && k > 0) continue;   // de Bloodie le falta un tentáculo de un lado
-      tentaculo(side, k);
-    }
+    girado(ctx, brazoPose(opts, side), hx + side * 5.5, hy + 2.5, () => {
+      for (let k = 0; k < 2; k++) {
+        if (B && side === 1 && k > 0) continue;   // de Bloodie le falta un tentáculo de un lado
+        tentaculo(side, k);
+      }
+    });
   }
 
   // cuerpo: columna azul, estrecha arriba y ancha abajo
@@ -914,13 +957,15 @@ function drawTarda(ctx, pal, facing, walk, opts) {
       if (B && side === 1 && k === 2) return;   // de Bloodie le falta una pata
       const sw = Math.sin(walk * (chasing ? 2 : 1) + fase + (side > 0 ? 1.5 : 0)) * (chasing ? 2.5 : 1.2);
       const yEnd = chasing ? y - 7 + sw : y + 2 + sw;
-      pata(side * 6.5, y, side * 12.5, yEnd, 3.2);
+      const fin = girar([side * 12.5, yEnd], [side * 6.5, y], brazoPose(opts, side));
+      pata(side * 6.5, y, fin[0], fin[1], 3.2);
     });
   }
   // las dos de abajo, andando
   for (const side of [-1, 1]) {
     const st = Math.sin(walk + (side > 0 ? Math.PI : 0)) * 1.6;
-    pata(side * 4, bot - 2, side * 5 + st, bot + 4, 3.6);
+    const finP = girar([side * 5 + st, bot + 4], [side * 4, bot - 2], piernaPose(opts, side));
+    pata(side * 4, bot - 2, finP[0], finP[1], 3.6);
   }
   // el cuerpo: un rectángulo alto (un poco más ancho abajo) con las esquinas redondeadas
   ctx.fillStyle = skin;
@@ -988,18 +1033,19 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
   ctx.fillStyle = skin;
   for (const side of [-1, 1]) {
     const lift = side * step > 0 ? -side * step * 0.7 : 0;
-    ctx.fillRect(side * 3.5 - 1.8, 3, 3.6, 7 + lift);
-    ctx.beginPath(); ctx.ellipse(side * 4.5, 10.5 + lift, 4.2, 2, 0, 0, Math.PI * 2); ctx.fill();
+    girado(ctx, piernaPose(opts, side), side * 3.5, 3, () => {
+      ctx.fillRect(side * 3.5 - 1.8, 3, 3.6, 7 + lift);
+      ctx.beginPath(); ctx.ellipse(side * 4.5, 10.5 + lift, 4.2, 2, 0, 0, Math.PI * 2); ctx.fill();
+    });
   }
   // brazos abiertos (de Bloodie que persigue, arriba)
   ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
   for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.8) + side) * (chasing ? 4 : 1.5);
-    ctx.beginPath(); ctx.moveTo(side * 5.5, -4);
-    if (B && chasing) ctx.lineTo(side * 13 + sw, -17 + Math.abs(sw));
-    else ctx.lineTo(side * 11 + sw * 0.4, -1 + sw * 0.3);
-    ctx.stroke();
-    if (!(B && chasing)) { ctx.fillStyle = skin; dot(ctx, side * 11.5 + sw * 0.4, -1 + sw * 0.3, 2); }
+    const aH = brazoPose(opts, side), hombroH = [side * 5.5, -4];
+    const manoH = girar(B && chasing ? [side * 13 + sw, -17 + Math.abs(sw)] : [side * 11 + sw * 0.4, -1 + sw * 0.3], hombroH, aH);
+    ctx.beginPath(); ctx.moveTo(side * 5.5, -4); ctx.lineTo(manoH[0], manoH[1]); ctx.stroke();
+    if (!(B && chasing)) { const pm = girar([side * 11.5 + sw * 0.4, -1 + sw * 0.3], hombroH, aH); ctx.fillStyle = skin; dot(ctx, pm[0], pm[1], 2); }
   }
   // camiseta roja
   ctx.fillStyle = shirt;
@@ -1041,6 +1087,115 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
   ctx.fillStyle = B ? '#2a0306' : '#8a5a48'; dot(ctx, hx, hy + 3.3, 0.8);
   ctx.beginPath(); ctx.moveTo(hx - 2, hy + 4.6); ctx.quadraticCurveTo(hx - 1, hy + 6, hx, hy + 4.8); ctx.quadraticCurveTo(hx + 1, hy + 6, hx + 2, hy + 4.6); ctx.stroke();
   if (!B) { ctx.save(); ctx.globalAlpha *= 0.45; ctx.fillStyle = '#f08aa8'; dot(ctx, hx - 5.2, hy + 3, 1.4); dot(ctx, hx + 5.2, hy + 3, 1.4); ctx.restore(); }
+}
+
+// Draila, según su ficha (Elora): cocodrilo verde de morro largo con la boca abierta enseñando los
+// dientes y mirando de reojo; un top rosa-rojo que deja ver la barriga amarilla, con el ombligo en
+// espiral, y pantalón rosa-rojo; una mano en la cintura; la cola verde con la tripa amarilla a rayitas; pies verdes.
+function drawDraila(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
+  const skin = pal.color, skinDark = pal.dark;
+  const ropa = B ? '#5e0810' : '#e2405c', ropaDark = B ? '#3a0408' : '#b52a44';
+  const amarillo = B ? '#8a6a3a' : '#f3dc5a';
+  const line = B ? '#2a0306' : '#1d241a';
+  const hy = -20;   // el cuello largo (Elora)
+  const step = Math.sin(walk) * 1.5;
+  const lado = facing === 'left' ? 1 : -1;      // la cola sale por el lado contrario a donde mira
+  const mira = facing === 'left' ? -1 : facing === 'right' ? 1 : 0;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // la cola: verde por arriba y amarilla por abajo, con rayitas
+  const cola = () => {
+    const w = Math.sin(walk * 0.8) * 2.5;
+    ctx.strokeStyle = skin; ctx.lineWidth = 4.5;
+    ctx.beginPath(); ctx.moveTo(lado * 3, 5); ctx.quadraticCurveTo(lado * 14, 9, lado * (19 + w), 3); ctx.stroke();
+    ctx.strokeStyle = amarillo; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(lado * 5, 7); ctx.quadraticCurveTo(lado * 14, 10.4, lado * (18.5 + w), 4.6); ctx.stroke();
+    ctx.strokeStyle = line; ctx.lineWidth = 0.5;
+    ctx.beginPath(); for (const k of [8, 11, 14]) { ctx.moveTo(lado * k, 6.3 + k * 0.12); ctx.lineTo(lado * k, 9.4); } ctx.stroke();
+  };
+  if (!back) cola();
+  // piernas: el pantalón rosa hasta la rodilla y la pierna verde con el pie
+  for (const side of [-1, 1]) {
+    const lift = side * step > 0 ? -side * step * 0.6 : 0;
+    girado(ctx, piernaPose(opts, side), side * 3, 2, () => {
+      ctx.fillStyle = ropa; ctx.fillRect(side * 3 - 2, 2, 4, 4.5);
+      ctx.fillStyle = skin; ctx.fillRect(side * 3 - 1.7, 6, 3.4, 4.5 + lift);
+      ctx.beginPath(); ctx.ellipse(side * 3.8, 10.8 + lift, 3, 1.7, 0, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+  // los brazos: uno con la mano en la cintura (en jarra) y el otro colgando; persiguiendo, los dos arriba
+  ctx.strokeStyle = skin; ctx.lineWidth = 2.8;
+  for (const side of [-1, 1]) {
+    const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1);
+    const hombroD = [side * 4.5, -10], aD = brazoPose(opts, side);
+    const puntos = chasing ? [[side * 12 + sw, -17 + Math.abs(sw)]]
+      : side === 1 ? [[side * 10, -4], [side * 5.5, -1]]   // la mano en la cintura
+        : [[side * 7.5 + sw * 0.3, 1]];
+    ctx.beginPath(); ctx.moveTo(hombroD[0], hombroD[1]);
+    for (const pt of puntos) { const q = girar(pt, hombroD, aD); ctx.lineTo(q[0], q[1]); }
+    ctx.stroke();
+  }
+  // el cuerpo: largo y verde; lleva un top rosa-rojo y se le ve la barriga (Elora), que es amarilla
+  // con el ombligo en espiral; abajo, el pantalón rosa-rojo
+  ctx.fillStyle = skin;
+  rrect(ctx, -5, -14, 10, 18, 2.5); ctx.fill();
+  if (!back) {
+    ctx.fillStyle = amarillo; rrect(ctx, -3.6, -2.4, 6.2, 3.8, 1.3); ctx.fill();   // la barriga
+    ctx.strokeStyle = line; ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    for (let a = 0; a < Math.PI * 4; a += 0.3) { const r = 0.2 + a * 0.1; const x = -0.5 + Math.cos(a) * r, y = -0.5 + Math.sin(a) * r; if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();   // el ombligo
+  }
+  ctx.fillStyle = ropa;
+  rrect(ctx, -5, -14, 10, 11.6, 2.5); ctx.fill();   // el top (largo, Elora)
+  ctx.fillRect(-5, 1.5, 10, 3);                  // el pantalón
+  ctx.save(); ctx.globalAlpha *= 0.45; ctx.fillStyle = ropaDark; ctx.fillRect(2.5, -13, 2.5, 10); ctx.restore();
+  if (back) cola();
+  // la cabeza: redonda, verde, con el morro largo
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(0, hy, 8.5, 0, Math.PI * 2); ctx.fill();
+  if (B) bloodyMarks(ctx, 0, hy, facing);
+  if (back) return;
+  const morroX = mira * 8, morroY = mira ? 0 : 6;   // de frente, el morro hacia abajo; de lado, hacia ese lado
+  const largo = mira ? 10 : 6.5;
+  // la boca abierta, roja por dentro, con los dientes
+  ctx.save(); ctx.translate(morroX, hy + 2 + morroY * 0.5);
+  if (mira) ctx.scale(mira, 1);
+  const ancho = mira ? largo : 7;
+  if (mira) {
+    ctx.fillStyle = skin;   // la mandíbula de arriba
+    rrect(ctx, -2, -4.5, largo + 2, 4, 2); ctx.fill();
+    rrect(ctx, -2, 1.5, largo, 3.4, 1.7); ctx.fill();   // la de abajo
+    ctx.fillStyle = B ? '#3a0408' : '#c4303a'; ctx.fillRect(-1, -0.6, largo - 1, 2.2);   // por dentro
+    ctx.fillStyle = '#fbfbf4';
+    for (let i = 0; i < 3; i++) {
+      const tx = 1 + i * 2.8;
+      ctx.beginPath(); ctx.moveTo(tx - 1, -0.6); ctx.lineTo(tx, 1); ctx.lineTo(tx + 1, -0.6); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(tx + 0.4, 1.6); ctx.lineTo(tx + 1.4, 0.2); ctx.lineTo(tx + 2.4, 1.6); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = line; dot(ctx, largo - 1, -3.4, 0.5);   // la nariz
+  } else {
+    ctx.fillStyle = skin; rrect(ctx, -ancho / 2 - 1, -3, ancho + 2, 8.5, 3.5); ctx.fill();
+    ctx.fillStyle = B ? '#3a0408' : '#c4303a'; rrect(ctx, -ancho / 2 + 0.5, 0.2, ancho - 1, 3.6, 1.5); ctx.fill();
+    ctx.fillStyle = '#fbfbf4';
+    for (let i = 0; i < 3; i++) {
+      const tx = -2.4 + i * 2.4;
+      ctx.beginPath(); ctx.moveTo(tx - 1, 0.2); ctx.lineTo(tx, 1.8); ctx.lineTo(tx + 1, 0.2); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(tx - 1, 3.8); ctx.lineTo(tx, 2.4); ctx.lineTo(tx + 1, 3.8); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = line; dot(ctx, -1.3, -1.6, 0.5); dot(ctx, 1.3, -1.6, 0.5);   // la nariz
+  }
+  ctx.restore();
+  // el ojo grande, mirando de reojo, con el párpado de enfadada (de Bloodie, rojo o amarillo)
+  const ojos = mira ? [[-mira * 2.5]] : [[-3.2], [3.2]];
+  for (const [ox] of ojos) {
+    const x = ox, y = hy - 3;
+    ctx.fillStyle = B ? '#f0d0c8' : '#fff'; dot(ctx, x, y, 2.8);
+    ctx.fillStyle = B ? (chasing ? '#ffe36b' : '#7a0b12') : '#111';
+    dot(ctx, x + (mira || (ox < 0 ? 1 : -1)) * 1.1, y + 0.4, 1.5);
+    ctx.strokeStyle = line; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(x - 2.8, y - 2.6 + (ox < 0 ? 0 : 1)); ctx.lineTo(x + 2.8, y - 2.6 + (ox < 0 ? 1 : 0)); ctx.stroke();
+  }
 }
 
 // El Drake Sangriento: el que escupe fuego en el pasillo de Drake (pasillo 50), dibujado por Elora
@@ -1132,4 +1287,4 @@ function drawDrakeSangriento(ctx, pal, facing, walk, opts) {
   ctx.beginPath(); ctx.ellipse(0.5, -6 + gota, 0.9, 1.4 + gota * 0.4, 0, 0, Math.PI * 2); ctx.fill();
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, drakeSangriento: drawDrakeSangriento };
+const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, crocodile: drawDraila, drakeSangriento: drawDrakeSangriento };

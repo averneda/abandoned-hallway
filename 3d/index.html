@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<!-- Abandoned Holeway en 3D: la versión secreta (Elora). Se llega con el código secreto del menú
+     del juego 2D. Es la prueba 3D de antes, guardada aparte: su src/ es una copia vieja del juego,
+     no se mezcla con el juego 2D (que es el de verdad). Three.js r160 en vendor/ (licencia MIT). -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Abandoned Holeway · Prueba 3D</title>
+<link rel="stylesheet" href="./src/style.css">
+<style>
+#hud {position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.prototype {position:absolute;bottom:12px;left:16px;color:#bdcbd0;font-size:12px;letter-spacing:2px;pointer-events:none}
+#ui .screen {background:rgba(5,12,17,.79);backdrop-filter:blur(5px)}
+#ui h1 {font-size:46px;color:#e9e9d4;text-shadow:none;letter-spacing:5px}
+#ui .eyebrow {color:#9ce2c5;font-size:13px;letter-spacing:5px}
+#ui a {color:#bbdcd1}
+#ui .primary {background:#286356;border-color:#93d6bd}
+</style>
+</head>
+<body>
+<div id="stage">
+<canvas id="game" width="960" height="600"></canvas>
+<canvas id="hud" width="960" height="600"></canvas>
+<div class="prototype">CAT GAMES / ELORA · PROTOTIPO 3D</div>
+<div id="ui"><div class="screen"><h1>ABANDONED HOLEWAY</h1><p>Cargando la prueba 3D…</p><a href="../index.html">Volver al juego 2D</a></div></div>
+</div>
+<script type="module" src="./src/prototype-3d.js"></script>
+</body>
+</html>

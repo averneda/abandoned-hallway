@@ -6,6 +6,7 @@ import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, charac
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
+import { poseAndando } from './andares.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
 const ESTAMINA = '#2fe0a6';   // verde-turquesa de la estamina (barra y bolitas)
@@ -183,7 +184,7 @@ export class Game {
     p.moving = len > 0;
     p.corriendo = corriendo;   // (Gec va en monopatín cuando corre)
     p.facing = facingOf(ax.x, ax.y, p.facing);
-    if (p.moving) p.walk += dt * (corriendo ? 16 : 11);
+    if (p.moving) { p.walk += dt * (corriendo ? 16 : 11); p.andando = (p.andando || 0) + dt; } else p.andando = 0;
 
     if (input.wasPressed('jump') && !p.jumping && p.fly <= 0) { p.jumping = true; p.jump = this.jumpTime; }
     if (p.jumping) {
@@ -801,8 +802,10 @@ export class Game {
     let jumpH = p.jumping && p.jump > 0.06 ? Math.sin((1 - p.jump / this.jumpTime) * Math.PI) * (this.ch.ability === 'carot' ? 34 : 22) : 0;
     // Drake volando: sube, se balancea un poco y baja despacio al final
     if (p.fly > 0) jumpH = (26 + Math.sin(this.time * 5) * 3) * Math.min(1, p.fly / 0.35, (ABILITIES.drake.time - p.fly) / 0.25 + 0.2);
+    // los andares que inventó Elora en su Taller de Andares (solo andando por el suelo, sin saltar ni volar)
+    const pose = p.moving && !p.jumping && p.fly <= 0 && !p.tongue ? poseAndando(this.ch.id, !!p.corriendo, p.andando || 0) : null;
     drawCharacter(ctx, this.ch, p.x, p.y, p.facing, p.moving || (p.tongue && p.tongue.phase === 'dash') ? p.walk : 0, jumpH,
-      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null, skate: !!p.corriendo, lengua: !!p.tongue });
+      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null, skate: !!p.corriendo, lengua: !!p.tongue, pose });
     // sin estamina: gotas de sudor de cansancio (Elora)
     if (p.agotado) this.drawSweat(ctx, p.x, p.y - jumpH);
     // Supercarrera de Hoppy: rayas de velocidad detrás
