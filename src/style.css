@@ -84,6 +84,16 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 .card.mini .name { font-size: 12px; font-weight: 700; white-space: nowrap; }
 .card.mini.locked { opacity: 0.7; filter: grayscale(0.5); cursor: pointer; }
 .card.mini:hover, .card.mini.focus { transform: translateY(-2px); }
+/* la ficha y, a su derecha, las skins (modo pijama, Elora) */
+.shop-medio { display: flex; gap: 10px; align-items: center; justify-content: center; }
+.skins-panel { display: flex; flex-direction: column; gap: 6px; align-items: center; width: 116px; }
+.skins-titulo { font-size: 16px; font-weight: 700; color: #ffd95a; }
+.card.skin { width: 110px; padding: 4px 4px 5px; gap: 0; border-width: 2px; border-radius: 10px; }
+.card.skin canvas { width: 72px; height: 72px; }
+.card.skin .name { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.skin-precio { font-size: 12px; color: #b9f5c4; min-height: 15px; }
+.card.skin.current .skin-precio { color: #ffd95a; }
+.pijama-badge { background: #6a4fa8; color: #fff; font-weight: 700; font-size: 15px; padding: 3px 12px; border-radius: 12px; box-shadow: 0 2px 0 #000; }
 /* la ficha: la foto de la ficha de Elora, con los parámetros en su lado derecho */
 .ficha { position: relative; width: 518px; height: 370px; border-radius: 6px; overflow: hidden; background: #f1eee7; box-shadow: 0 6px 18px rgba(0,0,0,0.5); flex-shrink: 0; }
 .ficha-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: left center; }   /* si la foto es más ancha, se recorta por la derecha (en blanco), no al personaje */

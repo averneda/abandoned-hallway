@@ -63,6 +63,33 @@ export const TARDA_GRIS = { color: '#a9a8ad', dark: '#74737a' };
 
 export function characterById(id) { return CHARACTERS.find((c) => c.id === id) || CHARACTERS[0]; }
 
+// Skins (Elora): disfraces con ropa nueva; el mismo personaje vestido de otra cosa. Elora las dibuja en
+// papel, enteras y coloreadas, y se compran en la tienda de Tarda (de 30 a 90 monedas; el precio de cada
+// una lo dice Elora con su dibujo). Las primeras son las **skins de pijama** (su cartel:
+// assets/referencias/skins/cartel-pijamas.webp); habrá una para cada personaje (Elora).
+// De momento solo se ven en el **modo pijama** secreto (el código de «🔑 Introducir código»), y ahí son
+// gratis (Elora): así el juego se puede publicar sin enseñarlas todavía.
+// Los pijamas de ahora son **de prueba**, inspirados en el cartel, hasta que lleguen los dibujos de Elora
+// (provisional: true). Cada personaje los dibuja en su función (pal.skin === 'pijama').
+export const SKINS = {
+  pijama: {
+    emoji: '🛌',
+    personajes: {
+      gek: { price: null, provisional: true },      // pijama de monopatines (Elora)
+      draila: { price: null, provisional: true },   // pijama de estrellas
+      hoppy: { price: null, provisional: true },    // con un peluchito
+      katy: { price: null, provisional: true },     // pijama entero lila (Elora) y un peluchito
+    },
+  },
+};
+export function skinsDe(id) { return Object.keys(SKINS).filter((k) => SKINS[k].personajes[id]); }
+// El personaje con una skin puesta (una copia: el personaje de siempre no cambia). Sin skin, el de siempre.
+// Los Bloodies nunca la llevan: se dibujan con sus colores de Bloodie, no con los del personaje.
+export function conSkin(ch, skin) {
+  const base = characterById(ch.id);
+  return skin && SKINS[skin] && SKINS[skin].personajes[base.id] ? { ...base, skin } : base;
+}
+
 const BLOODY = { color: '#a3141c', dark: '#5e0810' };
 
 // Poses (el editor de andar y correr de Elora): opts.pose = { bi, bd, pi, pd, cuerpo, sube }, en grados
@@ -315,6 +342,46 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
 
 // Un círculo relleno (cada uno con su propio trazo: así no hay líneas fantasma entre ellos).
 function dot(ctx, x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+// Una estrella de cuatro puntas (las del pijama de Draila).
+function estrella(ctx, x, y, r) {
+  const k = r * 0.3;
+  ctx.beginPath();
+  ctx.moveTo(x, y - r); ctx.lineTo(x + k, y - k); ctx.lineTo(x + r, y); ctx.lineTo(x + k, y + k);
+  ctx.lineTo(x, y + r); ctx.lineTo(x - k, y + k); ctx.lineTo(x - r, y); ctx.lineTo(x - k, y - k);
+  ctx.closePath(); ctx.fill();
+}
+// El camisón de las skins de pijama (Hoppy y Caty): de los hombros hasta las rodillas, más ancho abajo,
+// con mangas cortas.
+function camison(ctx, top, color, oscuro) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-6, top); ctx.lineTo(6, top); ctx.lineTo(8.5, 7.5); ctx.quadraticCurveTo(0, 9, -8.5, 7.5); ctx.closePath(); ctx.fill();
+  for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 4.5 : -8.5, top, 4, 4.5);
+  ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = oscuro;
+  ctx.beginPath(); ctx.moveTo(3.5, top + 1); ctx.lineTo(6, top + 1); ctx.lineTo(7.8, 7.4); ctx.lineTo(5, 7.8); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+// El peluchito que llevan Hoppy y Caty en pijama (cartel de Elora): carita redonda con orejas y su cuerpo.
+// orejas: 'caidas' (perrito) o 'picos' (gatito).
+function peluche(ctx, x, y, color, oscuro, orejas) {
+  // el cuerpo (Elora: los peluches tienen cuerpo), con bracitos y patitas
+  ctx.fillStyle = color;
+  dot(ctx, x - 1.3, y + 6.4, 0.95); dot(ctx, x + 1.3, y + 6.4, 0.95);
+  ctx.beginPath(); ctx.ellipse(x, y + 4, 2.2, 2.7, 0, 0, Math.PI * 2); ctx.fill();
+  dot(ctx, x - 2.3, y + 3.2, 0.85); dot(ctx, x + 2.3, y + 3.2, 0.85);
+  ctx.fillStyle = oscuro; ctx.save(); ctx.globalAlpha *= 0.5; ctx.beginPath(); ctx.ellipse(x, y + 4.4, 1.1, 1.4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.fillStyle = oscuro;
+  if (orejas === 'picos') {
+    for (const side of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(x + side * 1, y - 2); ctx.lineTo(x + side * 2.8, y - 4.4); ctx.lineTo(x + side * 3.1, y - 1); ctx.closePath(); ctx.fill();
+    }
+  } else {
+    for (const side of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + side * 2.9, y + 0.3, 1.1, 2.1, side * 0.4, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.fillStyle = color; dot(ctx, x, y, 2.9);
+  ctx.fillStyle = '#2a2020'; dot(ctx, x - 1.1, y - 0.4, 0.42); dot(ctx, x + 1.1, y - 0.4, 0.42);
+  ctx.fillStyle = '#b5485a'; dot(ctx, x, y + 0.8, 0.45);
+}
 
 // Rectángulo con las esquinas redondeadas (la función del navegador para esto no existe en los algo viejos).
 function rrect(ctx, x, y, w, h, r) {
@@ -602,7 +669,9 @@ function drawCaty(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
   const lila = B ? '#c9a0a0' : '#a9a2e6';
-  const shirt = B ? '#5e0810' : '#fbf0a8', shirtDark = B ? '#3a0408' : '#d9c45a';
+  // skin de pijama (de prueba, inspirada en el cartel de Elora): camisón entero lila (Elora) y un peluchito
+  const pj = pal.skin === 'pijama';
+  const shirt = B ? '#5e0810' : pj ? '#c3abf2' : '#fbf0a8', shirtDark = B ? '#3a0408' : pj ? '#9479d4' : '#d9c45a';
   const line = B ? '#2a0306' : '#3a2418';
   const hx = 0, hy = -15;
   const step = Math.sin(walk) * 1.5;
@@ -630,6 +699,9 @@ function drawCaty(ctx, pal, facing, walk, opts) {
   const brazos = [];
   for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.5);
+    // en pijama, la mano del lado del pincel coge el peluchito (Elora)
+    // (de espaldas no: el peluche no se ve y el brazo va normal, Elora)
+    if (pj && !B && !back && side === mano) { brazos.push([side, [mano * 4.6, -2.6]]); continue; }
     brazos.push([side, girar(chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 3], [side * 6, -6], brazoPose(opts, side))]);
   }
   for (const [side, h] of brazos) {
@@ -637,12 +709,23 @@ function drawCaty(ctx, pal, facing, walk, opts) {
     ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(side * 6, -6); ctx.quadraticCurveTo(ctlC[0], ctlC[1], h[0], h[1]); ctx.stroke();
   }
+  if (pj) {
+    // el camisón lila y, de frente, el peluchito abrazado (un gatito)
+    camison(ctx, -9, shirt, shirtDark);
+    // el peluchito, cogido con una mano (Elora): el brazo sale de la manga hasta el peluche
+    if (!back) {
+      ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(mano * 7.5, -5); ctx.lineTo(mano * 4.6, -2.6); ctx.stroke();
+      peluche(ctx, mano * 1.2, -3.4, '#f3eee6', '#c9b8a6', 'picos');
+    }
+  } else {
   // camiseta clarita con mangas cortas
   ctx.fillStyle = shirt;
   rrect(ctx, -7, -9, 14, 14, 2.5); ctx.fill();
   for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 5 : -9.5, -9, 4.5, 4.5);
   ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = shirtDark; ctx.fillRect(3.5, -8, 3, 12); ctx.restore();
-  if (!back && !B) {
+  }
+  if (!back && !B && !pj) {
     // la flor rosa con carita amarilla (cada pétalo, su propio círculo)
     ctx.fillStyle = '#ef7fb0';
     for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; dot(ctx, Math.cos(a) * 2.3, -2.5 + Math.sin(a) * 2.3, 1.4); }
@@ -650,8 +733,8 @@ function drawCaty(ctx, pal, facing, walk, opts) {
     ctx.fillStyle = line; dot(ctx, -0.6, -3, 0.3); dot(ctx, 0.6, -3, 0.3);
     ctx.fillRect(-0.6, -2.2, 1.2, 0.5);
   }
-  // el pincel, en una mano: palo marrón y la punta con pintura lila
-  if (!B) {
+  // el pincel, en una mano: palo marrón y la punta con pintura lila (en pijama, no: lleva su peluchito)
+  if (!B && !pj) {
     const h = brazos.find(([side]) => side === mano)[1];
     ctx.strokeStyle = '#8a5a3a'; ctx.lineWidth = 1.3;
     ctx.beginPath(); ctx.moveTo(h[0] - mano * 1, h[1] + 3); ctx.lineTo(h[0] + mano * 3, h[1] - 7); ctx.stroke();
@@ -716,7 +799,10 @@ function drawCaty(ctx, pal, facing, walk, opts) {
 function drawGec(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
-  const shirt = B ? '#5e0810' : '#a9abb0', shirtDark = B ? '#3a0408' : '#7c7e84';
+  // skin de pijama (de prueba, inspirada en el cartel de Elora): pijama de manga larga y pantalón
+  // largo con monopatines estampados (Elora); el azul es provisional
+  const pj = pal.skin === 'pijama';
+  const shirt = B ? '#5e0810' : pj ? '#7fb3e3' : '#a9abb0', shirtDark = B ? '#3a0408' : pj ? '#5a88bd' : '#7c7e84';
   const line = B ? '#2a0306' : '#1d241a';
   const hx = 0, hy = -15;
   const step = Math.sin(walk) * 1.5;
@@ -751,7 +837,9 @@ function drawGec(ctx, pal, facing, walk, opts) {
   for (const side of [-1, 1]) {
     const lift = !skate && side * step > 0 ? -side * step * 0.6 : 0;   // en el monopatín no da pasos
     girado(ctx, piernaPose(opts, side), side * 3.6, 3, () => {
+      ctx.fillStyle = pj ? shirt : skin;   // con pijama, el pantalón largo
       ctx.fillRect(side * 3.6 - 1.8, 3, 3.6, 8 + lift);
+      ctx.fillStyle = skin;
       ctx.beginPath(); ctx.ellipse(side * 4.4, 11 + lift, 3.2, 1.7, 0, 0, Math.PI * 2); ctx.fill();
     });
   }
@@ -762,7 +850,7 @@ function drawGec(ctx, pal, facing, walk, opts) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.2);
     const h = girar(chasing ? [side * 14 + sw, -18 + Math.abs(sw)] : agarra ? [side * 8, -26] : skate ? [side * 14, -6 + side * sw * 0.8] : [side * 12 + sw * 0.4, -1], [side * 6, -6], brazoPose(opts, side));
     manos.push([side, h]);
-    ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.strokeStyle = pj ? shirt : skin; ctx.lineWidth = 3; ctx.lineCap = 'round';   // con pijama, manga larga
     ctx.beginPath(); ctx.moveTo(side * 6, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
     ctx.fillStyle = skin;
     for (let k = -1; k <= 1; k++) dot(ctx, h[0] + side * 1.6, h[1] + k * 1.5, 1);
@@ -772,7 +860,15 @@ function drawGec(ctx, pal, facing, walk, opts) {
   rrect(ctx, -7, -9, 14, 14, 2.5); ctx.fill();
   for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 5 : -9.5, -9, 4.5, 4.5);
   ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = shirtDark; ctx.fillRect(3.5, -8, 3, 12); ctx.restore();
-  if (!back && !B) {
+  if (pj && !B) {
+    // el pijama de monopatines (Elora): tablas rojas pequeñitas con sus ruedas, por todo el pijama
+    for (const [mx, my, a] of [[-3.6, -5.6, 0.3], [2.4, -3.2, -0.4], [-2.2, 0.6, -0.2], [3.4, 2.4, 0.5]]) {
+      ctx.save(); ctx.translate(mx, my); ctx.rotate(a);
+      ctx.fillStyle = '#2b2b30'; dot(ctx, -1.3, 0.9, 0.45); dot(ctx, 1.3, 0.9, 0.45);
+      ctx.fillStyle = '#e0303c'; rrect(ctx, -2.2, -0.6, 4.4, 1.3, 0.6); ctx.fill();
+      ctx.restore();
+    }
+  } else if (!back && !B) {
     // "ROK!" en rojo (letras de palitos, pequeñas)
     ctx.strokeStyle = '#d81e2c'; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
     ctx.beginPath();
@@ -1020,7 +1116,10 @@ function drawTarda(ctx, pal, facing, walk, opts) {
 function drawHoppy(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
-  const shirt = B ? '#5e0810' : '#d8344a', shirtDark = B ? '#3a0408' : '#a8202f';
+  // skin de pijama (de prueba, inspirada en el cartel de Elora): camisón y un peluchito; el rosa es provisional
+  const pj = pal.skin === 'pijama';
+  const manoPeluche = facing === 'left' ? -1 : 1;   // la mano que coge el peluchito
+  const shirt = B ? '#5e0810' : pj ? '#f4b9cf' : '#d8344a', shirtDark = B ? '#3a0408' : pj ? '#d48aa8' : '#a8202f';
   const panel = B ? '#c9a0a0' : '#cfe9f6';
   const earIn = B ? '#7a0b12' : '#f2d23c';
   const line = B ? '#2a0306' : '#4a2e22';
@@ -1043,16 +1142,30 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
   for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.8) + side) * (chasing ? 4 : 1.5);
     const aH = brazoPose(opts, side), hombroH = [side * 5.5, -4];
+    if (pj && !B && !back && side === manoPeluche) continue;   // esa mano coge el peluchito (se dibuja con él; de espaldas, no)
     const manoH = girar(B && chasing ? [side * 13 + sw, -17 + Math.abs(sw)] : [side * 11 + sw * 0.4, -1 + sw * 0.3], hombroH, aH);
     ctx.beginPath(); ctx.moveTo(side * 5.5, -4); ctx.lineTo(manoH[0], manoH[1]); ctx.stroke();
     if (!(B && chasing)) { const pm = girar([side * 11.5 + sw * 0.4, -1 + sw * 0.3], hombroH, aH); ctx.fillStyle = skin; dot(ctx, pm[0], pm[1], 2); }
   }
+  if (pj) {
+    // el camisón y, de frente, el peluchito abrazado (un perrito de orejas caídas)
+    camison(ctx, -8, shirt, shirtDark);
+    // el peluchito, cogido con una mano (Elora): el brazo sale de la manga hasta el peluche
+    if (!back) {
+      const m = manoPeluche;
+      ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(m * 6.5, -4.5); ctx.lineTo(m * 4.4, -1.6); ctx.stroke();
+      peluche(ctx, m * 1.2, -2.6, '#ecdcc0', '#a87a54', 'caidas');
+      ctx.fillStyle = skin; dot(ctx, m * 4.4, -1.6, 2);
+    }
+  } else {
   // camiseta roja
   ctx.fillStyle = shirt;
   rrect(ctx, -6.5, -8, 13, 12.5, 2.5); ctx.fill();
   for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 4.5 : -8.5, -8, 4, 4);
   ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = shirtDark; ctx.fillRect(3.5, -7, 3, 11); ctx.restore();
-  if (!back) {
+  }
+  if (!back && !pj) {
     // el dibujo azul clarito con el corazón con brazos y piernas
     ctx.fillStyle = panel; ctx.fillRect(-4, -6, 8, 9);
     if (!B) {
@@ -1095,7 +1208,10 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
 function drawDraila(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
-  const ropa = B ? '#5e0810' : '#e2405c', ropaDark = B ? '#3a0408' : '#b52a44';
+  // skin de pijama (de prueba, inspirada en el cartel de Elora): pijama de manga larga y pantalón
+  // largo con estrellas; el azul de noche es provisional
+  const pj = pal.skin === 'pijama';
+  const ropa = B ? '#5e0810' : pj ? '#3a4a8c' : '#e2405c', ropaDark = B ? '#3a0408' : pj ? '#263266' : '#b52a44';
   const amarillo = B ? '#8a6a3a' : '#f3dc5a';
   const line = B ? '#2a0306' : '#1d241a';
   const hy = -20;   // el cuello largo (Elora)
@@ -1119,12 +1235,12 @@ function drawDraila(ctx, pal, facing, walk, opts) {
     const lift = side * step > 0 ? -side * step * 0.6 : 0;
     girado(ctx, piernaPose(opts, side), side * 3, 2, () => {
       ctx.fillStyle = ropa; ctx.fillRect(side * 3 - 2, 2, 4, 4.5);
-      ctx.fillStyle = skin; ctx.fillRect(side * 3 - 1.7, 6, 3.4, 4.5 + lift);
+      ctx.fillStyle = pj ? ropa : skin; ctx.fillRect(side * 3 - 1.7, 6, 3.4, 4.5 + lift);   // con pijama, pantalón largo
       ctx.beginPath(); ctx.ellipse(side * 3.8, 10.8 + lift, 3, 1.7, 0, 0, Math.PI * 2); ctx.fill();
     });
   }
   // los brazos: uno con la mano en la cintura (en jarra) y el otro colgando; persiguiendo, los dos arriba
-  ctx.strokeStyle = skin; ctx.lineWidth = 2.8;
+  ctx.strokeStyle = pj ? ropa : skin; ctx.lineWidth = 2.8;   // con pijama, manga larga
   for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1);
     const hombroD = [side * 4.5, -10], aD = brazoPose(opts, side);
@@ -1132,14 +1248,16 @@ function drawDraila(ctx, pal, facing, walk, opts) {
       : side === 1 ? [[side * 10, -4], [side * 5.5, -1]]   // la mano en la cintura
         : [[side * 7.5 + sw * 0.3, 1]];
     ctx.beginPath(); ctx.moveTo(hombroD[0], hombroD[1]);
-    for (const pt of puntos) { const q = girar(pt, hombroD, aD); ctx.lineTo(q[0], q[1]); }
+    let q = hombroD;
+    for (const pt of puntos) { q = girar(pt, hombroD, aD); ctx.lineTo(q[0], q[1]); }
     ctx.stroke();
+    if (pj) { ctx.fillStyle = skin; dot(ctx, q[0], q[1], 1.5); }   // la mano asoma por la manga
   }
   // el cuerpo: largo y verde; lleva un top rosa-rojo y se le ve la barriga (Elora), que es amarilla
   // con el ombligo en espiral; abajo, el pantalón rosa-rojo
   ctx.fillStyle = skin;
   rrect(ctx, -5, -14, 10, 18, 2.5); ctx.fill();
-  if (!back) {
+  if (!back && !pj) {   // con pijama, la barriga va tapada
     ctx.fillStyle = amarillo; rrect(ctx, -3.6, -2.4, 6.2, 3.8, 1.3); ctx.fill();   // la barriga
     ctx.strokeStyle = line; ctx.lineWidth = 0.5;
     ctx.beginPath();
@@ -1147,9 +1265,14 @@ function drawDraila(ctx, pal, facing, walk, opts) {
     ctx.stroke();   // el ombligo
   }
   ctx.fillStyle = ropa;
-  rrect(ctx, -5, -14, 10, 11.6, 2.5); ctx.fill();   // el top (largo, Elora)
+  rrect(ctx, -5, -14, 10, pj ? 18.5 : 11.6, 2.5); ctx.fill();   // el top (largo, Elora); con pijama, todo
   ctx.fillRect(-5, 1.5, 10, 3);                  // el pantalón
   ctx.save(); ctx.globalAlpha *= 0.45; ctx.fillStyle = ropaDark; ctx.fillRect(2.5, -13, 2.5, 10); ctx.restore();
+  if (pj && !B) {
+    // las estrellas del pijama: amarillas, de cuatro puntas, unas grandes y otras pequeñitas
+    ctx.fillStyle = '#ffe36b';
+    for (const [ex, ey, r] of [[-2.6, -11, 1.6], [1.8, -8, 1.1], [-1.4, -4.6, 1.3], [2.6, -1.4, 1.6], [-2.8, 1.6, 1], [0.6, 3.2, 0.9]]) estrella(ctx, ex, ey, r);
+  }
   if (back) cola();
   // la cabeza: redonda, verde, con el morro largo
   ctx.fillStyle = skin;

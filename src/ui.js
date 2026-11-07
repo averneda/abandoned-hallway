@@ -2,7 +2,7 @@ import { maxHearts } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
-import { CHARACTERS, drawCharacter } from './characters.js';
+import { CHARACTERS, drawCharacter, SKINS, skinsDe, conSkin } from './characters.js';
 import { PAD_ACTIONS } from './input.js';
 import { TapePlayer, grabacionDeCinta } from './tapes.js';
 import { music } from './music.js';
@@ -24,8 +24,14 @@ export function tapeName(n) { return savedTapeNames()[n] || defaultTapeName(n); 
 
 // La huella del código secreto del 3D (Elora): sin mayúsculas, sin acentos y sin signos.
 const CODIGO_3D = 'e94801bf';
-function huellaCodigo(texto) {
-  const n = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+// La huella del código del pasillo 50 (Elora): te lleva directo al pasillo de Drake (index.html?pasillo=50).
+// Este sí mira las mayúsculas (Elora): todo en minúscula menos la P de pasillo.
+const CODIGO_P50 = '39138241';
+// La huella del código del modo pijama (Elora; también vale escrito con holeway/hallway y pijama/pijamas).
+const CODIGO_PIJAMA = new Set(['a9e7a80e', 'f4ae3cc7', 'a35c150d', 'a7f5d55a', 'a64e4d24', '2443bff5', '2a22be4a', '8db173bb', 'db61d337', '9eff940c']);
+function huellaCodigo(texto, mayusculas = false) {
+  let n = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  n = (mayusculas ? n : n.toLowerCase()).replace(/[^A-Za-z0-9]+/g, ' ').trim();
   let h = 0x811c9dc5;
   for (const c of n) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
   return h.toString(16);
@@ -101,15 +107,18 @@ export class UI {
   // ---------------- menú principal
   // El título lo dibuja la escena Title en el canvas (el cartel de Elora);
   // aquí solo van los botones, abajo del todo.
-  showMenu({ onPlay, onPad }) {
+  // pijama: el modo pijama secreto (Elora) = { activo(), cambiar(on) }
+  showMenu({ onPlay, onPad, pijama }) {
     this.clear();
+    const otraVez = () => this.showMenu({ onPlay, onPad, pijama });
     const s = this.el('div', 'screen titlemenu');
     s.appendChild(this.el('p', 'subtitle', t('menu.subtitle')));
+    if (pijama && pijama.activo()) s.appendChild(this.el('p', 'pijama-badge', t('menu.pijama')));
     const row = this.el('div', 'row');
     const play = this.button(t('menu.play'), onPlay, true);
-    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(() => this.showMenu({ onPlay, onPad }))));
+    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama)));
     s.appendChild(row);
-    s.appendChild(this.langRow(() => this.showMenu({ onPlay, onPad })));
+    s.appendChild(this.langRow(otraVez));
     this.root.appendChild(s);
     const info = this.el('div', 'titleinfo');
     info.appendChild(this.el('div', '', t('menu.controls')));
@@ -119,19 +128,31 @@ export class UI {
   }
 
   // ---------------- código secreto (Elora): con el código bueno se abre Abandoned Holeway en 3D (3d/).
-  // El código no está escrito aquí (para que siga siendo secreto): se compara su "huella".
-  showCode(onBack) {
+  // Con el del pasillo 50 (Elora), vas directo al pasillo de Drake. Con el del modo pijama (Elora), las skins de pijama salen en la tienda de Tarda, gratis; se queda puesto
+  // en este navegador hasta que se quita con el botón de aquí.
+  // Los códigos no están escritos aquí (para que sigan siendo secretos): se compara su "huella".
+  showCode(onBack, pijama) {
     this.clear();
     const s = this.el('div', 'screen');
     s.appendChild(this.el('h2', '', '🔑 ' + t('code.title')));
     const campo = document.createElement('input');
     campo.type = 'text'; campo.id = 'codigo-secreto'; campo.autocomplete = 'off'; campo.spellcheck = false;
+    // que el teclado de la tablet no ponga mayúsculas solo (el código del pasillo 50 las mira)
+    campo.setAttribute('autocapitalize', 'none'); campo.setAttribute('autocorrect', 'off');
     campo.placeholder = t('code.placeholder'); campo.className = 'code-input';
     const nota = this.el('p', 'small note-inline', '');
     const probar = () => {
-      if (huellaCodigo(campo.value) === CODIGO_3D) {
+      const huella = huellaCodigo(campo.value);
+      if (huella === CODIGO_3D) {
         nota.textContent = t('code.ok');
         setTimeout(() => { location.href = '3d/'; }, 900);
+      } else if (huellaCodigo(campo.value, true) === CODIGO_P50) {
+        nota.textContent = t('code.p50');
+        setTimeout(() => { location.href = location.pathname + '?pasillo=50'; }, 1200);
+      } else if (pijama && CODIGO_PIJAMA.has(huella)) {
+        pijama.cambiar(true);
+        nota.textContent = t('code.pijamaOn');
+        setTimeout(onBack, 1800);
       } else {
         nota.textContent = t('code.wrong');
         nota.classList.remove('shake'); void nota.offsetWidth; nota.classList.add('shake');
@@ -140,7 +161,11 @@ export class UI {
     campo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); probar(); } e.stopPropagation(); });
     const row = this.el('div', 'row');
     row.append(this.button(t('code.enter'), probar, true), this.button(t('code.back'), onBack));
-    s.append(campo, row, nota);
+    s.append(campo, row);
+    if (pijama && pijama.activo()) {
+      s.appendChild(this.button(t('code.pijamaOff'), () => { pijama.cambiar(false); this.toast(t('code.pijamaOffDone')); onBack(); }));
+    }
+    s.appendChild(nota);
     this.root.appendChild(s);
     this.keyHandler = (e) => { if (e.code === 'Escape') onBack(); };
     campo.focus();
@@ -223,7 +248,8 @@ export class UI {
   // Arriba, todos los personajes en fila; abajo, la ficha del que está señalado: la ficha de Elora
   // (su foto) con los parámetros escritos en el lado derecho, que ella dejó en blanco para eso.
   // secretos: los personajes que aún no salen en la tienda (Drake, hasta escapar del pasillo 50: Elora)
-  showShop({ unlocked, coins, current, focusId, onChoose, onBuy, onClose, secretos }) {
+  // skins (modo pijama, Elora): { elegida(id), elegir(ch, skin) } o nada si el modo pijama no está puesto
+  showShop({ unlocked, coins, current, focusId, onChoose, onBuy, onClose, secretos, skins }) {
     const LISTA = CHARACTERS.filter((c) => !(c.secreto && !unlocked.has(c.id) && secretos && secretos.has(c.id)));
     this.clear();
     const s = this.el('div', 'screen dim shop');
@@ -249,7 +275,7 @@ export class UI {
       const c = this.el('div', 'card mini' + (locked ? ' locked' : '') + (ch.id === current.id ? ' current' : ''));
       const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64;
       const cx = cv.getContext('2d'); cx.translate(32, 40); cx.scale(1.5, 1.5);
-      drawCharacter(cx, ch, 0, 0, 'down', 0, 0, false);
+      drawCharacter(cx, skins ? conSkin(ch, skins.elegida(ch.id)) : ch, 0, 0, 'down', 0, 0, false);
       c.appendChild(cv);
       c.appendChild(this.el('div', 'name', (locked ? '🔒 ' : '') + ch.name));
       // ratón: pasar por encima enseña la ficha (solo con ratón de verdad: en el móvil, tocar
@@ -266,6 +292,14 @@ export class UI {
       cardEls.forEach((c, i) => c.classList.toggle('focus', i === focus));
       note.textContent = '';
       this.fillFicha(ficha, ch);
+      this.fillSkins(panelSkins, ch, skins, () => {
+        // al cambiar de skin, se redibuja su cartita de arriba
+        const cv = cardEls[focus].querySelector('canvas'), cx = cv.getContext('2d');
+        cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
+        cx.translate(32, 40); cx.scale(1.5, 1.5);
+        drawCharacter(cx, conSkin(ch, skins.elegida(ch.id)), 0, 0, 'down', 0, 0, false);
+        refresh();
+      });
       actions.innerHTML = '';
       const locked = !unlocked.has(ch.id);
       let label;
@@ -278,7 +312,11 @@ export class UI {
       actions.append(main, this.button(t('shop.close'), onClose));
     };
 
-    s.append(roster, ficha, actions, note);
+    // la ficha y, a su derecha, las skins del personaje (solo en el modo pijama)
+    const medio = this.el('div', 'shop-medio');
+    const panelSkins = this.el('div', 'skins-panel');
+    medio.append(ficha, panelSkins);
+    s.append(roster, medio, actions, note);
     this.root.appendChild(s);
     refresh();
     this.keyHandler = (e) => {
@@ -287,6 +325,30 @@ export class UI {
       else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); activate(LISTA[focus]); }
       else if (e.code === 'Escape') onClose();
     };
+  }
+
+  // Las skins de un personaje en la tienda (modo pijama, Elora): una cartita por skin con el personaje
+  // vestido así; la que lleva puesta, marcada. En el modo pijama son gratis.
+  fillSkins(box, ch, skins, onChange) {
+    box.innerHTML = '';
+    const lista = skins ? skinsDe(ch.id) : [];
+    box.classList.toggle('hidden', !lista.length);
+    if (!lista.length) return;
+    box.appendChild(this.el('div', 'skins-titulo', t('skins.title')));
+    const puesta = skins.elegida(ch.id) || null;
+    for (const skin of [null, ...lista]) {
+      const c = this.el('div', 'card skin' + (skin === puesta ? ' current' : ''));
+      const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80;
+      const cx = cv.getContext('2d'); cx.translate(40, 52); cx.scale(2, 2);
+      drawCharacter(cx, conSkin(ch, skin), 0, 0, 'down', 0, 0, false);
+      c.appendChild(cv);
+      const nombre = skin ? SKINS[skin].emoji + ' ' + t('skins.' + skin) : '👕 ' + t('skins.normal');
+      c.appendChild(this.el('div', 'name', nombre));
+      c.appendChild(this.el('div', 'skin-precio', skin === puesta ? t('skins.puesta') : skin ? t('skins.free') : ''));
+      if (skin && SKINS[skin].personajes[ch.id].provisional) c.title = t('skins.prueba');
+      c.onclick = () => { if (skin !== puesta) { skins.elegir(ch, skin); onChange(); } };
+      box.appendChild(c);
+    }
   }
 
   // Rellena la ficha de un personaje: la foto de Elora si la hay, o una ficha de papel con su dibujo.

@@ -10,7 +10,7 @@ import { Intro } from './intro.js';
 import { Title } from './title.js';
 import { TouchControls } from './touch.js';
 import { music } from './music.js';
-import { characterById } from './characters.js';
+import { characterById, conSkin, SKINS } from './characters.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -29,7 +29,11 @@ const wallet = { coins: 0, tapes: 0 };
 // Las demás cintas que tienes están en el inventario. Se pueden recuperar desde la caja.
 const cajaCintas = new Set();
 // drakeEnTienda: ya escapaste del pasillo de Drake y Drake está en la tienda (Elora)
-const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false };
+// modoPijama: se puso el código del modo pijama (Elora): las skins de pijama salen en la tienda, gratis
+const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false };
+// La skin que lleva puesta cada personaje (id del personaje → skin). Solo se ven en el modo pijama.
+const skinsElegidas = {};
+function aplicarSkin(ch) { return conSkin(ch, flags.modoPijama ? skinsElegidas[ch.id] : null); }
 const run = { character: characterById('carot'), level: 1, tapes: 0 };
 try {
   for (const id of JSON.parse(localStorage.getItem('holeway.unlocked') || '[]')) unlocked.add(id);
@@ -44,8 +48,10 @@ try {
   flags.tutorialSeen = localStorage.getItem('holeway.tutorialSeen') === '1';
   flags.lobbySeen = localStorage.getItem('holeway.lobbySeen') === '1';
   flags.drakeEnTienda = localStorage.getItem('holeway.drakeEnTienda') === '1';
+  flags.modoPijama = localStorage.getItem('holeway.modoPijama') === '1';
+  Object.assign(skinsElegidas, JSON.parse(localStorage.getItem('holeway.skins') || '{}'));
   const chId = localStorage.getItem('holeway.character');
-  if (chId && unlocked.has(chId)) run.character = characterById(chId);
+  if (chId && unlocked.has(chId)) run.character = aplicarSkin(characterById(chId));
 } catch (e) { /* nada */ }
 function save() {
   try {
@@ -58,6 +64,8 @@ function save() {
     localStorage.setItem('holeway.tutorialSeen', flags.tutorialSeen ? '1' : '0');
     localStorage.setItem('holeway.lobbySeen', flags.lobbySeen ? '1' : '0');
     localStorage.setItem('holeway.drakeEnTienda', flags.drakeEnTienda ? '1' : '0');
+    localStorage.setItem('holeway.modoPijama', flags.modoPijama ? '1' : '0');
+    localStorage.setItem('holeway.skins', JSON.stringify(skinsElegidas));
   } catch (e) { /* nada */ }
 }
 
@@ -95,6 +103,11 @@ function gotoMenu() {
     // La cinemática sale al principio, la primera vez, y lleva al lobby.
     onPlay: () => { if (flags.introSeen) gotoLobby(); else gotoIntro(); },
     onPad: () => ui.showPadSetup({ input, onClose: gotoMenu }),
+    // el modo pijama secreto (Elora): se pone y se quita con el código
+    pijama: {
+      activo: () => flags.modoPijama,
+      cambiar: (on) => { flags.modoPijama = on; run.character = aplicarSkin(run.character); save(); },
+    },
   });
 }
 
@@ -125,7 +138,17 @@ function gotoLobby() {
       const open = (focusId) => ui.showShop({
         unlocked, coins: wallet.coins, current: run.character, focusId,
         secretos: flags.drakeEnTienda ? new Set() : new Set(['drake']),
-        onChoose: (ch) => { run.character = ch; save(); lobby.setCharacter(ch); close(); },
+        onChoose: (ch) => { run.character = aplicarSkin(ch); save(); lobby.setCharacter(run.character); close(); },
+        // en el modo pijama, las skins (gratis); si es el personaje que llevas, se lo pone ya
+        skins: flags.modoPijama ? {
+          elegida: (id) => skinsElegidas[id] || null,
+          elegir: (ch, skin) => {
+            if (skin) skinsElegidas[ch.id] = skin; else delete skinsElegidas[ch.id];
+            if (ch.id === run.character.id) { run.character = aplicarSkin(ch); lobby.setCharacter(run.character); }
+            save();
+            if (skin) ui.toast(SKINS[skin].emoji + ' ' + t('skins.toast', { name: ch.name }));
+          },
+        } : null,
         onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(ch.id); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
         onClose: menu,
       });
