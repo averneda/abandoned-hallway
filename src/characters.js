@@ -55,12 +55,13 @@ export const CHARACTERS = [
     pequena: true,   // chica, más pequeña que los demás: tiene 7 u 8 años; enérgica, adoptada por humanos (Elora)
     stats: { velocidad: 80, cordura: 41, sigilo: 30, resistencia: 70 }, corazones: 3, ficha: 'assets/sprites/fichas/hoppy.webp',
     fichaCuadro: { left: 65.5, top: 26, right: 2.5, bottom: 4 } },
-  // Chop, el reno (Elora; el nombre lo eligió ella): el personaje secreto de Navidad. Su id sigue siendo 'reno'. Se gana abriendo los 5 días del calendario de
-  // Adviento grande (src/adviento.js) o se juega gratis en el modo Navidad (código). De momento es un reno de
-  // prueba que dibuja Clad [PROVISIONAL]: sin habilidad, sin ficha y con los números normales hasta que
-  // Elora dibuje su ficha y decida sus números y su habilidad.
-  { id: 'reno', name: 'Chop', species: { es: 'Reno', en: 'Reindeer' }, color: '#a8703f', dark: '#74471f', shape: 'reindeer', price: null, secreto: true, navidad: true, ability: null,
-    stats: { velocidad: 50, cordura: 50, sigilo: 50, resistencia: 50 }, corazones: 3 },
+  // Chop, el reno (Elora; el nombre lo eligió ella): el personaje secreto de Navidad. Su id sigue siendo 'reno'.
+  // Se gana abriendo los 5 días del calendario de Adviento grande (src/adviento.js) o se juega gratis en el
+  // modo Navidad (código). Ya tiene su ficha de Elora y su habilidad, la Nariz brillante (Elora); sus números,
+  // todavía no [PROVISIONAL]: los normales hasta que los decida Elora.
+  { id: 'reno', name: 'Chop', species: { es: 'Reno', en: 'Reindeer' }, color: '#c49a70', dark: '#94704c', shape: 'reindeer', price: null, secreto: true, navidad: true, ability: 'chop',
+    stats: { velocidad: 50, cordura: 50, sigilo: 50, resistencia: 50 }, corazones: 3, ficha: 'assets/sprites/fichas/reno.webp',
+    fichaCuadro: { left: 65, top: 22, right: 3, bottom: 5 } },
 ];
 
 // La Tarda de verdad (la de la tienda del lobby y la que habla en las grabaciones) es gris, como la
@@ -86,6 +87,7 @@ export const SKINS = {
       draila: { price: null, provisional: true },   // pijama de estrellas
       hoppy: { price: null, provisional: true },    // con un peluchito
       katy: { price: null, provisional: true },     // pijama entero lila (Elora) y un peluchito
+      oct: { price: 40 },        // bata gris con lazo y sombrerito de paja, sin gafas (dibujo de Elora)
       // ya hechos a partir de su dibujo de Elora (foto en assets/referencias/skins/<id>-pijama.webp)
       carot: { price: 40 },    // camisón rosa de corazones y un peluchito blanco con manchas
       froggy: { price: 40 },   // pijama azul con lunitas amarillas
@@ -647,6 +649,10 @@ function drawOct(ctx, pal, facing, walk, opts) {
   const skin = pal.color, skinDark = pal.dark;
   const shirt = B ? '#5e0810' : '#9b6ad0', shirtDark = B ? '#3a0408' : '#6b3fa6';
   const sucker = B ? '#c9a0a0' : '#f3d65a';
+  // skin de pijama (dibujo de Elora): una bata gris larga con un lazo en la cintura y un sombrerito de
+  // paja en el pecho (Elora quería poner «ONE PIECE», pero eso tiene dueño), y sin gafas, para dormir
+  const pj = pal.skin === 'pijama' && !B;
+  const bata = '#bdb8c6', bataOsc = '#8f8a9c';
   const line = B ? '#2a0306' : '#1f2a33';
   // hacia dónde apuntan los tentáculos de la cara: de frente, a la izquierda como en la ficha
   const dir = facing === 'right' ? 1 : -1;
@@ -662,6 +668,13 @@ function drawOct(ctx, pal, facing, walk, opts) {
     const end = girar(chasing ? [side * 13 + sw, -24] : [side * 12 + sw * 0.4, 2], [side * 6, -5], aO);
     ctx.strokeStyle = skin; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(side * 6, -5); ctx.quadraticCurveTo(ctl[0], ctl[1], end[0], end[1]); ctx.stroke();
+    if (pj) {
+      // la manga larga de la bata, hasta la mitad del tentáculo (el trozo de la curva de 0 a 0,5)
+      const m = 0.5, c1 = [side * 6 + (ctl[0] - side * 6) * m, -5 + (ctl[1] + 5) * m];
+      const u = 1 - m, pm = [u * u * side * 6 + 2 * u * m * ctl[0] + m * m * end[0], u * u * -5 + 2 * u * m * ctl[1] + m * m * end[1]];
+      ctx.strokeStyle = bata; ctx.lineWidth = 3.8;
+      ctx.beginPath(); ctx.moveTo(side * 6, -5); ctx.quadraticCurveTo(c1[0], c1[1], pm[0], pm[1]); ctx.stroke();
+    }
     ctx.fillStyle = sucker;
     for (const t of [0.55, 0.85]) {
       // ventosas a lo largo del tentáculo
@@ -684,6 +697,27 @@ function drawOct(ctx, pal, facing, walk, opts) {
   }
   ctx.strokeStyle = skinDark; ctx.lineWidth = 0.7;
   ctx.beginPath(); ctx.moveTo(-3, 4); ctx.lineTo(-4.5, 9); ctx.moveTo(3, 4); ctx.lineTo(4.5, 9); ctx.stroke();
+  if (pj) {
+    // la bata gris, larga hasta casi abajo (asoman las puntas de los tentáculos), con el cuello en pico
+    ctx.fillStyle = bata;
+    ctx.beginPath(); ctx.moveTo(-7, -9); ctx.lineTo(7, -9); ctx.lineTo(9, 8); ctx.lineTo(-9, 8); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.globalAlpha *= 0.45; ctx.fillStyle = bataOsc;
+    ctx.beginPath(); ctx.moveTo(3.5, -8); ctx.lineTo(6.5, -8); ctx.lineTo(8.5, 7.6); ctx.lineTo(5, 7.6); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = bataOsc; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-3, -9); ctx.lineTo(0.5, -2); ctx.lineTo(0.5, 8); ctx.moveTo(3, -9); ctx.lineTo(0.5, -2); ctx.stroke();
+    // el cinturón con el lazo
+    ctx.fillStyle = bataOsc; ctx.fillRect(-8, 0, 16, 1.6);
+    if (!back) {
+      ctx.fillStyle = '#d8d4de';
+      ctx.beginPath(); ctx.ellipse(-1.3, 0.8, 1.6, 1.1, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(1.3, 0.8, 1.6, 1.1, 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(-1, 1.4, 0.9, 3.6); ctx.fillRect(0.4, 1.4, 0.9, 3);
+      // el sombrerito de paja en el pecho: el ala, la copa y la cinta roja
+      ctx.fillStyle = '#f2cf4a'; ctx.beginPath(); ctx.ellipse(-2.6, -4, 2.6, 0.9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-2.6, -4.9, 1.5, 1.3, 0, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#d42a36'; ctx.fillRect(-4.1, -4.6, 3, 0.6);
+    }
+  } else {
   // camiseta morada con mangas cortas
   ctx.fillStyle = shirt;
   rrect(ctx, -7, -9, 14, 12, 2.5); ctx.fill();
@@ -696,6 +730,7 @@ function drawOct(ctx, pal, facing, walk, opts) {
     ctx.fillStyle = B ? '#c9a0a0' : '#f4f4f8';
     rrect(ctx, -3.6, -5.2, 7.2, 3.6, 1.6); ctx.fill();
     ctx.fillStyle = line; dot(ctx, -1.8, -3.4, 0.6); dot(ctx, 1.6, -3.9, 0.45); dot(ctx, 2.4, -3, 0.45);
+  }
   }
   // el brazo de delante, igual que el otro
   brazo(dir, 1);
@@ -716,17 +751,19 @@ function drawOct(ctx, pal, facing, walk, opts) {
     ctx.quadraticCurveTo(xe - dir * 0.6, ye + 1.8, xe - dir * 1.8, ye + 0.8); ctx.stroke();
     ctx.fillStyle = sucker; dot(ctx, x0 + dir * fwd * 0.7, ya + 3.5, 0.55);
   });
-  // gafas redondas con los ojos grandes (cada círculo en su propio trazo)
+  // gafas redondas con los ojos grandes (cada círculo en su propio trazo); en pijama, sin gafas (Elora)
   const ec = hx + dir * 2.2;
   const eyeC = B ? (chasing ? '#ffe36b' : '#7a0b12') : line;
   for (const side of [-1, 1]) {
     const x = ec + side * 3.1;
     ctx.fillStyle = B ? '#f0d0c8' : '#fff'; dot(ctx, x, hy - 2.5, 2.4);
     ctx.fillStyle = eyeC; dot(ctx, x + dir * 0.4, hy - 2.4, 1.3);
+    if (pj) continue;
     ctx.strokeStyle = line; ctx.lineWidth = 0.8;
     ctx.beginPath(); ctx.arc(x, hy - 2.5, 2.6, 0, Math.PI * 2); ctx.stroke();
   }
-  ctx.beginPath(); ctx.moveTo(ec - 0.5, hy - 2.5); ctx.lineTo(ec + 0.5, hy - 2.5); ctx.stroke();
+  ctx.strokeStyle = line; ctx.lineWidth = 0.8;
+  if (!pj) { ctx.beginPath(); ctx.moveTo(ec - 0.5, hy - 2.5); ctx.lineTo(ec + 0.5, hy - 2.5); ctx.stroke(); }
   // ceja preocupada encima del ojo de atrás y el coloretito en la mejilla
   ctx.lineWidth = 0.8;
   ctx.beginPath(); ctx.moveTo(ec - dir * 1.8, hy - 6.4); ctx.lineTo(ec - dir * 4.6, hy - 5.4); ctx.stroke();
@@ -1441,84 +1478,118 @@ function drawDraila(ctx, pal, facing, walk, opts) {
   }
 }
 
-// El reno de prueba (Clad, hasta que Elora dibuje su ficha) [PROVISIONAL]: marrón con la tripa y el hocico
-// clarito, cuernos de ramas, orejas, una bufanda roja con rayas verdes, colita blanca y pezuñas oscuras.
-// De Bloodie le falta un trozo de cuerno.
+// Chop, el reno (ficha de Elora): marrón clarito, con los cuernos grandes marrón oscuro (y un lazo rosa de
+// regalo en uno), los ojos cerrados de contento, la naricita roja en el hocico clarito, una bufanda blanca con
+// rayas rojas y verdes que vuela, un jersey rojo-rosa de «MERRY CHRISTMAS» con un arbolito, las pezuñas
+// marrón oscuro y una colita. De Bloodie le falta un trozo de cuerno.
 function drawReno(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
-  const skin = pal.color, skinDark = pal.dark;
-  const claro = B ? '#c9a0a0' : '#e8cfa6', cuerno = B ? '#3a0408' : '#d9b98a', cuernoOsc = B ? '#2a0306' : '#a88a5c';
-  const bufanda = B ? '#5e0810' : '#d42a36', raya = B ? '#3a0408' : '#2e9a4c';
-  const pezuna = B ? '#2a0306' : '#3a2618', line = B ? '#2a0306' : '#2a1a10';
+  const skin = pal.color;
+  const hocico = B ? '#c9a0a0' : '#ecd6ad', cuerno = B ? '#3a0408' : '#7a2e1e';
+  const jersey = B ? '#5e0810' : '#e2646e', jerseyOsc = B ? '#3a0408' : '#b8454f';
+  const blanco = B ? '#c9a0a0' : '#f7f6f0', rojo = B ? '#5e0810' : '#d42a36', verde = B ? '#3a0408' : '#2e9a4c';
+  const pezuna = B ? '#2a0306' : '#5a2418', line = B ? '#2a0306' : '#3a2016';
+  const lado = facing === 'left' ? -1 : 1;   // hacia dónde vuela la bufanda
   const hx = facing === 'left' ? -1.5 : facing === 'right' ? 1.5 : 0, hy = -15;
   const step = Math.sin(walk) * 1.5;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  // colita blanca (detrás, salvo de espaldas)
-  const cola = () => { ctx.fillStyle = B ? '#c9a0a0' : '#fff7ee'; dot(ctx, 0, 4, 2.4); };
-  if (!back) { ctx.fillStyle = B ? '#c9a0a0' : '#fff7ee'; dot(ctx, -7, 4, 2); }
-  // patas con pezuñas
+  // la colita (detrás si mira de frente)
+  const cola = () => { ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(0, 4, 2.4, 1.8, 0, 0, Math.PI * 2); ctx.fill(); };
+  if (!back) { ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(-lado * 6.5, 4.5, 2, 1.4, -lado * 0.5, 0, Math.PI * 2); ctx.fill(); }
+  // patas marrón clarito con las pezuñas oscuras
   for (const side of [-1, 1]) {
     const lift = side * step > 0 ? -side * step * 0.6 : 0;
-    girado(ctx, piernaPose(opts, side), side * 3.6, 3, () => {
-      ctx.fillStyle = skin; ctx.fillRect(side * 3.6 - 1.8, 3, 3.6, 7 + lift);
-      ctx.fillStyle = pezuna; rrect(ctx, side * 3.6 - 2.3, 9 + lift, 4.6, 2.6, 1); ctx.fill();
+    girado(ctx, piernaPose(opts, side), side * 3.4, 3, () => {
+      ctx.fillStyle = skin; ctx.fillRect(side * 3.4 - 1.7, 3, 3.4, 7 + lift);
+      ctx.fillStyle = pezuna; rrect(ctx, side * 3.4 - 2.2, 9 + lift, 4.4, 2.6, 1); ctx.fill();
     });
   }
-  // brazos (de Bloodie que persigue, arriba), con las manos-pezuña
+  // brazos con las mangas del jersey y las pezuñas (de Bloodie que persigue, arriba)
   for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.4);
     const h = girar(chasing ? [side * 13 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 2], [side * 5.5, -6], brazoPose(opts, side));
-    ctx.strokeStyle = skin; ctx.lineWidth = 3;
+    ctx.strokeStyle = jersey; ctx.lineWidth = 3.2;
     ctx.beginPath(); ctx.moveTo(side * 5.5, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
     ctx.fillStyle = pezuna; dot(ctx, h[0], h[1], 1.6);
   }
-  // el cuerpo, con la tripa clarita
-  ctx.fillStyle = skin; rrect(ctx, -6.5, -9, 13, 14, 4); ctx.fill();
-  if (!back) { ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(0, -1, 4, 5, 0, 0, Math.PI * 2); ctx.fill(); }
-  ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = skinDark; ctx.fillRect(3.5, -8, 2.5, 12); ctx.restore();
-  if (back) cola();
-  // los cuernos: un tronco y dos ramitas a cada lado (de Bloodie, a uno le falta un trozo)
-  for (const side of [-1, 1]) {
-    const x0 = hx + side * 3.5, y0 = hy - 6.5;
-    const roto = B && side === 1;
-    ctx.strokeStyle = cuerno; ctx.lineWidth = 1.6;
+  // el jersey rojo-rosa
+  ctx.fillStyle = jersey; rrect(ctx, -6.5, -9, 13, 13.5, 3.5); ctx.fill();
+  ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = jerseyOsc; ctx.fillRect(3.5, -8, 2.5, 11.5); ctx.restore();
+  ctx.fillStyle = jerseyOsc; ctx.fillRect(-6.5, 2.6, 13, 1.6);   // el borde de abajo
+  if (!back && !B) {
+    // el arbolito y las letras verdes de «MERRY CHRISTMAS» (a este tamaño, dos rayitas de letras)
+    ctx.fillStyle = verde;
+    ctx.beginPath(); ctx.moveTo(0, -7.6); ctx.lineTo(1.8, -4.4); ctx.lineTo(-1.8, -4.4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffd83a'; dot(ctx, 0, -7.8, 0.6);
+    ctx.strokeStyle = '#3fbf5a'; ctx.lineWidth = 0.8;
     ctx.beginPath();
-    ctx.moveTo(x0, y0); ctx.lineTo(x0 + side * 3, y0 - 6);
-    if (!roto) { ctx.lineTo(x0 + side * 4.5, y0 - 11); }
-    ctx.moveTo(x0 + side * 1.6, y0 - 3); ctx.lineTo(x0 + side * 5.5, y0 - 5);
-    if (!roto) { ctx.moveTo(x0 + side * 3.3, y0 - 7); ctx.lineTo(x0 + side * 7, y0 - 9); ctx.moveTo(x0 + side * 3.8, y0 - 8.5); ctx.lineTo(x0 + side * 2.4, y0 - 12); }
+    for (let x = -4.4; x <= 3.6; x += 1.6) { ctx.moveTo(x, -2.6); ctx.lineTo(x + 0.9, -2.6); }
+    for (let x = -5; x <= 4.2; x += 1.4) { ctx.moveTo(x, -0.6); ctx.lineTo(x + 0.8, -0.6); }
     ctx.stroke();
-    ctx.strokeStyle = cuernoOsc; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + side * 3, y0 - 6); ctx.stroke();
+  }
+  if (back) cola();
+  // los cuernos grandes marrón oscuro: un tronco que sube y tres puntas hacia dentro (como una E)
+  for (const side of [-1, 1]) {
+    const x0 = hx + side * 3.4, y0 = hy - 6.5;
+    const roto = B && side === 1;
+    ctx.strokeStyle = cuerno; ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x0 + side * 6, y0 - 4, x0 + side * 6, y0 - (roto ? 8 : 13));
+    ctx.moveTo(x0 + side * 3, y0 - 2.6); ctx.lineTo(x0 + side * 1, y0 - 6);
+    if (!roto) { ctx.moveTo(x0 + side * 5.6, y0 - 7); ctx.lineTo(x0 + side * 2.6, y0 - 9.6); ctx.moveTo(x0 + side * 6, y0 - 11); ctx.lineTo(x0 + side * 3.4, y0 - 13.4); }
+    ctx.stroke();
+  }
+  // el lazo rosa de regalo en un cuerno (Elora)
+  if (!B) {
+    const lx = hx + 3.4 + 6.2, ly = hy - 6.5 - 11;
+    ctx.fillStyle = '#f08aa8';
+    ctx.beginPath(); ctx.ellipse(lx - 1.6, ly, 1.7, 1.1, -0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(lx + 1.6, ly, 1.7, 1.1, 0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#d4607e'; dot(ctx, lx, ly, 0.8);
   }
   // las orejas, de lado
   for (const side of [-1, 1]) {
-    ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(hx + side * 8.5, hy - 2.5, 3.6, 1.8, side * 0.5, 0, Math.PI * 2); ctx.fill();
-    if (!back) { ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(hx + side * 8.6, hy - 2.5, 2, 0.9, side * 0.5, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(hx + side * 8.4, hy - 2.5, 3.4, 1.7, side * 0.5, 0, Math.PI * 2); ctx.fill();
+    if (!back) { ctx.fillStyle = hocico; ctx.beginPath(); ctx.ellipse(hx + side * 8.5, hy - 2.5, 1.8, 0.8, side * 0.5, 0, Math.PI * 2); ctx.fill(); }
   }
   // la cabeza
   ctx.fillStyle = skin; dot(ctx, hx, hy, 8);
-  // la bufanda roja con rayas verdes, y la punta que cuelga
-  ctx.fillStyle = bufanda; rrect(ctx, -6.5, -10, 13, 3.4, 1.6); ctx.fill();
-  ctx.fillRect(back ? -4.5 : 2.5, -8, 2.6, 7);
+  // la bufanda blanca con rayas rojas y verdes, y la punta larga que vuela hacia un lado
+  ctx.fillStyle = blanco; rrect(ctx, -6.5, -10, 13, 3.4, 1.6); ctx.fill();
+  const punta = [[lado * 4, -9], [lado * 9, -8.4], [lado * 12, -10.4], [lado * 15.5, -8.6]];
+  const ola = Math.sin(walk) * 0.6;
+  ctx.strokeStyle = blanco; ctx.lineWidth = 2.6;
+  ctx.beginPath(); ctx.moveTo(punta[0][0], punta[0][1]);
+  ctx.bezierCurveTo(punta[1][0], punta[1][1] + ola, punta[2][0], punta[2][1] - ola, punta[3][0], punta[3][1]);
+  ctx.stroke();
   if (!B) {
-    ctx.fillStyle = raya;
-    for (const x of [-4, -0.5, 3]) ctx.fillRect(x, -10, 1.1, 3.4);
-    ctx.fillRect(back ? -4.5 : 2.5, -4, 2.6, 1);
+    for (const [x, c] of [[-4.6, rojo], [-2, verde], [0.6, rojo], [3.2, verde]]) { ctx.fillStyle = c; ctx.fillRect(x, -10, 1.2, 3.4); }
+    for (const [k, c] of [[0.3, rojo], [0.55, verde], [0.8, rojo]]) {
+      const u = 1 - k;
+      const px = u * u * u * punta[0][0] + 3 * u * u * k * punta[1][0] + 3 * u * k * k * punta[2][0] + k * k * k * punta[3][0];
+      const py = u * u * u * punta[0][1] + 3 * u * u * k * (punta[1][1] + ola) + 3 * u * k * k * (punta[2][1] - ola) + k * k * k * punta[3][1];
+      ctx.fillStyle = c; dot(ctx, px, py, 1.15);
+    }
   }
   if (B) bloodyMarks(ctx, hx, hy, facing);
   if (back) return;
-  // el hocico clarito con la nariz marrón oscuro, los ojos y una sonrisita
+  // el hocico clarito con la naricita roja, los ojos cerrados de contento y una sonrisita
   const mx = hx + (facing === 'left' ? -1.5 : facing === 'right' ? 1.5 : 0);
-  ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(mx, hy + 3.5, 4.2, 3.2, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = B ? '#2a0306' : '#4a2a18'; ctx.beginPath(); ctx.ellipse(mx, hy + 1.6, 1.8, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = hocico; ctx.beginPath(); ctx.ellipse(mx, hy + 3.4, 4, 3.1, 0, 0, Math.PI * 2); ctx.fill();
+  // con la Nariz brillante encendida (opts.nariz), la naricita brilla roja
+  if (opts.nariz && !B) {
+    const pulso = 0.5 + 0.2 * Math.sin(walk * 2 + performance.now() / 120);
+    ctx.fillStyle = `rgba(255, 70, 70, ${pulso * 0.45})`; dot(ctx, mx, hy + 1.5, 4.2);
+    ctx.fillStyle = `rgba(255, 120, 110, ${pulso * 0.6})`; dot(ctx, mx, hy + 1.5, 2.4);
+  }
+  ctx.fillStyle = B ? '#2a0306' : opts.nariz ? '#ff4a4a' : '#c0303a'; dot(ctx, mx, hy + 1.5, 1.2);
+  ctx.strokeStyle = B && chasing ? '#ffe36b' : line; ctx.lineWidth = 0.9;
   for (const side of [-1, 1]) {
     const ex = hx + side * 3.3 + (mx - hx) * 0.5;
-    ctx.fillStyle = B ? (chasing ? '#ffe36b' : '#7a0b12') : '#1a1210'; dot(ctx, ex, hy - 1.8, 1.4);
-    if (!B) { ctx.fillStyle = '#fff'; dot(ctx, ex + 0.5, hy - 2.3, 0.45); }
+    ctx.beginPath(); ctx.arc(ex, hy - 1.4, 1.8, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
   }
   ctx.strokeStyle = line; ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(mx - 1.6, hy + 4.4); ctx.quadraticCurveTo(mx, hy + 5.8, mx + 1.6, hy + 4.4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(mx - 1.6, hy + 4.2); ctx.quadraticCurveTo(mx, hy + 5.6, mx + 1.6, hy + 4.2); ctx.stroke();
 }
 
 // El Drake Sangriento: el que escupe fuego en el pasillo de Drake (pasillo 50), dibujado por Elora

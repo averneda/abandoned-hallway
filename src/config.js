@@ -80,6 +80,9 @@ export const ABILITIES = {
   // Hoppy: Supercarrera (Elora). Corre el doble de rápido que corriendo normal y no se cansa.
   // Dura 5 s y se puede volver a usar a los 15 s (Elora).
   hoppy: { time: 5, cooldown: 15, speed: 2 },
+  // Chop (Elora): Nariz brillante. Al coger una cinta, comida, un corazón o una bolita de estamina (las monedas no),
+  // su nariz se enciende 5 s más (se van sumando) y ve más lejos en la oscuridad (luz: cuántas veces más [PROVISIONAL]).
+  chop: { segundos: 5, luz: 1.8 },
 };
 
 export const COINS = {

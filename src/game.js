@@ -106,6 +106,7 @@ export class Game {
       capa: 0,       // segundos que le queda la capa Tun de Tarda (inmortal, pero más lento)
       fly: 0,        // segundos que le quedan a Drake volando (pasa por encima de trastos y nadie le coge)
       supercarrera: 0, // segundos que le quedan a Hoppy corriendo a toda velocidad (sin cansarse)
+      nariz: 0,        // segundos que le quedan a Chop con la Nariz brillante (ve más lejos en la oscuridad)
       stamina: STAMINA.start,  // se gasta corriendo y se recupera parando
       agotado: false,          // se quedó a cero: hay que recuperar un poco antes de volver a correr
       sinCorrer: 0,            // segundos desde la última vez que corrió
@@ -215,6 +216,7 @@ export class Game {
       sfx.supercarrera();
     }
     if (p.supercarrera > 0) p.supercarrera -= dt;
+    if (p.nariz > 0) p.nariz = Math.max(0, p.nariz - dt);
     if (this.ch.ability === 'drake' && input.wasPressed('ability') && p.cooldown <= 0 && p.fly <= 0) {
       p.fly = ABILITIES.drake.time;
       p.cooldown = ABILITIES.drake.cooldown;
@@ -378,6 +380,11 @@ export class Game {
         p.stamina = Math.min(STAMINA.max, p.stamina + STAMINA.ball);
         p.agotado = false;
         this.say(t('msg.stamina'), 1.5); sfx.stamina();
+      }
+      // Nariz brillante de Chop (Elora): cada objeto que coges (menos las monedas) le da 5 s más de luz
+      if (this.ch.ability === 'chop' && it.type !== 'coin') {
+        if (p.nariz <= 0) this.say(t('msg.nariz'), 1.5);
+        p.nariz += ABILITIES.chop.segundos;
       }
     }
 
@@ -808,7 +815,7 @@ export class Game {
     // los andares que inventó Elora en su Taller de Andares (solo andando por el suelo, sin saltar ni volar)
     const pose = p.moving && !p.jumping && p.fly <= 0 && !p.tongue ? poseAndando(this.ch.id, !!p.corriendo, p.andando || 0) : null;
     drawCharacter(ctx, this.ch, p.x, p.y, p.facing, p.moving || (p.tongue && p.tongue.phase === 'dash') ? p.walk : 0, jumpH,
-      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null, skate: !!p.corriendo, lengua: !!p.tongue, pose });
+      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null, skate: !!p.corriendo, lengua: !!p.tongue, pose, nariz: p.nariz > 0 });
     // sin estamina: gotas de sudor de cansancio (Elora)
     if (p.agotado) this.drawSweat(ctx, p.x, p.y - jumpH);
     // Supercarrera de Hoppy: rayas de velocidad detrás
@@ -1078,7 +1085,8 @@ export class Game {
     };
     const flicker = 1 + Math.sin(this.time * 9) * 0.02 + Math.sin(this.time * 23) * 0.01;
     // El Bonus está mucho más iluminado: es una sala alegre y se tiene que ver entera.
-    const radio = (L.noButton ? LIGHT_RADIUS_TILES * 2.6 : LIGHT_RADIUS_TILES) * TILE * flicker;
+    // con la Nariz brillante de Chop, la luz llega más lejos
+    const radio = (L.noButton ? LIGHT_RADIUS_TILES * 2.6 : LIGHT_RADIUS_TILES) * (p.nariz > 0 ? ABILITIES.chop.luz : 1) * TILE * flicker;
     hole(p.x - cam.x, p.y - cam.y, radio);
     // Con la salida abierta, su luz verde se ve desde lejos para guiarte hasta ella.
     if (this.buttonPressed) for (const e of L.exits) hole((e.tx + 0.5) * TILE - cam.x, (e.ty + 0.5) * TILE - cam.y, TILE * 3, 0.8);
@@ -1093,6 +1101,20 @@ export class Game {
     }
     d.globalAlpha = 1;
     ctx.drawImage(this.dark, 0, 0, VIEW_W, VIEW_H);
+    // Nariz brillante de Chop (Elora): el borde de la luz se ve verde brillante, para saber que está encendida
+    // (Elora: verde mejor que rojo, que parecía peligro)
+    if (p.nariz > 0) {
+      const x = p.x - cam.x, y = p.y - cam.y;
+      const pulso = 0.75 + 0.25 * Math.sin(this.time * 6);
+      const fin = Math.min(1, p.nariz / 0.6);   // al apagarse, el rojo se va poco a poco
+      const g = ctx.createRadialGradient(x, y, radio * 0.55, x, y, radio * 1.02);
+      g.addColorStop(0, 'rgba(60, 235, 110, 0)');
+      g.addColorStop(0.62, `rgba(60, 235, 110, ${0.45 * pulso * fin})`);
+      g.addColorStop(0.8, `rgba(120, 255, 150, ${0.32 * pulso * fin})`);
+      g.addColorStop(1, 'rgba(60, 235, 110, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, radio * 1.02, 0, Math.PI * 2); ctx.fill();
+    }
   }
 
   renderHUD(ctx) {
@@ -1188,6 +1210,10 @@ export class Game {
       const name = t('ability.' + this.ch.ability + '.name');
       if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }
       else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
+    } else if (this.ch.ability === 'chop') {
+      const name = t('ability.chop.name');
+      if (p.nariz > 0) { ctx.fillStyle = '#7dff9a'; ctx.fillText(`${name}: ${Math.ceil(p.nariz)}s`, x, y); }
+      else { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.narizEspera', { name }), x, y); }
     } else if (this.ch.ability === 'carot') {
       ctx.fillStyle = '#ffe36b';
       ctx.fillText(t('ability.carot.name'), x, y);
