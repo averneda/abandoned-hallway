@@ -144,6 +144,7 @@ export const DRAKE = {
   fireTime: 1.5,    // lo que dura el fuego en pantalla [PROVISIONAL]
   flyTime: 2.5,     // lo que tarda Drake en subir volando y en irse [PROVISIONAL]
   size: 10,         // el Drake Sangriento es 10 veces más grande que un Bloody normal (Elora)
+  anxiety: 3,       // ansiedad por segundo si Drake viene y aún no te has escondido (Elora: "un poco") [PROVISIONAL]
   buttonsApart: 8,  // casillas mínimas entre botón y botón, para que estén repartidos [PROVISIONAL]
 };
 export const CONTINUE_EVERY = 5;      // cada cuántos niveles sale "¿continuar o salir?"

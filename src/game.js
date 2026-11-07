@@ -5,6 +5,7 @@ import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from '.
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS } from './characters.js';
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
+import { music } from './music.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
 const ESTAMINA = '#2fe0a6';   // verde-turquesa de la estamina (barra y bolitas)
@@ -649,6 +650,7 @@ export class Game {
     if (f.fase === 'espera' && f.t >= DRAKE.fireEvery) {
       f.fase = 'aviso'; f.t = 0;   // el aviso grande lo pinta renderFuego
       sfx.hurt();
+      music.play('fuego');         // música rápida y nerviosa mientras viene Drake (Elora)
     } else if (f.fase === 'aviso' && f.t >= DRAKE.warn) {
       f.fase = 'fuego'; f.t = 0;
       const libre = p.seguro || p.enHueco || p.capa > 0 || p.fly > 0;
@@ -664,7 +666,10 @@ export class Game {
       f.fase = 'vuelta'; f.t = 0;
     } else if (f.fase === 'vuelta' && f.t >= DRAKE.flyTime) {
       f.fase = 'espera'; f.t = 0;
+      music.play('miedo');
     }
+    // Drake está viniendo y aún no te has escondido: te sube un poco la ansiedad (Elora)
+    if (f.fase === 'aviso' && !p.seguro && !p.enHueco) p.anxiety += DRAKE.anxiety * dt * statMul(this.ch, 'cordura');
   }
 
   // Drake (gigante, DRAKE.size veces un Bloody) volando por la pantalla, el aviso y las llamas.

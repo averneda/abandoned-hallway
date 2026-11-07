@@ -3,6 +3,7 @@
 //   'miedo'  → notas largas y raras en tono menor, para los pasillos.
 //   'alegre' → saltarina y rápida en tono mayor, para la sala Bonus.
 //   'lobby'  → tranquila y un poco misteriosa, como de sala de espera, para el lobby.
+//   'fuego'  → rápida y nerviosa, mientras el Drake Sangriento viene a escupir fuego (Elora).
 
 import { audioContext } from './audio.js';
 
@@ -77,6 +78,23 @@ const CANCIONES = {
       ['E2', 4], ['C3', 4], ['A2', 4], ['B2', 4],
     ],
   },
+  // Re menor, muy rápida y repetitiva, como un corazón que late deprisa: para cuando el Drake
+  // Sangriento viene a escupir fuego en el pasillo 50 (Elora: "más rápida, que dé un poco de ansiedad").
+  fuego: {
+    tiempo: 0.105,
+    voz: 'square', volVoz: 0.085,
+    bajoTipo: 'sawtooth', volBajo: 0.07,
+    melodia: [
+      ['D5', 1], ['F5', 1], ['D5', 1], ['G#5', 1], ['D5', 1], ['F5', 1], ['D5', 1], ['A5', 1],
+      ['D5', 1], ['F5', 1], ['D5', 1], ['G#5', 1], ['A5', 2], ['G#5', 2],
+      ['C5', 1], ['D#5', 1], ['C5', 1], ['F#5', 1], ['C5', 1], ['D#5', 1], ['C5', 1], ['G5', 1],
+      ['A#4', 1], ['D5', 1], ['F5', 1], ['A5', 1], ['G#5', 2], ['A5', 2],
+    ],
+    bajo: [
+      ['D2', 1], ['D3', 1], ['D2', 1], ['D3', 1], ['D2', 1], ['D3', 1], ['D2', 1], ['D#3', 1],
+      ['C2', 1], ['C3', 1], ['C2', 1], ['C3', 1], ['A#1', 1], ['A#2', 1], ['A1', 1], ['A2', 1],
+    ],
+  },
 };
 
 const ADELANTO = 0.6;  // cuánto se programa por delante
@@ -121,7 +139,7 @@ export class Music {
     o.stop(t0 + dur + 0.05);
   }
 
-  // play('miedo'), play('alegre') o play('lobby'). Si ya suena esa, no hace nada.
+  // play('miedo'), play('alegre'), play('lobby') o play('fuego'). Si ya suena esa, no hace nada.
   play(nombre) {
     if (this.playing && this.cancion === nombre) return;
     if (!CANCIONES[nombre]) return;

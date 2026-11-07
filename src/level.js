@@ -125,6 +125,11 @@ export function loadMap(n, map, seed = 0) {
     else if (ch !== ' ') { (markers[ch] = markers[ch] || []).push({ tx, ty, ...center(tx, ty) }); }
   }
   if (!spawn) throw new Error('Mapa ' + n + ': falta P');
+  // una letra (P, N, T...) metida en la zona segura también es zona segura
+  for (const ms of [[{ tx: Math.floor(spawn.x / TILE), ty: Math.floor(spawn.y / TILE) }], ...Object.values(markers)]) for (const m of ms) {
+    const i = m.ty * W + m.tx;
+    if ([1, -1, W, -W].some((d) => seguro[i + d])) seguro[i] = 1;
+  }
 
   const rand = rng(seed * 2654435761 + 12345);
   const stx = Math.floor(spawn.x / TILE), sty = Math.floor(spawn.y / TILE);

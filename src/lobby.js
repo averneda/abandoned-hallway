@@ -107,6 +107,26 @@ export class Lobby extends Game {
       ctx.fillStyle = '#e8b83a'; ctx.beginPath(); ctx.ellipse(nx + 20, ny + 0.5, 4, 2, 0, 0, Math.PI * 2); ctx.fill();
     };
 
+    // el cartel de madera "¡Nuevas skins próximamente!" (Elora): a la izquierda de la puerta de
+    // salida, colgado en la pared de arriba
+    const d0 = this.doors[0] || { tx: 13, ty: 1 };
+    const cartel = () => {
+      const w = 100, h = 40, cx = d0.tx * TILE - 12 - w / 2, top = d0.ty * TILE - 6;
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(cx - w / 2 + 3, top + 4, w, h);   // sombra en la pared
+      ctx.fillStyle = '#a8733f'; ctx.fillRect(cx - w / 2, top, w, h);                 // la tabla
+      ctx.fillStyle = '#8c5d30'; ctx.fillRect(cx - w / 2, top + h / 2 - 1, w, 2);       // la raya entre tablas
+      ctx.strokeStyle = '#5a3d26'; ctx.lineWidth = 2; ctx.strokeRect(cx - w / 2, top, w, h);
+      ctx.fillStyle = '#3a2618';                                   // los clavos
+      for (const [px, py] of [[-w / 2 + 5, 5], [w / 2 - 5, 5], [-w / 2 + 5, h - 5], [w / 2 - 5, h - 5]]) { ctx.beginPath(); ctx.arc(cx + px, top + py, 1.5, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#fff6dc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 11px "Segoe UI", Arial';
+      const [l1, l2] = t('lobby.skins').split('\n');
+      ctx.fillText(l1, cx, top + h * 0.3); ctx.fillText(l2 || '', cx, top + h * 0.72);
+      ctx.textBaseline = 'alphabetic';
+    };
+
+    cartel();
+
     // actores ordenados por altura
     const actors = [
       { y: ny + 12, draw: tienda },
