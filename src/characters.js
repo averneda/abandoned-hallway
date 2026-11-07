@@ -57,10 +57,10 @@ export const CHARACTERS = [
     fichaCuadro: { left: 65.5, top: 26, right: 2.5, bottom: 4 } },
   // Chop, el reno (Elora; el nombre lo eligió ella): el personaje secreto de Navidad. Su id sigue siendo 'reno'.
   // Se gana abriendo los 5 días del calendario de Adviento grande (src/adviento.js) o se juega gratis en el
-  // modo Navidad (código). Ya tiene su ficha de Elora y su habilidad, la Nariz brillante (Elora); sus números,
-  // todavía no [PROVISIONAL]: los normales hasta que los decida Elora.
+  // modo Navidad (código). Ya tiene su ficha de Elora, su habilidad (la Nariz brillante) y sus números (Elora,
+  // en su menú de números).
   { id: 'reno', name: 'Chop', species: { es: 'Reno', en: 'Reindeer' }, color: '#c49a70', dark: '#94704c', shape: 'reindeer', price: null, secreto: true, navidad: true, ability: 'chop',
-    stats: { velocidad: 50, cordura: 50, sigilo: 50, resistencia: 50 }, corazones: 3, ficha: 'assets/sprites/fichas/reno.webp',
+    stats: { velocidad: 75, cordura: 50, sigilo: 51, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/reno.webp',
     fichaCuadro: { left: 65, top: 22, right: 3, bottom: 5 } },
 ];
 
@@ -77,16 +77,16 @@ export function characterById(id) { return CHARACTERS.find((c) => c.id === id) |
 // price: lo que cuesta cada una (Elora; null = aún no lo ha dicho). Todavía no se venden: hasta que dejen
 // de ser secretas, solo se ven en el **modo pijama** secreto (el código de «🔑 Introducir código»), y ahí son
 // gratis (Elora): así el juego se puede publicar sin enseñarlas todavía.
-// Los pijamas de ahora son **de prueba**, inspirados en el cartel, hasta que lleguen los dibujos de Elora
-// (provisional: true). Cada personaje los dibuja en su función (pal.skin === 'pijama').
+// Los de Gec, Draila, Hoppy y Caty los hizo Clad inspirándose en el cartel, y Elora los dejó así (no hace falta
+// que los dibuje); los demás salen de sus dibujos. Cada personaje los dibuja en su función (pal.skin === 'pijama').
 export const SKINS = {
   pijama: {
     emoji: '🛌',
     personajes: {
-      gek: { price: null, provisional: true },      // pijama de monopatines (Elora)
-      draila: { price: null, provisional: true },   // pijama de estrellas
-      hoppy: { price: null, provisional: true },    // con un peluchito
-      katy: { price: null, provisional: true },     // pijama entero lila (Elora) y un peluchito
+      gek: { price: 40 },      // pijama de monopatines (Elora)
+      draila: { price: 40 },   // pijama de estrellas
+      hoppy: { price: 40 },    // con un peluchito
+      katy: { price: 40 },     // pijama entero lila (Elora) y un peluchito
       oct: { price: 40 },        // bata gris con lazo y sombrerito de paja, sin gafas (dibujo de Elora)
       // ya hechos a partir de su dibujo de Elora (foto en assets/referencias/skins/<id>-pijama.webp)
       carot: { price: 40 },    // camisón rosa de corazones y un peluchito blanco con manchas
@@ -779,7 +779,7 @@ function drawCaty(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
   const lila = B ? '#c9a0a0' : '#a9a2e6';
-  // skin de pijama (de prueba, inspirada en el cartel de Elora): camisón entero lila (Elora) y un peluchito
+  // skin de pijama (hecha por Clad a partir del cartel de Elora; Elora la dejó así): camisón entero lila (Elora) y un peluchito
   const pj = pal.skin === 'pijama';
   const shirt = B ? '#5e0810' : pj ? '#c3abf2' : '#fbf0a8', shirtDark = B ? '#3a0408' : pj ? '#9479d4' : '#d9c45a';
   const line = B ? '#2a0306' : '#3a2418';
@@ -909,8 +909,8 @@ function drawCaty(ctx, pal, facing, walk, opts) {
 function drawGec(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
-  // skin de pijama (de prueba, inspirada en el cartel de Elora): pijama de manga larga y pantalón
-  // largo con monopatines estampados (Elora); el azul es provisional
+  // skin de pijama (hecha por Clad a partir del cartel de Elora; Elora la dejó así): pijama de manga larga y pantalón
+  // largo con monopatines estampados (Elora); hecho por Clad y Elora lo dejó así
   const pj = pal.skin === 'pijama';
   const shirt = B ? '#5e0810' : pj ? '#7fb3e3' : '#a9abb0', shirtDark = B ? '#3a0408' : pj ? '#5a88bd' : '#7c7e84';
   const line = B ? '#2a0306' : '#1d241a';
@@ -1273,7 +1273,7 @@ function drawTarda(ctx, pal, facing, walk, opts) {
 function drawHoppy(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
-  // skin de pijama (de prueba, inspirada en el cartel de Elora): camisón y un peluchito; el rosa es provisional
+  // skin de pijama (hecha por Clad a partir del cartel de Elora; Elora la dejó así): camisón rosa y un peluchito
   const pj = pal.skin === 'pijama';
   const manoPeluche = facing === 'left' ? -1 : 1;   // la mano que coge el peluchito
   const shirt = B ? '#5e0810' : pj ? '#f4b9cf' : '#d8344a', shirtDark = B ? '#3a0408' : pj ? '#d48aa8' : '#a8202f';
@@ -1365,8 +1365,8 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
 function drawDraila(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
-  // skin de pijama (de prueba, inspirada en el cartel de Elora): pijama de manga larga y pantalón
-  // largo con estrellas; el azul de noche es provisional
+  // skin de pijama (hecha por Clad a partir del cartel de Elora; Elora la dejó así): pijama de manga larga y pantalón
+  // largo con estrellas; hecho por Clad y Elora lo dejó así
   const pj = pal.skin === 'pijama';
   const ropa = B ? '#5e0810' : pj ? '#3a4a8c' : '#e2405c', ropaDark = B ? '#3a0408' : pj ? '#263266' : '#b52a44';
   const amarillo = B ? '#8a6a3a' : '#f3dc5a';

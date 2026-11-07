@@ -2,7 +2,7 @@ import { maxHearts } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
-import { CHARACTERS, drawCharacter, SKINS, skinsDe, conSkin } from './characters.js';
+import { CHARACTERS, drawCharacter, SKINS, skinsDe, conSkin, characterById, TARDA_GRIS } from './characters.js';
 import { PAD_ACTIONS } from './input.js';
 import { TapePlayer, grabacionDeCinta } from './tapes.js';
 import { music } from './music.js';
@@ -32,6 +32,8 @@ const CODIGO_P50 = '39138241';
 // La huella del código del modo Navidad (Elora): el lobby de Navidad (árbol y calendario) y el reno gratis.
 // Mira las mayúsculas, como lo escribió Elora.
 const CODIGO_NAVIDAD = 'e3b0eab2';
+// La huella del código del modo online (Elora): abre la pantalla «JUEGO ONLINE». Mira las mayúsculas.
+const CODIGO_ONLINE = '2dcf3ed7';
 // La huella del código del modo pijama (Elora; también vale escrito con holeway/hallway y pijama/pijamas).
 const CODIGO_PIJAMA = new Set(['a9e7a80e', 'f4ae3cc7', 'a35c150d', 'a7f5d55a', 'a64e4d24', '2443bff5', '2a22be4a', '8db173bb', 'db61d337', '9eff940c']);
 function huellaCodigo(texto, mayusculas = false) {
@@ -155,6 +157,9 @@ export class UI {
       } else if (huellaCodigo(campo.value, true) === CODIGO_P50) {
         nota.textContent = t('code.p50');
         setTimeout(() => { location.href = location.pathname + '?pasillo=50'; }, 1200);
+      } else if (huellaCodigo(campo.value, true) === CODIGO_ONLINE) {
+        nota.textContent = t('code.onlineOk');
+        setTimeout(() => this.showOnline(onBack), 900);
       } else if (navidad && CODIGO_NAVIDAD && huellaCodigo(campo.value, true) === CODIGO_NAVIDAD) {
         navidad.cambiar(true);
         nota.textContent = t('code.navidadOn');
@@ -655,6 +660,66 @@ export class UI {
   }
 
   // Aviso breve entre niveles (nuevo personaje) sin pantalla completa.
+  // ---------------- la pantalla «JUEGO ONLINE» (dibujo de Elora, assets/referencias/online/juego-online.webp):
+  // a la izquierda, Tarda contenta detrás de una mesa con manchas de sangre y walkie-talkies y una radio encima;
+  // a la derecha, Crear sala, Unirse a una sala y Amigos (que abre Ver amigos e Invitar amigos). Se abre con el
+  // código del modo online. Todavía no conecta con nada: el modo online está por hacer [PENDIENTE].
+  showOnline(onBack, amigos = false) {
+    this.clear();
+    const s = this.el('div', 'screen opaque online');
+    s.appendChild(this.el('h2', 'online-titulo', t('online.title')));
+    const cuerpo = this.el('div', 'online-cuerpo');
+    const cv = document.createElement('canvas'); cv.width = 360; cv.height = 300; cv.className = 'online-dibujo';
+    this.dibujarOnline(cv.getContext('2d'));
+    const botones = this.el('div', 'online-botones');
+    const nota = this.el('p', 'small note-inline online-nota', '');
+    const pronto = () => { nota.textContent = '📻 ' + t('online.pronto'); nota.classList.remove('shake'); void nota.offsetWidth; nota.classList.add('shake'); };
+    if (!amigos) {
+      botones.append(
+        this.button('🏠 ' + t('online.crear'), pronto, true),
+        this.button('🚪 ' + t('online.unirse'), pronto, true),
+        this.button('👫 ' + t('online.amigos'), () => this.showOnline(onBack, true), true));
+    } else {
+      botones.append(this.el('p', 'online-sub', '👫 ' + t('online.amigos')),
+        this.button('👀 ' + t('online.verAmigos'), pronto, true),
+        this.button('💌 ' + t('online.invitar'), pronto, true));
+    }
+    botones.appendChild(nota);
+    cuerpo.append(cv, botones);
+    s.append(cuerpo, this.el('p', 'small online-seguro', '🔒 ' + t('online.seguro')),
+      this.button(t('code.back'), amigos ? () => this.showOnline(onBack) : onBack));
+    this.root.appendChild(s);
+    this.keyHandler = (e) => { if (e.code === 'Escape') (amigos ? this.showOnline(onBack) : onBack()); };
+  }
+
+  // Tarda detrás de la mesa con los walkie-talkies y la radio (como en el dibujo de Elora)
+  dibujarOnline(x) {
+    x.clearRect(0, 0, 360, 300);
+    // Tarda, contenta, detrás de la mesa
+    x.save(); x.translate(130, 150); x.scale(3.2, 3.2);
+    drawCharacter(x, { ...characterById('tarda'), ...TARDA_GRIS }, 0, 0, 'down', 0, 0, false, { alta: true });
+    x.restore();
+    // la mesa, con manchas de sangre
+    x.fillStyle = '#9a9aa3'; x.fillRect(20, 170, 320, 22);
+    x.fillStyle = '#7d7d86'; x.fillRect(20, 192, 320, 8);
+    x.fillRect(40, 200, 22, 95); x.fillRect(298, 200, 22, 95);
+    x.fillStyle = '#9b1c26';
+    for (const [mx, my, rx] of [[70, 180, 14], [190, 184, 10], [290, 178, 12], [50, 240, 6], [309, 260, 6]]) { x.beginPath(); x.ellipse(mx, my, rx, rx * 0.35, 0.2, 0, Math.PI * 2); x.fill(); }
+    // los walkie-talkies y la radio encima de la mesa
+    const walkie = (wx, c) => {
+      x.fillStyle = '#3a3a42'; x.fillRect(wx, 138, 22, 34);
+      x.strokeStyle = '#3a3a42'; x.lineWidth = 3; x.beginPath(); x.moveTo(wx + 16, 138); x.lineTo(wx + 18, 120); x.stroke();
+      x.fillStyle = '#25252b'; x.beginPath(); x.arc(wx + 18, 119, 3, 0, Math.PI * 2); x.fill();
+      x.fillStyle = c; x.fillRect(wx + 4, 143, 14, 8);
+      x.fillStyle = '#5a5a64'; for (let k = 0; k < 3; k++) x.fillRect(wx + 4, 156 + k * 4, 14, 2);
+    };
+    walkie(215, '#f2d24a'); walkie(250, '#5fbf5a');
+    x.fillStyle = '#4a4a54'; x.fillRect(282, 146, 52, 26);
+    x.fillStyle = '#2b2b31'; x.beginPath(); x.arc(320, 159, 9, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#d42a36'; for (let k = 0; k < 6; k++) { x.beginPath(); x.arc(290 + (k % 3) * 7, 152 + Math.floor(k / 3) * 9, 2.2, 0, Math.PI * 2); x.fill(); }
+    x.strokeStyle = '#4a4a54'; x.lineWidth = 2; x.beginPath(); x.moveTo(330, 146); x.quadraticCurveTo(342, 130, 330, 118); x.stroke();
+  }
+
   // ---------------- el calendario de Adviento (Elora): las 5 casillas grandes (21 a 25) y las 5 chiquitas
   // (26 a 30). Se abre la de hoy; las que se te pasaron se recuperan por 1.000 monedas (Elora).
   // estado: { abiertas: [fechas] }; onAbrir(cual, fecha?) abre la de hoy (o recupera esa fecha) y devuelve el

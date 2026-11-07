@@ -192,3 +192,13 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 @media (prefers-reduced-motion: reduce) { .adv-casilla.hoy { animation: none; } }
 .screen .adv-nota { color: #b9f5c4; font-size: 17px; font-weight: 800; min-height: 22px; }
 .pijama-badge.navidad-badge { background: #1f7a3a; }
+/* la pantalla «JUEGO ONLINE» (dibujo de Elora) */
+.screen.online { gap: 14px; }
+.online-titulo { font-size: 40px !important; letter-spacing: 3px; }
+.online-cuerpo { display: flex; gap: 28px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.online-dibujo { width: 360px; height: 300px; }
+.online-botones { display: flex; flex-direction: column; gap: 12px; min-width: 280px; }
+.online-botones button { font-size: 22px; }
+.screen .online-sub { color: #fff6dc; font-weight: 800; font-size: 22px; }
+.screen .online-nota { color: #ffe36b; font-weight: 800; min-height: 22px; max-width: 300px; }
+.screen .online-seguro { color: #b9f5c4; }
