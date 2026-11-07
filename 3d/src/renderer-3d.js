@@ -6,6 +6,8 @@ import * as THREE from '../vendor/three.module.js';
 import { TILE } from './config.js';
 import { T } from './level.js';
 
+// el día de las skins nuevas (el mismo que SKINS_DIA del juego 2D)
+const SKINS_DIA = [2026, 11, 10];
 const BORDES = false;   // la raya negra alrededor de personajes y cosas (Elora: mejor sin ella)
 
 // Los colores de cada personaje, de sus fichas (Elora).
@@ -19,6 +21,7 @@ const LOOKS = {
   draila: { forma: 'crocodile', piel: '#3f9a4a', ropa: '#e2405c', oscuro: '#2f7a3a' },
   katy: { forma: 'cat', piel: '#f08a3c', ropa: '#fbf0a8', oscuro: '#c0561c' },
   jely: { forma: 'jellyfish', piel: '#3f9fe0', cabeza: '#a9e4e2' },
+  tardaGris: { forma: 'tardigrade', piel: '#a9a8ad', oscuro: '#74737a' },   // la Tarda de la tienda, gris (Elora)
   hoppy: { forma: 'hare', piel: '#c49a7a', ropa: '#d8344a', oscuro: '#93694c', oreja: '#f2d23c' },
 };
 
@@ -86,8 +89,11 @@ export class Renderer3D {
     const viva = (a, k = 1.25) => rgb(a.map((v) => Math.min(255, Math.round(v * k))));
     const wallColor = viva(L.theme.wall, 1.6), wallTop = viva(L.theme.wall, 2.4), floorColor = viva(L.theme.floor, 1.05);
     // Shared geometry/materials keep this small static map inexpensive.
+    // en el lobby, la estantería de las cintas (V) no se dibuja como pared: allí van la tele y la caja
+    const estante = new Set(((L.lobby && L.markers.V) || []).map((v) => v.ty * L.w + v.tx));
     for (let z = 0; z < L.h; z++) for (let x = 0; x < L.w; x++) {
       const t = L.tiles[z * L.w + x], X = x + .5, Z = z + .5;
+      if (estante.has(z * L.w + x)) { this.box(world, floorColor, X, -.07, Z, .97, .12, .97); continue; }
       if (t !== T.WALL) {
         const color = L.theme.floorColors ? rgb(L.theme.floorColors[(x + z) % L.theme.floorColors.length]) : floorColor;
         this.box(world, color, X, -.07, Z, .97, .12, .97);
@@ -131,8 +137,61 @@ export class Renderer3D {
       batch.instanceMatrix.needsUpdate = true;
       this.scene.add(batch);
     }
+    if (L.lobby) this.lobby(L);
     this.actorMeshes.set(game.player, this.actor(game.ch, false, this.lookId));
     for (const e of game.enemies) this.actorMeshes.set(e, this.actor(e.look, true));
+  }
+  // Las cosas del lobby (Elora): Tarda gris detrás de su mostrador, la tele marrón y la caja de cartón
+  // con las cintas, la puerta a los pasillos (bordes rojos y luz ámbar) y el cartel de las skins.
+  lobby(L) {
+    this.scene.background = new THREE.Color('#3a2b3f');
+    this.scene.fog = new THREE.Fog('#3a2b3f', 12, 26);
+    this.light.intensity = 6;
+    const lamp = new THREE.PointLight('#ffcf8a', 8, 14, 1.6); lamp.position.set(L.w / 2, 3.2, L.h / 2); this.scene.add(lamp);
+    // Tarda y su mostrador
+    for (const n of L.markers.N || []) {
+      const X = n.tx + .5, Z = n.ty + .5;
+      const tarda = this.actor({ id: 'tardaGris', shape: 'tardigrade' }, false, 'tardaGris');
+      tarda.position.set(X, 0, Z - .1); tarda.scale.setScalar(1.15);
+      this.box(this.scene, '#8a5a34', X, .38, Z + .55, 1.5, .76, .4);       // el mostrador
+      this.box(this.scene, '#b07a48', X, .78, Z + .55, 1.6, .06, .5);       // la tabla de arriba
+      for (const k of [-.2, 0, .2]) this.ball(this.scene, '#ffd95a', X + .45 + k * .3, .83, Z + .55, .07, .03, .07, true);   // monedas
+    }
+    // la tele marrón y la caja de cartón con las cintas
+    const V = L.markers.V || [];
+    if (V.length) {
+      const a = V[0], b = V[V.length - 1];
+      const tx = a.tx + .9, tz = a.ty + .5;
+      this.box(this.scene, '#e9dfc3', tx, .25, tz, 1.1, .5, .7);            // el mueble
+      this.box(this.scene, '#8b5a2b', tx, .82, tz, 1, .7, .55);             // la tele
+      this.box(this.scene, '#6fd0c4', tx, .84, tz + .28, .72, .48, .02, true);   // la pantalla
+      for (const s2 of [-1, 1]) { const ant = this.box(this.scene, '#333', tx + s2 * .18, 1.32, tz, .03, .35, .03); ant.rotation.z = s2 * -.4; }
+      const cx = b.tx + .2, cz = b.ty + .5;
+      this.box(this.scene, '#c99a5b', cx, .3, cz, .8, .6, .6);              // la caja
+      this.box(this.scene, '#e6b878', cx, .62, cz + .2, .8, .04, .25);      // una solapa abierta
+      for (let i = 0; i < 3; i++) this.box(this.scene, '#242c39', cx - .2 + i * .2, .64, cz, .14, .1, .3);   // las cintas asomando
+    }
+    // la puerta a los pasillos: abierta, con los bordes rojos y una luz ámbar
+    for (const d of L.markers.D || []) {
+      const X = d.tx + .5, Z = d.ty + .5, g = new THREE.Group(); g.position.set(X, 0, Z); this.scene.add(g);
+      this.box(g, '#b3202a', -.46, .8, 0, .1, 1.6, .3); this.box(g, '#b3202a', .46, .8, 0, .1, 1.6, .3); this.box(g, '#b3202a', 0, 1.6, 0, 1.02, .12, .3);
+      this.box(g, '#120c14', 0, .78, -.1, .82, 1.56, .08);
+      this.box(g, '#ffd35a', 0, 1.72, .12, .4, .1, .06, true);
+      const luz = new THREE.PointLight('#ffd35a', 4, 4, 2); luz.position.set(X, 1.4, Z + .6); this.scene.add(luz);
+      // el cartel de las skins, colgado en la pared a la izquierda de la puerta (Elora)
+      const lienzo = document.createElement('canvas'); lienzo.width = 256; lienzo.height = 104;
+      const c = lienzo.getContext('2d');
+      c.fillStyle = '#a8733f'; c.fillRect(0, 0, 256, 104); c.fillStyle = '#8c5d30'; c.fillRect(0, 50, 256, 4);
+      c.strokeStyle = '#5a3d26'; c.lineWidth = 8; c.strokeRect(0, 0, 256, 104);
+      c.fillStyle = '#fff6dc'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 30px system-ui, sans-serif';
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const faltan = Math.round((new Date(SKINS_DIA[0], SKINS_DIA[1] - 1, SKINS_DIA[2]) - hoy) / 86400000);
+      c.fillText('¡Nuevas skins!', 128, 27);
+      c.fillText(faltan > 1 ? `Faltan ${faltan} días` : faltan === 1 ? 'Falta 1 día' : '¡YA ES LA HORA!', 128, 78);
+      const tex = new THREE.CanvasTexture(lienzo); tex.colorSpace = THREE.SRGBColorSpace;
+      const cartel = new THREE.Mesh(new THREE.PlaneGeometry(1.7, .7), new THREE.MeshBasicMaterial({ map: tex }));
+      cartel.position.set(X - 1.6, .95, Z + .52); this.scene.add(cartel);
+    }
   }
   // Los personajes de Elora, en dibujo 3D: cabezones, con ojos grandes y sus colores de la ficha.
   actor(ch, bloody, lookId) {
@@ -205,7 +264,8 @@ export class Renderer3D {
     let dist = 3.4;
     for (let d = .3; d <= 3.4; d += .1) {
       const tx = Math.floor(x - fx * d), tz = Math.floor(z - fz * d);
-      if (tx < 0 || tz < 0 || tx >= L.w || tz >= L.h || L.tiles[tz * L.w + tx] === T.WALL) { dist = Math.max(.35, d - .25); break; }
+      const tt = tx < 0 || tz < 0 || tx >= L.w || tz >= L.h ? T.WALL : L.tiles[tz * L.w + tx];
+      if (tt === T.WALL || tt === T.DOOR_START || tt === T.EXIT_CLOSED) { dist = Math.max(.35, d - .25); break; }
     }
     const alto = 1.25 + dist * .32;
     const want = { x: x - fx * dist, y: alto, z: z - fz * dist };
