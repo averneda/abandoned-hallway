@@ -368,6 +368,9 @@ export class UI {
       c.appendChild(cv);
       const nombre = skin ? SKINS[skin].emoji + ' ' + t('skins.' + skin) : '👕 ' + t('skins.normal');
       c.appendChild(this.el('div', 'name', nombre));
+      // el mini comentario de esa skin para este personaje (Elora: los de la fiesta de pijamas)
+      const kFrase = skin ? 'skins.frase.' + skin + '.' + ch.id : null, frase = kFrase ? t(kFrase) : '';
+      if (frase && frase !== kFrase) c.appendChild(this.el('div', 'skin-frase', '💬 ' + frase));
       const precio = skin ? SKINS[skin].personajes[ch.id].price : 0;
       const etiqueta = skin === puesta ? t('skins.puesta') : !skin ? '' : skins.gratis(skin) ? t('skins.free') : tiene(skin) ? '' : t('skins.precio', { n: precio });
       const pie = this.el('div', 'skin-precio', etiqueta);

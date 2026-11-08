@@ -238,7 +238,9 @@ function gotoLobby() {
             if (skin) skinsElegidas[ch.id] = skin; else delete skinsElegidas[ch.id];
             if (ch.id === run.character.id) { run.character = aplicarSkin(ch); lobby.setCharacter(run.character); }
             save();
-            if (skin) ui.toast(SKINS[skin].emoji + ' ' + t(SKINS[skin].navidad ? 'skins.toastNav' : 'skins.toast', { name: ch.name }));
+            // al ponértela sale su mini comentario, si tiene (Elora)
+            const kFrase = 'skins.frase.' + skin + '.' + ch.id;
+            if (skin) ui.toast(SKINS[skin].emoji + ' ' + (t(kFrase) !== kFrase ? ch.name + ': ' + t(kFrase) : t(SKINS[skin].navidad ? 'skins.toastNav' : 'skins.toast', { name: ch.name })));
           },
         } : null,
         onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(ch.id); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
