@@ -203,7 +203,7 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 .screen .online-nota { color: #ffe36b; font-weight: 800; min-height: 22px; max-width: 300px; }
 .screen .online-seguro { color: #b9f5c4; }
 /* el cartel de las skins, de cerca (Elora): una tabla de madera grande con el reloj y la información */
-.cartel-grande { background: #a8733f; border: 5px solid #5a3d26; border-radius: 10px; box-shadow: 0 10px 0 rgba(0,0,0,0.35), inset 0 0 0 3px #8c5d30;
+.cartel-grande { position: relative; background: #a8733f; border: 5px solid #5a3d26; border-radius: 10px; box-shadow: 0 10px 0 rgba(0,0,0,0.35), inset 0 0 0 3px #8c5d30;
   padding: 18px 26px; max-width: min(680px, 94%); display: flex; flex-direction: column; align-items: center; gap: 10px; color: #fff6dc; }
 .cartel-grande .cartel-titulo { margin: 0; font-size: 34px; color: #fff6dc; text-shadow: 0 3px 0 #5a3d26; }
 .screen .cartel-grande .cartel-cuando { margin: 0; font-size: 19px; font-weight: 800; color: #fff6dc; }
@@ -223,3 +223,22 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 .adv-paginas { display: flex; align-items: center; gap: 12px; }
 .adv-paginas button.adv-flecha { min-width: 0; padding: 4px 14px; font-size: 18px; }
 .adv-pagina { color: #fff6dc; font-weight: 800; }
+button.cartel-x { position: absolute; top: 8px; right: 8px; min-width: 0; width: 40px; height: 40px; padding: 0; border-radius: 50%;
+  font-size: 22px; line-height: 1; display: grid; place-items: center; background: #5a3d26; color: #fff6dc; border: 2px solid #fff6dc; }
+.cartel-grande.navidad button.cartel-x { background: #1f6a3a; }
+button.cartel-x:hover, button.cartel-x:focus-visible { background: #fff6dc; color: #5a3d26; }
+/* las letras del cartel de las skins, decoradas con cosas de dormir (Elora) */
+.cartel-titulo-sueno { position: relative; padding: 10px 34px 6px; }
+.cartel-titulo-sueno .cartel-titulo { color: #fff6dc; text-shadow: 0 3px 0 #5a3d26, 0 0 12px rgba(255, 227, 107, 0.55); }
+.cartel-titulo-sueno .sueno { position: absolute; pointer-events: none; font-weight: 900; line-height: 1; }
+.sueno.luna { left: 0; top: 6px; font-size: 34px; color: #ffe36b; transform: rotate(-15deg); text-shadow: 0 0 8px rgba(255, 227, 107, 0.7); }
+.sueno.e1 { left: 30px; top: -6px; font-size: 16px; color: #ffe36b; }
+.sueno.e2 { left: 42%; top: -8px; font-size: 14px; color: #fff; }
+.sueno.e3 { right: 46px; top: -4px; font-size: 18px; color: #ffe36b; }
+.sueno.e4 { left: 18%; bottom: -6px; font-size: 12px; color: #fff; }
+.sueno.e5 { right: 28%; bottom: -8px; font-size: 13px; color: #ffe36b; }
+.sueno.zz { right: 14px; top: 8px; font-size: 20px; color: #c9b8ff; letter-spacing: 2px; transform: rotate(-12deg); }
+@keyframes suenoBrilla { 50% { opacity: 0.35; } }
+.sueno.e1, .sueno.e3, .sueno.e5 { animation: suenoBrilla 1.8s ease-in-out infinite; }
+.sueno.e2, .sueno.e4 { animation: suenoBrilla 1.8s ease-in-out 0.9s infinite; }
+@media (prefers-reduced-motion: reduce) { .sueno { animation: none !important; } }

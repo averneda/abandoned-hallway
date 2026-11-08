@@ -10,7 +10,7 @@ import { drawCharacter, characterById, TARDA_GRIS } from './characters.js';
 import { t } from './i18n.js';
 import { sfx } from './sound.js';
 import { coinValue } from './coins.js';
-import { hoyJuego } from './adviento.js';
+import { hoyJuego, casillas } from './adviento.js';
 
 // ¿Es Navidad? (NAVIDAD en src/config.js). Sale siempre en el modo Navidad secreto (el código de Elora)
 // y con index.html?navidad=1, para probarlo.
@@ -150,13 +150,21 @@ export class Lobby extends Game {
     // Tarda de la tienda: detrás de su mostrador, para vender (Elora); alta, gris y con su cinta
     const nx = this.npc.x, ny = this.npc.y;
     const tienda = () => {
-      drawCharacter(ctx, this.tarda, nx, ny - 6, 'down', this.time * 2, 0, false, { alta: true });
+      // en Navidad lleva su skin de osito, toda marrón, y está cosiendo (Elora)
+      drawCharacter(ctx, this.tarda, nx, ny - 6, 'down', this.time * 2, 0, false, this.arbol ? { alta: true, osito: true, cosiendo: true } : { alta: true });
       // el mostrador, delante de Tarda: le tapa las patas de abajo
       ctx.fillStyle = '#6b4a2b'; ctx.fillRect(nx - 32, ny + 1, 64, 5);     // la tabla de arriba
       ctx.fillStyle = '#4a3220'; ctx.fillRect(nx - 30, ny + 6, 60, 18);    // el frente
       ctx.fillStyle = '#3a2618'; ctx.fillRect(nx - 30, ny + 6, 60, 2);     // sombra bajo la tabla
       ctx.strokeStyle = '#5a3d26'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(nx - 10, ny + 9); ctx.lineTo(nx - 10, ny + 22); ctx.moveTo(nx + 10, ny + 9); ctx.lineTo(nx + 10, ny + 22); ctx.stroke();
+      // en Navidad, un carrete de hilo rojo en el mostrador (Tarda está cosiendo, Elora)
+      if (this.arbol) {
+        ctx.fillStyle = '#c9a06a'; ctx.fillRect(nx - 24, ny - 6, 7, 1.6); ctx.fillRect(nx - 24, ny - 0.4, 7, 1.6);
+        ctx.fillStyle = '#d8344a'; ctx.fillRect(nx - 23, ny - 4.6, 5, 4.4);
+        ctx.strokeStyle = '#a31c26'; ctx.lineWidth = 0.5;
+        ctx.beginPath(); for (const y of [-3.6, -2.4, -1.2]) { ctx.moveTo(nx - 23, ny + y); ctx.lineTo(nx - 18, ny + y); } ctx.stroke();
+      }
       // un montoncito de monedas encima
       ctx.fillStyle = '#ffd95a'; ctx.beginPath(); ctx.ellipse(nx + 20, ny + 2, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#e8b83a'; ctx.beginPath(); ctx.ellipse(nx + 20, ny + 0.5, 4, 2, 0, 0, Math.PI * 2); ctx.fill();
@@ -243,19 +251,19 @@ export class Lobby extends Game {
     ctx.beginPath(); ctx.ellipse(cx - 6, top + 1, 6, 3.5, -0.4, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(cx + 6, top + 1, 6, 3.5, 0.4, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#a81f2a'; ctx.beginPath(); ctx.arc(cx, top + 1, 2.6, 0, Math.PI * 2); ctx.fill();
-    // las casillas: 5 grandes (21 a 25) y 5 chiquitas (26 a 30), con su número
+    // las casillas: las del calendario grande (21, en 3 filas de 7) y las del mini calendario del 5, con su número
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (let i = 0; i < 5; i++) {
-      const bx = x0 + 5 + i * 10, by = top + 9;
-      ctx.fillStyle = ['#e23b4a', '#f2d24a', '#3a8ee8', '#fff6dc', '#b65fe0'][i];
-      ctx.fillRect(bx, by, 8.5, 12);
-      ctx.fillStyle = '#2a2124'; ctx.font = 'bold 6px "Segoe UI", Arial'; ctx.fillText(String(21 + i), bx + 4.25, by + 6.5);
-    }
-    for (let i = 0; i < 5; i++) {
-      const bx = x0 + 7 + i * 9.5, by = top + 27;
-      ctx.fillStyle = '#fff6dc'; ctx.fillRect(bx, by, 6.5, 7);
-      ctx.fillStyle = '#2a2124'; ctx.font = 'bold 4.5px "Segoe UI", Arial'; ctx.fillText(String(26 + i), bx + 3.25, by + 3.8);
-    }
+    const colores = ['#e23b4a', '#f2d24a', '#3a8ee8', '#fff6dc', '#b65fe0'];
+    casillas('grande').forEach((c, i) => {
+      const bx = x0 + 5.5 + (i % 7) * 6.9, by = top + 6 + Math.floor(i / 7) * 6.4;
+      ctx.fillStyle = colores[i % 5]; ctx.fillRect(bx, by, 6, 5.4);
+      ctx.fillStyle = '#2a2124'; ctx.font = 'bold 3.6px "Segoe UI", Arial'; ctx.fillText(String(c.dia), bx + 3, by + 2.9);
+    });
+    casillas('chico').forEach((c, i) => {
+      const bx = x0 + 9 + i * 8.4, by = top + 27.5;
+      ctx.fillStyle = '#fff6dc'; ctx.fillRect(bx, by, 6.5, 6.5);
+      ctx.fillStyle = '#2a2124'; ctx.font = 'bold 4.2px "Segoe UI", Arial'; ctx.fillText(String(c.dia), bx + 3.25, by + 3.5);
+    });
     ctx.fillStyle = '#fff6dc'; ctx.font = 'bold 5px "Segoe UI", Arial'; ctx.fillText('ADVIENTO', cx, top + 41);
     ctx.textBaseline = 'alphabetic';
   }

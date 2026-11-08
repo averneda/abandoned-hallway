@@ -348,10 +348,10 @@ export class UI {
   }
 
   // Las skins de un personaje en la tienda (modo pijama, Elora): una cartita por skin con el personaje
-  // vestido así; la que lleva puesta, marcada. En el modo pijama son gratis.
+  // vestido así; la que lleva puesta, marcada. En el modo pijama son gratis, y las de Navidad, con el modo Navidad.
   fillSkins(box, ch, skins, onChange) {
     box.innerHTML = '';
-    const lista = skins && skins.puede(ch.id) ? skinsDe(ch.id) : [];
+    const lista = skins ? skinsDe(ch.id).filter((k) => skins.disponible(k) && skins.puede(ch.id, k)) : [];
     box.classList.toggle('hidden', !lista.length);
     if (!lista.length) return;
     box.appendChild(this.el('div', 'skins-titulo', t('skins.title')));
@@ -368,7 +368,7 @@ export class UI {
       const nombre = skin ? SKINS[skin].emoji + ' ' + t('skins.' + skin) : '👕 ' + t('skins.normal');
       c.appendChild(this.el('div', 'name', nombre));
       const precio = skin ? SKINS[skin].personajes[ch.id].price : 0;
-      const etiqueta = skin === puesta ? t('skins.puesta') : !skin ? '' : skins.gratis ? t('skins.free') : tiene(skin) ? '' : t('skins.precio', { n: precio });
+      const etiqueta = skin === puesta ? t('skins.puesta') : !skin ? '' : skins.gratis(skin) ? t('skins.free') : tiene(skin) ? '' : t('skins.precio', { n: precio });
       const pie = this.el('div', 'skin-precio', etiqueta);
       c.appendChild(pie);
       if (skin && SKINS[skin].personajes[ch.id].provisional) c.title = t('skins.prueba');
@@ -748,7 +748,13 @@ export class UI {
     const fiesta = skinsListas();
     const fondo = this.el('div', 'screen dim cartel-fondo');
     const s = this.el('div', 'cartel-grande' + (fiesta ? ' fiesta' : ''));
-    s.appendChild(this.el('h2', 'cartel-titulo', t(fiesta ? 'cartel.fiesta' : 'cartel.titulo')));
+    // las letras grandes, decoradas con cosas de dormir: estrellas, una luna y zetas (Elora)
+    const titulo = this.el('div', 'cartel-titulo-sueno');
+    titulo.appendChild(this.el('h2', 'cartel-titulo', t(fiesta ? 'cartel.fiesta' : 'cartel.titulo')));
+    for (const [cls, txt] of [['luna', '☾'], ['e1', '★'], ['e2', '✦'], ['e3', '★'], ['e4', '✦'], ['e5', '★'], ['zz', 'z Z']]) {
+      const d = this.el('span', 'sueno ' + cls, txt); d.setAttribute('aria-hidden', 'true'); titulo.appendChild(d);
+    }
+    s.appendChild(titulo);
     s.appendChild(this.el('p', 'cartel-cuando', t(fiesta ? 'cartel.pasarlo' : 'cartel.cuando')));
     const reloj = this.el('div', 'cartel-reloj');
     if (!fiesta) s.appendChild(reloj);
@@ -785,7 +791,10 @@ export class UI {
     const lista = this.el('ul', 'cartel-info');
     for (const k of ['info1', 'info2', 'info3', 'info4']) lista.appendChild(this.el('li', '', t('cartel.' + k)));
     s.appendChild(lista);
-    s.appendChild(this.button(t('shop.close'), () => { this.clear(); onClose(); }, true));
+    // para cerrar, una ✕ en la esquina (lo pidió el padre de Elora) en vez del botón «Cerrar»
+    const equis = this.button('✕', () => { this.clear(); onClose(); }, true);
+    equis.className = 'cartel-x'; equis.setAttribute('aria-label', t('shop.close')); equis.title = t('shop.close');
+    s.appendChild(equis);
     fondo.appendChild(s);
     this.root.appendChild(fondo);
     this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); this.clear(); onClose(); } };
@@ -837,7 +846,10 @@ export class UI {
     for (const k of ['info1', 'info2', 'info3', 'info4']) lista.appendChild(this.el('li', '', t('nav.' + k)));
     lista.appendChild(this.el('li', '', t(destapado ? 'nav.chop' : 'nav.quien')));
     s.appendChild(lista);
-    s.appendChild(this.button(t('shop.close'), () => { this.clear(); onClose(); }, true));
+    // para cerrar, una ✕ en la esquina (lo pidió el padre de Elora) en vez del botón «Cerrar»
+    const equis = this.button('✕', () => { this.clear(); onClose(); }, true);
+    equis.className = 'cartel-x'; equis.setAttribute('aria-label', t('shop.close')); equis.title = t('shop.close');
+    s.appendChild(equis);
     fondo.appendChild(s);
     this.root.appendChild(fondo);
     this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); this.clear(); onClose(); } };

@@ -39,7 +39,8 @@ const skinsElegidas = {};
 // Las skins compradas con monedas (id del personaje → lista de skins)
 const skinsCompradas = {};
 const comprada = (id, skin) => !!(skinsCompradas[id] && skinsCompradas[id].includes(skin));
-const tieneSkin = (id, skin) => flags.modoPijama || (skinsListas() && comprada(id, skin));
+// las de Navidad (SKINS[...].navidad), de momento solo con el modo Navidad y gratis (Elora)
+const tieneSkin = (id, skin) => (SKINS[skin] && SKINS[skin].navidad) ? flags.modoNavidad : flags.modoPijama || (skinsListas() && comprada(id, skin));
 // El calendario de Adviento (Elora): qué casillas has abierto y si ya te dieron los regalos finales
 let adviento = advientoVacio();
 // Los personajes que tienes: los comprados y, gratis y sin guardarlo, el reno en el modo Navidad y Drake en el
@@ -183,9 +184,11 @@ function gotoLobby() {
         onChoose: (ch) => { run.character = aplicarSkin(ch); save(); lobby.setCharacter(run.character); close(); },
         // las skins: en el modo pijama, gratis y de todos; desde que salen (martes 10, 16:00), se compran con
         // monedas, solo de los personajes que tienes. Si es el personaje que llevas, se lo pone ya
-        skins: flags.modoPijama || skinsListas() ? {
-          gratis: flags.modoPijama,
-          puede: (id) => flags.modoPijama || tienes().has(id),
+        skins: flags.modoPijama || skinsListas() || flags.modoNavidad ? {
+          gratis: (skin) => (SKINS[skin] && SKINS[skin].navidad) || flags.modoPijama,
+          disponible: (skin) => (SKINS[skin] && SKINS[skin].navidad) ? flags.modoNavidad : flags.modoPijama || skinsListas(),
+          // de qué personajes se enseñan: en el modo pijama o Navidad, de todos (gratis); si no, solo de los tuyos
+          puede: (id, skin) => ((SKINS[skin] && SKINS[skin].navidad) ? flags.modoNavidad : flags.modoPijama) || tienes().has(id),
           tiene: (id, skin) => tieneSkin(id, skin),
           monedas: () => wallet.coins,
           comprar: (ch, skin, precio) => {
@@ -201,7 +204,7 @@ function gotoLobby() {
             if (skin) skinsElegidas[ch.id] = skin; else delete skinsElegidas[ch.id];
             if (ch.id === run.character.id) { run.character = aplicarSkin(ch); lobby.setCharacter(run.character); }
             save();
-            if (skin) ui.toast(SKINS[skin].emoji + ' ' + t('skins.toast', { name: ch.name }));
+            if (skin) ui.toast(SKINS[skin].emoji + ' ' + t(SKINS[skin].navidad ? 'skins.toastNav' : 'skins.toast', { name: ch.name }));
           },
         } : null,
         onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(ch.id); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
@@ -287,6 +290,7 @@ function startLevel(n, reintento = false) {
     ...common,
     startHearts: run.hearts,
     nieve: esNavidad(),   // en Navidad, montones de nieve en los pasillos (Elora)
+    navidad: esNavidad(), // y los Bloodies con gorrito de Papá Noel (Elora)
     // Tarda explicando el pasillo de Drake (Elora)
     onDialogue: (lines) => {
       game.paused = true;

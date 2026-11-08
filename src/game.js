@@ -149,6 +149,7 @@ export class Game {
     this.flood = 0;  // segundos que quedan de sala inundada (habilidad de Jely)
     // Nieve en el suelo (Navidad, Elora): una casilla con 1 tiene nieve. No en el Bonus ni en el lobby.
     this.nieve = callbacks && callbacks.nieve && !L.noButton && !L.lobby ? hacerNieve(L, this.rand) : null;
+    this.navidad = !!(callbacks && callbacks.navidad);   // en Navidad, los Bloodies con gorrito y el Drake Sangriento de Papá Noel (Elora)
     this.avisoNieve = false;
 
     this.enemies = L.enemies.map((e, i) => ({
@@ -656,7 +657,7 @@ export class Game {
 
     // Bloodies y jugador (ordenados por altura para que se tapen bien)
     const frozen = this.freeze > 0;
-    const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null }) }));
+    const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null, navidad: this.navidad }) }));
     // Tarda, en el pasillo de Drake (Elora: está ahí para explicarte cómo funciona)
     if (this.npc) actors.push({ y: this.npc.y, draw: () => drawCharacter(ctx, this.npc.look, this.npc.x, this.npc.y - 6, 'down', this.time * 2, 0, false, { alta: true }) });
     actors.push({ y: p.y, draw: () => this.drawPlayer(ctx) });
@@ -762,7 +763,7 @@ export class Game {
     }
     // Drake gigante
     ctx.save(); ctx.translate(VIEW_W / 2, y); ctx.scale(DRAKE.size, DRAKE.size);
-    drawCharacter(ctx, DRAKE_SANGRIENTO, 0, 0, f.fase === 'vuelta' ? 'up' : 'down', this.time * 6, 0, false, {});
+    drawCharacter(ctx, DRAKE_SANGRIENTO, 0, 0, f.fase === 'vuelta' ? 'up' : 'down', this.time * 6, 0, false, { navidad: this.navidad });
     ctx.restore();
     // el aviso, grande y parpadeando, con la cuenta atrás
     if (f.fase === 'aviso') {
