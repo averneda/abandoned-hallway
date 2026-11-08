@@ -2,7 +2,7 @@
 // (y la tele en pequeñito al lado; antes era una estantería)
 // y una puerta para entrar a los pasillos.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, SKINS_LISTAS, NAVIDAD } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, skinsListas, horaSkins, ahoraJuego, NAVIDAD } from './config.js';
 import { T, loadMap, setTile } from './level.js';
 import { LOBBY } from './maps.js';
 import { Game, dist } from './game.js';
@@ -34,7 +34,7 @@ export function cartelNavidad(hoy = hoyJuego()) {
   if (!NAVIDAD.cartelDesde) return false;
   const dia = (txt) => { const [a, m, d] = txt.split('-').map(Number); return new Date(a, m - 1, d); };
   const h = new Date(hoy); h.setHours(0, 0, 0, 0);
-  return h >= dia(NAVIDAD.cartelDesde) && h < dia(NAVIDAD.desde);
+  return h >= dia(NAVIDAD.cartelDesde) && h <= dia(NAVIDAD.desde);   // el primer día del evento sigue (Elora)
 }
 
 export class Lobby extends Game {
@@ -97,9 +97,11 @@ export class Lobby extends Game {
     if (dist(p.x, p.y, this.npc.x, this.npc.y) < TILE * 1.9) this.near = 'tarda';
     else if (this.shelf.some((v) => dist(p.x, p.y, v.x, v.y + TILE) < TILE * 1.3)) this.near = 'tapes';
     else if (this.calendario && dist(p.x, p.y, this.calendario.x, this.calendario.y + TILE * 1.5) < TILE * 1.4) this.near = 'adviento';
+    else if (this.cb.onCartel && (this.cartelSkinsVisible() || cartelNavidad()) && dist(p.x, p.y, this.cartelSkinsPos().x, this.cartelSkinsPos().y) < TILE * 1.6) this.near = 'cartel';
     if (this.near && input.wasPressed('interact')) {
       if (this.near === 'tarda') this.cb.onShop();
       else if (this.near === 'adviento') this.cb.onAdviento();
+      else if (this.near === 'cartel') this.cb.onCartel(cartelNavidad() ? 'navidad' : 'skins');
       else this.cb.onTapes();
       return;
     }
@@ -110,6 +112,18 @@ export class Lobby extends Game {
     for (const m of this.messages) m.ttl -= dt;
     this.messages = this.messages.filter((m) => m.ttl > 0);
     this.updateCamera();
+  }
+
+  // El cartel de las skins (Elora): se ve hasta que salen las skins y todo el día del estreno (Elora: ese día
+  // sigue y es la fiesta de pijamas), y no cuando está el de Navidad. Se puede mirar de cerca: te pones debajo y pulsas E.
+  cartelSkinsVisible() {
+    if (cartelNavidad()) return false;
+    const ahora = ahoraJuego(), h = horaSkins();
+    return !skinsListas(ahora) || ahora.toDateString() === h.toDateString();
+  }
+  cartelSkinsPos() {
+    const d0 = this.doors[0] || { tx: 13, ty: 1 };
+    return { x: d0.tx * TILE - 12 - 50, y: d0.ty * TILE - 6 + 40 + TILE * 0.9 };   // justo debajo del cartel
   }
 
   render(ctx) {
@@ -161,12 +175,23 @@ export class Lobby extends Game {
       for (const [px, py] of [[-w / 2 + 5, 5], [w / 2 - 5, 5], [-w / 2 + 5, h - 5], [w / 2 - 5, h - 5]]) { ctx.beginPath(); ctx.arc(cx + px, top + py, 1.5, 0, Math.PI * 2); ctx.fill(); }
       ctx.fillStyle = '#fff6dc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 11px "Segoe UI", Arial';
-      // cuántos días faltan para las skins nuevas (cuenta sola, según la fecha de hoy)
-      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      // cuántos días faltan para las skins nuevas (cuenta sola, según la fecha de hoy). El mismo día
+      // (Elora): un temporizador con las horas y los minutos que faltan, y en el último minuto, los segundos
+      const ahora = ahoraJuego(), hoy = new Date(ahora); hoy.setHours(0, 0, 0, 0);
       const [a, m, d] = SKINS_DIA.split('-').map(Number);
       const faltan = Math.round((new Date(a, m - 1, d) - hoy) / 86400000);
       const l1 = t('lobby.skins');
-      const l2 = faltan > 1 ? t('lobby.skinsDias', { n: faltan }) : faltan === 1 ? t('lobby.skinsDia') : t('lobby.skinsYa');
+      let l2;
+      if (skinsListas(ahora)) l2 = t('lobby.skinsFiesta');   // el día del estreno: ¡la fiesta de pijamas!
+      else if (faltan > 1) l2 = t('lobby.skinsDias', { n: faltan });
+      else if (faltan === 1) l2 = t('lobby.skinsDia');
+      else {
+        const seg = Math.max(0, Math.ceil((horaSkins() - ahora) / 1000));
+        const min = Math.ceil(seg / 60), hh = Math.floor(min / 60), mm = min % 60;   // los minutos, redondeando hacia arriba
+        if (seg <= 60) l2 = t('lobby.skinsS', { s: seg });
+        else if (hh > 0) l2 = t('lobby.skinsHM', { h: hh, m: mm });
+        else l2 = t('lobby.skinsM', { m: mm });
+      }
       ctx.fillText(l1, cx, top + h * 0.3); ctx.fillText(l2 || '', cx, top + h * 0.72);
       ctx.textBaseline = 'alphabetic';
     };
@@ -175,7 +200,7 @@ export class Lobby extends Game {
     // entonces ya se habrá quitado (al probarlo con ?cartelnavidad=1, lo tapa)
     if (this.calendario) this.drawCalendario(ctx, this.calendario.x, this.calendario.y);
     if (cartelNavidad()) this.drawCartelNavidad(ctx, d0.tx * TILE - 12 - 70, d0.ty * TILE - 8);
-    else if (!SKINS_LISTAS) cartel();   // cuando las skins estén puestas, el cartel se va (Elora)
+    else if (this.cartelSkinsVisible()) cartel();   // el día del estreno sigue; al día siguiente se va (Elora)
 
     // actores ordenados por altura
     const actors = [
@@ -265,15 +290,15 @@ export class Lobby extends Game {
       ctx.fillStyle = '#ff2e3e';
       for (const [bx, by] of [[-1.2, -1], [1.2, -1], [0, 1]]) { ctx.beginPath(); ctx.arc(hx + bx, hy + by, 1.4, 0, Math.PI * 2); ctx.fill(); }
     }
-    // el texto
-    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    // el texto (el primer día del evento: «¡Ya es Navidad!»)
+    const hoy = hoyJuego(); hoy.setHours(0, 0, 0, 0);
     const [a, m, d] = NAVIDAD.desde.split('-').map(Number);
     const faltan = Math.round((new Date(a, m - 1, d) - hoy) / 86400000);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff6dc'; ctx.font = 'bold 11.5px "Segoe UI", Arial';
     ctx.fillText(t('lobby.navidad'), cx, top + h * 0.34);
     ctx.fillStyle = '#ffe36b'; ctx.font = 'bold 11px "Segoe UI", Arial';
-    ctx.fillText(faltan > 1 ? t('lobby.navidadDias', { n: faltan }) : t('lobby.navidadDia'), cx, top + h * 0.72);
+    ctx.fillText(faltan > 1 ? t('lobby.navidadDias', { n: faltan }) : faltan === 1 ? t('lobby.navidadDia') : t('lobby.navidadYa'), cx, top + h * 0.72);
     ctx.textBaseline = 'alphabetic';
   }
 
@@ -413,7 +438,7 @@ export class Lobby extends Game {
     // avisos
     ctx.textAlign = 'center';
     let yy = VIEW_H - 40;
-    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
+    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento', cartel: 'lobby.cartel' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
     else { ctx.font = `16px ${font}`; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText(t('lobby.door'), VIEW_W / 2, yy); yy -= 30; }
     this.renderMessages(ctx, yy, font);
     ctx.restore();

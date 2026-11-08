@@ -975,6 +975,18 @@ function drawGec(ctx, pal, facing, walk, opts) {
     for (const k of [-5, 5]) { dot(ctx, k, 2, 1.3); }
     ctx.fillStyle = tabla;
     rrect(ctx, -8, -1.2, 16, 2.8, 1.4); ctx.fill();
+    if (pj && !B) {
+      // en pijama, el monopatín va tapado con la manta de estrellas de Draila (Elora: "Draila le prestó su
+      // manta para dormir y la usó para el monopatín"): azul oscuro, con el borde ondulado y estrellas amarillas
+      ctx.fillStyle = '#3a4a8c';
+      ctx.beginPath(); ctx.moveTo(-8.8, -0.4); ctx.quadraticCurveTo(-8.6, -2.4, -6.5, -2.4); ctx.lineTo(6.5, -2.4);
+      ctx.quadraticCurveTo(8.6, -2.4, 8.8, -0.4);
+      for (let k = 0; k < 6; k++) { const x0 = 8.8 - k * (17.6 / 6); ctx.quadraticCurveTo(x0 - 1.47, 3, x0 - 2.93, 1.1); }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#263266'; ctx.fillRect(-6.5, -2.4, 13, 0.6);
+      ctx.fillStyle = '#ffe36b';
+      for (const [ex, ey, r] of [[-5.4, -0.6, 1], [-1.6, 0.4, 0.75], [2, -0.8, 1], [5.6, 0.4, 0.75]]) estrella(ctx, ex, ey, r);
+    }
     ctx.restore();
   };
   if (skate) {

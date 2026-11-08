@@ -202,3 +202,24 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 .screen .online-sub { color: #fff6dc; font-weight: 800; font-size: 22px; }
 .screen .online-nota { color: #ffe36b; font-weight: 800; min-height: 22px; max-width: 300px; }
 .screen .online-seguro { color: #b9f5c4; }
+/* el cartel de las skins, de cerca (Elora): una tabla de madera grande con el reloj y la información */
+.cartel-grande { background: #a8733f; border: 5px solid #5a3d26; border-radius: 10px; box-shadow: 0 10px 0 rgba(0,0,0,0.35), inset 0 0 0 3px #8c5d30;
+  padding: 18px 26px; max-width: min(680px, 94%); display: flex; flex-direction: column; align-items: center; gap: 10px; color: #fff6dc; }
+.cartel-grande .cartel-titulo { margin: 0; font-size: 34px; color: #fff6dc; text-shadow: 0 3px 0 #5a3d26; }
+.screen .cartel-grande .cartel-cuando { margin: 0; font-size: 19px; font-weight: 800; color: #fff6dc; }
+.cartel-reloj { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.cartel-faltan { font-weight: 800; font-size: 18px; margin-right: 4px; }
+.cartel-num { background: #3a2618; color: #ffe36b; border-radius: 8px; padding: 6px 12px; font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; min-width: 72px; }
+.cartel-ya { color: #ffe36b; font-size: 28px; font-weight: 900; }
+.cartel-sombras { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; background: rgba(58,38,24,0.35); border-radius: 10px; padding: 6px; }
+.cartel-grande .cartel-sorpresa { margin: 0; font-weight: 800; color: #ffe36b; }
+.cartel-info { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 17px; font-weight: 700; display: grid; gap: 4px; }
+.cartel-grande.fiesta .cartel-sombras { background: rgba(255, 246, 220, 0.35); }
+.screen .cartel-grande.fiesta .cartel-cuando { color: #ffe36b; font-size: 26px; }
+.cartel-grande.navidad { background: #b8323c; border-color: #1f6a3a; box-shadow: 0 10px 0 rgba(0,0,0,0.35), inset 0 0 0 3px #2e9a4c; }
+.cartel-grande.navidad .cartel-titulo { text-shadow: 0 3px 0 #6a141c; }
+.cartel-grande.navidad .cartel-num { background: #1f4a2c; }
+.cartel-grande.navidad .cartel-sombras { background: rgba(255, 246, 220, 0.25); }
+.adv-paginas { display: flex; align-items: center; gap: 12px; }
+.adv-paginas button.adv-flecha { min-width: 0; padding: 4px 14px; font-size: 18px; }
+.adv-pagina { color: #fff6dc; font-weight: 800; }

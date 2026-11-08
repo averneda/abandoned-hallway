@@ -1,7 +1,7 @@
 // El calendario de Adviento del lobby (evento de Navidad, Elora).
 //
-// - Calendario grande, del 21 al 25 de diciembre: cada día que lo abres te da 20 monedas, y si abres los
-//   5 te llevas el regalo secreto (un personaje nuevo de Navidad: el reno, que dibujará Elora).
+// - Calendario grande, del 5 al 25 de diciembre (21 casillas, en páginas de 7; Elora): cada día que lo abres te da 20 monedas, y si abres los
+//   21 te llevas el regalo secreto (un personaje nuevo de Navidad: Chop, el reno).
 // - Calendario chiquito, del 26 al 30 de diciembre: es un extra. Si abres los 5, el regalo final:
 //   50 monedas + el regalo del finde (30 monedas y 3 cintas) (Elora).
 // Cada casilla se abre su día. Si un día se te pasa, la puedes recuperar por 1.000 monedas (Elora): no te da
@@ -9,7 +9,7 @@
 // Los números están en ADVIENTO de src/config.js.
 // Para probarlo otro día: index.html?navidad=1&dia=2026-12-23
 
-import { ADVIENTO } from './config.js';
+import { ADVIENTO, ahoraJuego } from './config.js';
 
 // "AAAA-MM-DD" de una fecha (hora local)
 export function textoDia(f) {
@@ -27,7 +27,7 @@ export function hoyJuego() {
     const p = new URLSearchParams(location.search).get('dia');
     if (p && /^\d{4}-\d{2}-\d{2}$/.test(p)) { const [a, m, d] = p.split('-').map(Number); return new Date(a, m - 1, d); }
   } catch (e) { /* nada */ }
-  return new Date();
+  return ahoraJuego();   // (con ?ahora=AAAA-MM-DDTHH:MM:SS también se puede probar otra hora)
 }
 
 // Las casillas de un calendario ('grande' o 'chico'): [{ fecha, dia }]

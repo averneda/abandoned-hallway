@@ -1,4 +1,4 @@
-import { maxHearts } from './config.js';
+import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
@@ -6,7 +6,7 @@ import { CHARACTERS, drawCharacter, SKINS, skinsDe, conSkin, characterById, TARD
 import { PAD_ACTIONS } from './input.js';
 import { TapePlayer, grabacionDeCinta } from './tapes.js';
 import { music } from './music.js';
-import { casillas, estadoCasilla } from './adviento.js';
+import { casillas, estadoCasilla, textoDia, hoyJuego } from './adviento.js';
 import { cancionLobby } from './lobby.js';
 
 // ---- nombres de las cintas (Elora): quien juega puede ponerle nombre a cada cinta; se guarda en
@@ -81,6 +81,7 @@ export class UI {
 
   clear() {
     if (this.tapePlayer) { this.tapePlayer.parar(); this.tapePlayer = null; }
+    if (this.reloj) { clearInterval(this.reloj); this.reloj = null; }
     this.root.innerHTML = ''; this.keyHandler = null; this.padTick = null; this.navIndex = 0;
   }
 
@@ -350,11 +351,14 @@ export class UI {
   // vestido así; la que lleva puesta, marcada. En el modo pijama son gratis.
   fillSkins(box, ch, skins, onChange) {
     box.innerHTML = '';
-    const lista = skins ? skinsDe(ch.id) : [];
+    const lista = skins && skins.puede(ch.id) ? skinsDe(ch.id) : [];
     box.classList.toggle('hidden', !lista.length);
     if (!lista.length) return;
     box.appendChild(this.el('div', 'skins-titulo', t('skins.title')));
     const puesta = skins.elegida(ch.id) || null;
+    // desde que salen las skins (Elora: martes 10, 16:00) se compran con monedas; en el modo pijama, gratis.
+    // Para no comprar sin querer: el primer toque pregunta «¿Comprar?» y el segundo compra.
+    const tiene = (skin) => !skin || skins.tiene(ch.id, skin);
     for (const skin of [null, ...lista]) {
       const c = this.el('div', 'card skin' + (skin === puesta ? ' current' : ''));
       const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80;
@@ -363,9 +367,18 @@ export class UI {
       c.appendChild(cv);
       const nombre = skin ? SKINS[skin].emoji + ' ' + t('skins.' + skin) : '👕 ' + t('skins.normal');
       c.appendChild(this.el('div', 'name', nombre));
-      c.appendChild(this.el('div', 'skin-precio', skin === puesta ? t('skins.puesta') : skin ? t('skins.free') : ''));
+      const precio = skin ? SKINS[skin].personajes[ch.id].price : 0;
+      const etiqueta = skin === puesta ? t('skins.puesta') : !skin ? '' : skins.gratis ? t('skins.free') : tiene(skin) ? '' : t('skins.precio', { n: precio });
+      const pie = this.el('div', 'skin-precio', etiqueta);
+      c.appendChild(pie);
       if (skin && SKINS[skin].personajes[ch.id].provisional) c.title = t('skins.prueba');
-      c.onclick = () => { if (skin !== puesta) { skins.elegir(ch, skin); onChange(); } };
+      c.onclick = () => {
+        if (skin === puesta) return;
+        if (tiene(skin)) { skins.elegir(ch, skin); onChange(); return; }
+        if (skins.monedas() < precio) { pie.textContent = t('skins.faltan', { n: precio - skins.monedas() }); return; }
+        if (c.dataset.preguntado) { skins.comprar(ch, skin, precio); return; }
+        c.dataset.preguntado = '1'; pie.textContent = t('skins.comprar', { n: precio });
+      };
       box.appendChild(c);
     }
   }
@@ -725,6 +738,111 @@ export class UI {
   // (26 a 30). Se abre la de hoy; las que se te pasaron se recuperan por 1.000 monedas (Elora).
   // estado: { abiertas: [fechas] }; onAbrir(cual, fecha?) abre la de hoy (o recupera esa fecha) y devuelve el
   // texto de lo que te dan; monedas(): las que tienes.
+  // El cartel de las skins, de cerca (Elora: "que se pueda interactuar con el cartel y que te diga lo que va a
+  // pasar más de cerca y con más información"): una ventana de madera con el reloj que cuenta (días, horas,
+  // minutos y segundos), la información de las skins de pijama y los personajes en sombra (siluetas, como quería
+  // Elora: es una sorpresa; los secretos, Drake y Chop, no salen).
+  // Desde que salen (Elora): «¡Ya ha llegado el día de la fiesta de pijamas! ¡A pasarlo bien!» y las siluetas se destapan.
+  showCartel({ onClose }) {
+    this.clear();
+    const fiesta = skinsListas();
+    const fondo = this.el('div', 'screen dim cartel-fondo');
+    const s = this.el('div', 'cartel-grande' + (fiesta ? ' fiesta' : ''));
+    s.appendChild(this.el('h2', 'cartel-titulo', t(fiesta ? 'cartel.fiesta' : 'cartel.titulo')));
+    s.appendChild(this.el('p', 'cartel-cuando', t(fiesta ? 'cartel.pasarlo' : 'cartel.cuando')));
+    const reloj = this.el('div', 'cartel-reloj');
+    if (!fiesta) s.appendChild(reloj);
+    const pintarReloj = () => {
+      if (fiesta) return;
+      const seg = Math.max(0, Math.ceil((horaSkins() - ahoraJuego()) / 1000));
+      reloj.innerHTML = '';
+      if (seg <= 0) { this.showCartel({ onClose }); return; }   // ¡las 16:00! la fiesta empieza con la ventana abierta
+      reloj.appendChild(this.el('span', 'cartel-faltan', t('cartel.faltan')));
+      const d = Math.floor(seg / 86400), h = Math.floor(seg % 86400 / 3600), m = Math.floor(seg % 3600 / 60), sg = seg % 60;
+      for (const [k, n] of [['d', d], ['h', h], ['m', m], ['s', sg]]) {
+        if (k === 'd' && !d) continue;
+        reloj.appendChild(this.el('span', 'cartel-num', t('cartel.' + k, { n })));
+      }
+    };
+    pintarReloj();
+    this.reloj = setInterval(pintarReloj, 250);
+    const sombras = this.el('div', 'cartel-sombras');
+    for (const ch of CHARACTERS) {
+      if (ch.secreto || !SKINS.pijama.personajes[ch.id]) continue;
+      const cv = document.createElement('canvas'); cv.width = 56; cv.height = 64;
+      const cx = cv.getContext('2d'); cx.translate(28, 44); cx.scale(1.4, 1.4);
+      drawCharacter(cx, conSkin(ch, 'pijama'), 0, 0, 'down', 0, 0, false);
+      if (!fiesta) {
+        cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalCompositeOperation = 'source-in';
+        cx.fillStyle = '#2a1a10'; cx.fillRect(0, 0, 56, 64);   // en sombra: no se ve cómo es el pijama
+        cx.globalCompositeOperation = 'source-over'; cx.fillStyle = '#ffe36b'; cx.font = 'bold 18px "Segoe UI", Arial';
+        cx.textAlign = 'center'; cx.fillText('?', 28, 30);
+      }
+      sombras.appendChild(cv);
+    }
+    s.appendChild(sombras);
+    s.appendChild(this.el('p', 'cartel-sorpresa', t(fiesta ? 'cartel.desvelado' : 'cartel.sorpresa')));
+    const lista = this.el('ul', 'cartel-info');
+    for (const k of ['info1', 'info2', 'info3', 'info4']) lista.appendChild(this.el('li', '', t('cartel.' + k)));
+    s.appendChild(lista);
+    s.appendChild(this.button(t('shop.close'), () => { this.clear(); onClose(); }, true));
+    fondo.appendChild(s);
+    this.root.appendChild(fondo);
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); this.clear(); onClose(); } };
+  }
+
+  // El cartel de «¡La Navidad se acerca!», de cerca (Elora: "lo mismo con el cartel de Navidad"): el reloj hasta
+  // el primer día del evento (NAVIDAD.desde), lo que va a haber (árbol, calendario, música nueva y pasillos nuevos con nieve: Elora) y
+  // la silueta del personaje nuevo de Navidad. El 21 (el cartel sigue ese día): «¡Ya ha llegado la Navidad!»
+  // destapaChop: si ese día la silueta de Chop se destapa (lo decide Elora)
+  showCartelNavidad({ onClose, destapaChop }) {
+    this.clear();
+    const [a, m, d] = NAVIDAD.desde.split('-').map(Number), empieza = new Date(a, m - 1, d);
+    const fiesta = ahoraJuego() >= empieza;
+    const fondo = this.el('div', 'screen dim cartel-fondo');
+    const s = this.el('div', 'cartel-grande navidad' + (fiesta ? ' fiesta' : ''));
+    s.appendChild(this.el('h2', 'cartel-titulo', t(fiesta ? 'nav.fiesta' : 'nav.titulo')));
+    s.appendChild(this.el('p', 'cartel-cuando', fiesta ? t('nav.feliz') : t('nav.cuando', { d: Number(NAVIDAD.desde.slice(8)), h: Number(NAVIDAD.hasta.slice(8)) })));
+    const reloj = this.el('div', 'cartel-reloj');
+    if (!fiesta) s.appendChild(reloj);
+    const pintarReloj = () => {
+      if (fiesta) return;
+      const seg = Math.max(0, Math.ceil((empieza - ahoraJuego()) / 1000));
+      if (seg <= 0) { this.showCartelNavidad({ onClose, destapaChop }); return; }
+      reloj.innerHTML = '';
+      reloj.appendChild(this.el('span', 'cartel-faltan', t('nav.faltan')));
+      const dd = Math.floor(seg / 86400), h = Math.floor(seg % 86400 / 3600), mi = Math.floor(seg % 3600 / 60), sg = seg % 60;
+      for (const [k, n] of [['d', dd], ['h', h], ['m', mi], ['s', sg]]) {
+        if (k === 'd' && !dd) continue;
+        reloj.appendChild(this.el('span', 'cartel-num', t('cartel.' + k, { n })));
+      }
+    };
+    pintarReloj();
+    this.reloj = setInterval(pintarReloj, 250);
+    // la silueta del personaje nuevo (Chop): en sombra con una «?»; destapado el 21 si Elora lo quiere
+    const destapado = fiesta && destapaChop;
+    const caja = this.el('div', 'cartel-sombras');
+    const cv = document.createElement('canvas'); cv.width = 90; cv.height = 110;
+    const cx = cv.getContext('2d'); cx.translate(45, 78); cx.scale(2.4, 2.4);
+    drawCharacter(cx, characterById('reno'), 0, 0, 'down', 0, 0, false);
+    if (!destapado) {
+      cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalCompositeOperation = 'source-in';
+      cx.fillStyle = '#10301c'; cx.fillRect(0, 0, 90, 110);
+      cx.globalCompositeOperation = 'source-over'; cx.fillStyle = '#ffe36b'; cx.font = 'bold 30px "Segoe UI", Arial';
+      cx.textAlign = 'center'; cx.fillText('?', 45, 62);
+    }
+    caja.appendChild(cv);
+    s.appendChild(caja);
+    const lista = this.el('ul', 'cartel-info');
+    for (const k of ['info1', 'info2', 'info3', 'info4']) lista.appendChild(this.el('li', '', t('nav.' + k)));
+    lista.appendChild(this.el('li', '', t(destapado ? 'nav.chop' : 'nav.quien')));
+    s.appendChild(lista);
+    s.appendChild(this.button(t('shop.close'), () => { this.clear(); onClose(); }, true));
+    fondo.appendChild(s);
+    this.root.appendChild(fondo);
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); this.clear(); onClose(); } };
+  }
+
   showAdviento({ estado, onAbrir, onClose, monedas, precio }) {
     const otraVez = (texto) => {
       this.showAdviento({ estado, onAbrir, onClose, monedas, precio });
@@ -736,11 +854,20 @@ export class UI {
     const nota = this.el('p', 'small note-inline adv-nota', '');
     const bloque = (cual, titulo, final) => {
       const b = this.el('div', 'adv-bloque ' + cual);
-      b.appendChild(this.el('p', 'adv-titulo', t(titulo)));
+      const todas = casillas(cual), conf = ADVIENTO[cual];
+      b.appendChild(this.el('p', 'adv-titulo', t(titulo, { d: todas[0].dia, h: todas[todas.length - 1].dia, n: conf.monedasCadaDia })));
+      // el grande va en páginas de 7 casillas (Elora): se abre en la página de hoy y se pasa con las flechitas
+      const porPagina = conf.porPagina || todas.length, paginas = Math.ceil(todas.length / porPagina);
+      if (this.advPagina == null) {
+        const hoy = textoDia(hoyJuego()), k = todas.findIndex((c) => c.fecha >= hoy);   // la página de hoy
+        this.advPagina = Math.floor((k >= 0 ? k : todas.length - 1) / porPagina);
+      }
+      const pagina = cual === 'grande' ? Math.min(this.advPagina, paginas - 1) : 0;
       const fila = this.el('div', 'adv-fila');
-      casillas(cual).forEach((c, i) => {
+      todas.slice(pagina * porPagina, (pagina + 1) * porPagina).forEach((c, j) => {
+        const i = pagina * porPagina + j;
         const est = estadoCasilla(c.fecha, estado.abiertas);
-        const btn = this.el('button', 'adv-casilla ' + est + ' c' + i);
+        const btn = this.el('button', 'adv-casilla ' + est + ' c' + (i % 5));
         btn.appendChild(this.el('span', 'adv-num', String(c.dia)));
         btn.appendChild(this.el('span', 'adv-est', { abierta: '✓', hoy: '🎁', perdida: '✗', cerrada: '🔒' }[est]));
         btn.title = t('adv.' + est);
@@ -758,16 +885,25 @@ export class UI {
         };
         fila.appendChild(btn);
       });
-      b.appendChild(fila);
-      b.appendChild(this.el('p', 'adv-final', t(final)));
+      if (paginas > 1) {
+        const flecha = (txt, d) => {
+          const f = this.button(txt, () => { this.advPagina = pagina + d; otraVez(); });
+          f.classList.add('adv-flecha'); f.disabled = pagina + d < 0 || pagina + d >= paginas;
+          return f;
+        };
+        const nav = this.el('div', 'adv-paginas');
+        nav.append(flecha('◀', -1), this.el('span', 'adv-pagina', t('adv.pagina', { n: pagina + 1, t: paginas })), flecha('▶', 1));
+        b.append(fila, nav);
+      } else b.appendChild(fila);
+      b.appendChild(this.el('p', 'adv-final', t(final, { n: todas.length })));
       return b;
     };
     const pregunta = this.el('div', 'adv-pregunta');
     s.append(bloque('grande', 'adv.grande', 'adv.grandeFinal'), bloque('chico', 'adv.chico', 'adv.chicoFinal'), pregunta, nota);
     s.appendChild(this.el('p', 'small adv-ayuda', t('adv.ayuda', { n: precio.toLocaleString(getLang() === 'en' ? 'en-US' : 'de-DE') })));
-    s.appendChild(this.button(t('adv.cerrar'), onClose));
+    s.appendChild(this.button(t('adv.cerrar'), () => { this.advPagina = null; onClose(); }));
     this.root.appendChild(s);
-    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyE') onClose(); };
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyE') { this.advPagina = null; onClose(); } };
   }
 
   toast(text, ms = 3500) {

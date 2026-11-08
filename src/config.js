@@ -135,14 +135,38 @@ export const MAP_RANDOM = {
 
 // El día que salen las skins nuevas (Elora, el 7-11-2026: "faltan 3 días"): el cartel del lobby cuenta los días que faltan
 export const SKINS_DIA = '2026-11-10';
-// Cuando las skins nuevas ya estén en el juego, poner true: el cartel desaparece (Elora)
+// ...y la hora (Elora: "después de comer"; eligió el martes 10 a las 16:00). A esa hora (la del aparato de quien
+// juega) las skins de pijama salen solas en la tienda de Tarda, para comprarlas con monedas, y el cartel se quita.
+export const SKINS_HORA = '16:00';
+// Para que salgan ya sin esperar a la hora, poner true. Para probarlo: index.html?skins=1
 export const SKINS_LISTAS = false;
-// El evento de Navidad (Elora): de momento, un árbol de Navidad en el lobby. Sale el 21 de diciembre,
-// cuando empieza el invierno (Elora), y termina el 30 de diciembre (Elora).
+// La hora de ahora para el juego. Para probar otra: index.html?ahora=2026-11-10T15:58:30
+let desfase = 0;
+try {
+  const p = new URLSearchParams(location.search).get('ahora');
+  if (p && !isNaN(new Date(p))) desfase = new Date(p) - Date.now();
+} catch (e) { /* nada */ }
+export function ahoraJuego() { return new Date(Date.now() + desfase); }
+// Cuándo salen las skins (fecha y hora)
+export function horaSkins() {
+  const [a, m, d] = SKINS_DIA.split('-').map(Number), [h, mi] = SKINS_HORA.split(':').map(Number);
+  return new Date(a, m - 1, d, h, mi);
+}
+// ¿Ya han salido las skins? (con index.html?skins=1, sí, para probarlo)
+export function skinsListas(ahora = ahoraJuego()) {
+  if (SKINS_LISTAS) return true;
+  try { if (new URLSearchParams(location.search).get('skins') === '1') return true; } catch (e) { /* nada */ }
+  return ahora >= horaSkins();
+}
+// El evento de Navidad (Elora): el árbol de Navidad en el lobby, el calendario, la nieve... Empieza el 5 de diciembre
+// (Elora; antes el 21) y termina el 30 de diciembre (Elora).
 // Para verlo antes de tiempo: index.html?navidad=1
 // cartelDesde: el día que sale el cartel «¡La Navidad se acerca!» con la cuenta atrás hasta 'desde' (Elora:
 // el día después de poner las skins de pijama para todos). null = todavía no. Para verlo: index.html?cartelnavidad=1
-export const NAVIDAD = { desde: '2026-12-21', hasta: '2026-12-30', cartelDesde: null };
+// destaparChop: si el primer día del evento, en el cartel de cerca, la silueta de Chop se destapa (Elora: no, sigue
+// siendo secreto hasta que lo ganes en el calendario)
+// desde: Elora lo cambió del 21 al 5 de diciembre (8-11-2026)
+export const NAVIDAD = { desde: '2026-12-05', hasta: '2026-12-30', cartelDesde: '2026-11-11', destaparChop: false };   // cartel: el día después de las skins (Elora)
 // La nieve de los pasillos en Navidad (Elora): montones de nieve en el suelo; si los pisas vas más despacio,
 // y los Bloodies también (Elora: "un 20 %"). Solo en Navidad (o con el modo Navidad), no en el Bonus.
 // lento: la velocidad encima de la nieve (0.8 = un 20 % más despacio).
@@ -150,13 +174,13 @@ export const NAVIDAD = { desde: '2026-12-21', hasta: '2026-12-30', cartelDesde: 
 // cada montón, en casillas [PROVISIONAL].
 export const NIEVE = { lento: 0.8, cadaCasillas: 45, radio: [1.2, 2.4] };
 // El calendario de Adviento del lobby (Elora): sale durante el evento de Navidad. Ver src/adviento.js.
-// grande: del 21 al 25; 20 monedas cada día y, si abres los 5, el personaje secreto (el reno; 'reno' es
-// el id que tendrá cuando Elora lo dibuje). chico: del 26 al 30; si abres los 5, 50 monedas más el regalo
-// del finde (30 monedas y 3 cintas).
+// grande: del 5 al 25 de diciembre (Elora, 8-11-2026: 21 casillas, en páginas de 7); 20 monedas cada día y, si
+// abres todas, el personaje secreto (Chop, id 'reno'). chico: del 26 al 30; si abres los 5, 50 monedas más el
+// regalo del finde (30 monedas y 3 cintas).
 // precioRecuperar: lo que cuesta abrir un día que se te pasó (Elora: 1.000 monedas).
 export const ADVIENTO = {
   precioRecuperar: 1000,
-  grande: { primerDia: '2026-12-21', dias: 5, monedasCadaDia: 20, personaje: 'reno' },
+  grande: { primerDia: '2026-12-05', dias: 21, porPagina: 7, monedasCadaDia: 20, personaje: 'reno' },
   chico: { primerDia: '2026-12-26', dias: 5, premioMonedas: 50, findeMonedas: 30, findeCintas: 3 },
 };
 export const BONUS_EVERY = 5;   // cada cuántos pasillos toca el Bonus

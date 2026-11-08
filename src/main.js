@@ -1,6 +1,6 @@
 // Arranque del juego y paso entre pantallas: menú → lobby → (cinemática) → pasillos.
 
-import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO } from './config.js';
+import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
@@ -33,8 +33,13 @@ const cajaCintas = new Set();
 // modoPijama: se puso el código del modo pijama (Elora): las skins de pijama salen en la tienda, gratis
 // modoNavidad: se puso el código del modo Navidad (Elora): lobby de Navidad y el reno gratis
 const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false };
-// La skin que lleva puesta cada personaje (id del personaje → skin). Solo se ven en el modo pijama.
+// La skin que lleva puesta cada personaje (id del personaje → skin). Se ven en el modo pijama o, desde que
+// salen las skins (Elora: martes 10 a las 16:00), si la has comprado.
 const skinsElegidas = {};
+// Las skins compradas con monedas (id del personaje → lista de skins)
+const skinsCompradas = {};
+const comprada = (id, skin) => !!(skinsCompradas[id] && skinsCompradas[id].includes(skin));
+const tieneSkin = (id, skin) => flags.modoPijama || (skinsListas() && comprada(id, skin));
 // El calendario de Adviento (Elora): qué casillas has abierto y si ya te dieron los regalos finales
 let adviento = advientoVacio();
 // Los personajes que tienes: los comprados y, gratis y sin guardarlo, el reno en el modo Navidad y Drake en el
@@ -45,7 +50,7 @@ function tienes() {
   if (flags.modoPijama) extra.push('drake');
   return extra.length ? new Set([...unlocked, ...extra]) : unlocked;
 }
-function aplicarSkin(ch) { return conSkin(ch, flags.modoPijama ? skinsElegidas[ch.id] : null); }
+function aplicarSkin(ch) { const s = skinsElegidas[ch.id]; return conSkin(ch, s && tieneSkin(ch.id, s) ? s : null); }
 const run = { character: characterById('carot'), level: 1, tapes: 0 };
 try {
   for (const id of JSON.parse(localStorage.getItem('holeway.unlocked') || '[]')) unlocked.add(id);
@@ -63,6 +68,7 @@ try {
   flags.modoPijama = localStorage.getItem('holeway.modoPijama') === '1';
   flags.modoNavidad = localStorage.getItem('holeway.modoNavidad') === '1';
   Object.assign(skinsElegidas, JSON.parse(localStorage.getItem('holeway.skins') || '{}'));
+  Object.assign(skinsCompradas, JSON.parse(localStorage.getItem('holeway.skinsCompradas') || '{}'));
   adviento = { ...advientoVacio(), ...JSON.parse(localStorage.getItem('holeway.adviento') || '{}') };
   const chId = localStorage.getItem('holeway.character');
   if (chId && tienes().has(chId)) run.character = aplicarSkin(characterById(chId));
@@ -81,6 +87,7 @@ function save() {
     localStorage.setItem('holeway.modoPijama', flags.modoPijama ? '1' : '0');
     localStorage.setItem('holeway.modoNavidad', flags.modoNavidad ? '1' : '0');
     localStorage.setItem('holeway.skins', JSON.stringify(skinsElegidas));
+    localStorage.setItem('holeway.skinsCompradas', JSON.stringify(skinsCompradas));
     localStorage.setItem('holeway.adviento', JSON.stringify(adviento));
   } catch (e) { /* nada */ }
 }
@@ -171,9 +178,22 @@ function gotoLobby() {
         // los secretos no salen hasta que los tienes (el reno: ganándolo en el calendario o en el modo Navidad)
         secretos: flags.drakeEnTienda ? new Set(['reno']) : new Set(['drake', 'reno']),
         onChoose: (ch) => { run.character = aplicarSkin(ch); save(); lobby.setCharacter(run.character); close(); },
-        // en el modo pijama, las skins (gratis); si es el personaje que llevas, se lo pone ya
-        skins: flags.modoPijama ? {
-          elegida: (id) => skinsElegidas[id] || null,
+        // las skins: en el modo pijama, gratis y de todos; desde que salen (martes 10, 16:00), se compran con
+        // monedas, solo de los personajes que tienes. Si es el personaje que llevas, se lo pone ya
+        skins: flags.modoPijama || skinsListas() ? {
+          gratis: flags.modoPijama,
+          puede: (id) => flags.modoPijama || tienes().has(id),
+          tiene: (id, skin) => tieneSkin(id, skin),
+          monedas: () => wallet.coins,
+          comprar: (ch, skin, precio) => {
+            wallet.coins -= precio;
+            (skinsCompradas[ch.id] = skinsCompradas[ch.id] || []).push(skin);
+            skinsElegidas[ch.id] = skin;
+            if (ch.id === run.character.id) { run.character = aplicarSkin(ch); lobby.setCharacter(run.character); }
+            save(); open(ch.id);
+            ui.toast(SKINS[skin].emoji + ' ' + t('skins.comprada', { name: ch.name }));
+          },
+          elegida: (id) => { const s = skinsElegidas[id]; return s && tieneSkin(id, s) ? s : null; },
           elegir: (ch, skin) => {
             if (skin) skinsElegidas[ch.id] = skin; else delete skinsElegidas[ch.id];
             if (ch.id === run.character.id) { run.character = aplicarSkin(ch); lobby.setCharacter(run.character); }
@@ -196,6 +216,13 @@ function gotoLobby() {
       verCaja();
     },
     // el calendario de Adviento (Elora): abrir la casilla de hoy y darte lo que toque
+    // el cartel de las skins, de cerca (Elora)
+    onCartel: (cual) => {
+      lobby.paused = true;
+      const onClose = () => { lobby.paused = false; input.clear(); };
+      if (cual === 'navidad') ui.showCartelNavidad({ onClose, destapaChop: NAVIDAD.destaparChop });
+      else ui.showCartel({ onClose });
+    },
     onAdviento: () => {
       lobby.paused = true;
       ui.showAdviento({
@@ -212,7 +239,7 @@ function gotoLobby() {
           wallet.tapes += p.cintas;                         // las cintas van al inventario
           if (p.personaje) unlocked.add(p.personaje);       // el personaje secreto (sale en la tienda cuando exista)
           save();
-          if (p.final === 'grande') return (p.monedas ? t('adv.monedas', { n: p.monedas }) + ' ' : '') + t('adv.finalGrande') + ' ' + t('adv.finalGrandeLuego');
+          if (p.final === 'grande') return (p.monedas ? t('adv.monedas', { n: p.monedas }) + ' ' : '') + t('adv.finalGrande', { n: ADVIENTO.grande.dias }) + ' ' + t('adv.finalGrandeLuego');
           if (p.final === 'chico') return t('adv.finalChico');
           if (fecha) return t('adv.recuperado');
           return p.monedas ? t('adv.monedas', { n: p.monedas }) : t('adv.guardado');
