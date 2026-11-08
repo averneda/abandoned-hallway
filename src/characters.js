@@ -88,6 +88,7 @@ export const SKINS = {
       hoppy: { price: 40 },    // con un peluchito
       katy: { price: 40 },     // pijama entero lila (Elora) y un peluchito
       oct: { price: 40 },        // bata gris con lazo y sombrerito de paja, sin gafas (dibujo de Elora)
+      drake: { price: 40 },      // bata amarilla clarita con llamitas y un peluchito de humano (lo pensó Elora; lo hizo Clad)
       // ya hechos a partir de su dibujo de Elora (foto en assets/referencias/skins/<id>-pijama.webp)
       carot: { price: 40 },    // camisón rosa de corazones y un peluchito blanco con manchas
       froggy: { price: 40 },   // pijama azul con lunitas amarillas
@@ -222,6 +223,8 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
     // cuerpo
     ctx.fillStyle = body;
     ctx.beginPath(); ctx.ellipse(0, 0, 11, 12, 0, 0, Math.PI * 2); ctx.fill();
+    // Drake en pijama (lo pensó Elora): bata amarilla clarita con llamitas de fuego y un peluchito de humano
+    if (ch.shape === 'dragon' && pal.skin === 'pijama' && !opts.bloody) batoDrake(ctx, facing);
     if (ch.shape === 'tardigrade') {
       ctx.strokeStyle = dark; ctx.lineWidth = 2;
       for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(-9, i * 5); ctx.lineTo(9, i * 5); ctx.stroke(); }
@@ -364,6 +367,43 @@ function estrella(ctx, x, y, r) {
   ctx.lineTo(x, y + r); ctx.lineTo(x - k, y + k); ctx.lineTo(x - r, y); ctx.lineTo(x - k, y - k);
   ctx.closePath(); ctx.fill();
 }
+// La bata de Drake (Elora): amarilla clarita, con llamitas de fuego, un cinturón con lazo y, de frente,
+// un peluchito de humano abrazado con un brazo.
+function batoDrake(ctx, facing) {
+  const bata = '#fbe9a2', bataOsc = '#e3c76a';
+  ctx.fillStyle = bata;
+  ctx.beginPath(); ctx.ellipse(0, 0.5, 11.4, 12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.save(); ctx.globalAlpha *= 0.5; ctx.fillStyle = bataOsc;
+  ctx.beginPath(); ctx.ellipse(6, 1, 4.5, 10.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  // las llamitas: rojas por fuera y naranjas por dentro
+  for (const [lx, ly, t] of [[-6, -6, 1], [5, -5, 0.8], [-2, 6, 1.1], [7, 6, 0.9], [-8, 3, 0.8], [1, -1, 0.7]]) {
+    ctx.fillStyle = '#e8452c';
+    ctx.beginPath(); ctx.moveTo(lx, ly - 3 * t); ctx.quadraticCurveTo(lx + 2.2 * t, ly, lx, ly + 1.6 * t); ctx.quadraticCurveTo(lx - 2.2 * t, ly, lx, ly - 3 * t); ctx.fill();
+    ctx.fillStyle = '#ffa53a';
+    ctx.beginPath(); ctx.moveTo(lx, ly - 1.4 * t); ctx.quadraticCurveTo(lx + 1.1 * t, ly + 0.4 * t, lx, ly + 1.2 * t); ctx.quadraticCurveTo(lx - 1.1 * t, ly + 0.4 * t, lx, ly - 1.4 * t); ctx.fill();
+  }
+  // el cuello en pico y el cinturón
+  ctx.strokeStyle = bataOsc; ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.moveTo(-4, -10); ctx.lineTo(0, -3); ctx.lineTo(4, -10); ctx.moveTo(0, -3); ctx.lineTo(0, 11); ctx.stroke();
+  ctx.fillStyle = bataOsc; ctx.fillRect(-10.6, 2, 21.2, 1.8);
+  if (facing === 'up') return;
+  ctx.beginPath(); ctx.ellipse(2.6, 2.9, 1.6, 1, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(5.4, 2.9, 1.6, 1, 0.4, 0, Math.PI * 2); ctx.fill();
+  // el peluchito de humano: pelo marrón, cara clarita, camiseta azul y pantalón
+  const px = -3, py = 1.8;
+  ctx.fillStyle = '#3a5a9e'; ctx.fillRect(px - 1.1, py + 5.6, 1, 2.4); ctx.fillRect(px + 0.2, py + 5.6, 1, 2.4);
+  ctx.fillStyle = '#5aa0e8'; rrect(ctx, px - 2, py + 2, 4, 4, 1); ctx.fill();
+  ctx.fillStyle = '#f2c9a5'; dot(ctx, px - 2.6, py + 3.2, 0.8); dot(ctx, px + 2.6, py + 3.2, 0.8);
+  ctx.fillStyle = '#f2c9a5'; dot(ctx, px, py, 2.3);
+  ctx.fillStyle = '#6b4226'; ctx.beginPath(); ctx.arc(px, py - 0.4, 2.4, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+  ctx.fillStyle = '#2a2020'; dot(ctx, px - 0.8, py + 0.2, 0.3); dot(ctx, px + 0.8, py + 0.2, 0.3);
+  ctx.strokeStyle = '#b5485a'; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.arc(px, py + 0.8, 0.7, 0.3, Math.PI - 0.3); ctx.stroke();
+  // el brazo de Drake (en la manga amarilla) que lo abraza
+  ctx.strokeStyle = bata; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-9.5, 0); ctx.quadraticCurveTo(-8.5, 6.5, -1.5, 6); ctx.stroke();
+  ctx.fillStyle = '#ee7a4a'; dot(ctx, -1.2, 5.9, 1.5);
+}
+
 // Una luna creciente (pijamas de Froggy y Jely): un círculo amarillo y otro del color de fondo encima.
 function luna(ctx, x, y, r, ang, color, fondo) {
   ctx.fillStyle = color; dot(ctx, x, y, r);
