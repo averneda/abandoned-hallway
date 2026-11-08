@@ -1781,6 +1781,20 @@ function drawTarda(ctx, pal, facing, walk, opts) {
 // orejas largas amarillas por dentro (una tiesa y la otra doblada hacia un lado), los ojos cerrados
 // de contenta, una sonrisita, camiseta roja con un dibujo azul clarito (un corazón con brazos y
 // piernas, de "HAPPY HOPPY"), los brazos abiertos, las patas de liebre grandes y la colita.
+// La maceta de Hoppy (Elora): marroncita, boca abajo en la cabeza como un casco. Arriba, el culo de la maceta con su
+// agujerito; abajo, la boca de la maceta con el borde gordito, justo por debajo de los ojos.
+function macetaCasco(ctx, hx, hy, B) {
+  const base = B ? '#5a2a1a' : '#a8703f', borde = B ? '#6e3420' : '#bf8550', sombra = B ? '#3a1810' : '#7a4e2a';
+  ctx.fillStyle = base;
+  ctx.beginPath(); ctx.moveTo(hx - 6.2, hy - 11.4); ctx.lineTo(hx + 6.2, hy - 11.4); ctx.lineTo(hx + 9.8, hy - 0.4); ctx.lineTo(hx - 9.8, hy - 0.4); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = sombra; ctx.globalAlpha *= 0.45;
+  ctx.beginPath(); ctx.moveTo(hx + 2.6, hy - 11.4); ctx.lineTo(hx + 6.2, hy - 11.4); ctx.lineTo(hx + 9.8, hy - 0.4); ctx.lineTo(hx + 5, hy - 0.4); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha /= 0.45;
+  ctx.fillStyle = sombra; ctx.beginPath(); ctx.ellipse(hx, hy - 11.4, 1.6, 0.6, 0, 0, Math.PI * 2); ctx.fill();   // el agujerito
+  ctx.fillStyle = borde; rrect(ctx, hx - 10.8, hy - 1.2, 21.6, 3.2, 1.2); ctx.fill();
+  ctx.fillStyle = sombra; ctx.globalAlpha *= 0.35; ctx.fillRect(hx - 10.4, hy + 1.2, 20.8, 0.8); ctx.globalAlpha /= 0.35;
+}
+
 function drawHoppy(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
@@ -1793,7 +1807,6 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
   const manoPeluche = facing === 'left' ? -1 : 1;   // la mano que coge el peluchito
   const shirt = B ? '#5e0810' : pj ? '#f4b9cf' : '#d8344a', shirtDark = B ? '#3a0408' : pj ? '#d48aa8' : '#a8202f';
   const panel = B ? '#c9a0a0' : '#cfe9f6';
-  const earIn = B ? '#7a0b12' : '#f2d23c';
   const line = B ? '#2a0306' : '#4a2e22';
   const hx = 0, hy = back ? -15 : -14;
   const step = Math.sin(walk) * 1.8;
@@ -1876,24 +1889,20 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
       ctx.fillStyle = '#4ea84a'; ctx.fillRect(1, 3, 4, 1.4);   // el trocito verde de abajo
     }
   }
-  // orejas largas: la de la izquierda tiesa y la de la derecha doblada hacia un lado
-  ctx.fillStyle = skin;
-  ctx.beginPath(); ctx.ellipse(hx - 3.5, hy - 13, 2.8, 8.5, -0.15, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(hx + 8.5, hy - 7, 2.7, 7, 1.0, 0, Math.PI * 2); ctx.fill();
-  if (!back) {
-    ctx.fillStyle = earIn;
-    ctx.beginPath(); ctx.ellipse(hx - 3.4, hy - 13.5, 1.3, 6, -0.15, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(hx + 8.8, hy - 7.2, 1.2, 4.8, 1.0, 0, Math.PI * 2); ctx.fill();
-  }
+  // (las orejas largas ya no se ven: van escondidas dentro de la maceta, Elora)
   // cabeza
   ctx.fillStyle = skin; dot(ctx, hx, hy, 9);
+  // la Hoppy de verdad (Elora, noviembre 2026; la ficha estaba mal): lleva una maceta marroncita boca abajo en la
+  // cabeza, como un casco. Le tapa las orejas y los ojos; la boca sí se ve
+  macetaCasco(ctx, hx, hy, B);
   if (inv) {
     // la felpa con cuernos de reno: la diadema por encima de la cabeza y dos cuernos con dos puntas
+    // (con la maceta, la felpa va por encima de la maceta y los cuernos salen de arriba) [PROVISIONAL]
     ctx.strokeStyle = '#c4303a'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.arc(hx, hy + 1, 9.2, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hx, hy + 1, 12.4, Math.PI * 1.22, Math.PI * 1.78); ctx.stroke();
     ctx.strokeStyle = cuerno; ctx.lineWidth = 1.6;
     for (const side of [-1, 1]) {
-      const bx = hx + side * 5.4, by = hy - 6.2;
+      const bx = hx + side * 5.6, by = hy - 9.4;
       ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + side * 1.6, by - 4, bx + side * 1, by - 7.4);
       ctx.moveTo(bx + side * 0.9, by - 3.2); ctx.lineTo(bx + side * 3.6, by - 5);
       ctx.moveTo(bx + side * 1.2, by - 5.6); ctx.lineTo(bx - side * 1, by - 7.2);
@@ -1902,12 +1911,8 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
   }
   if (B) bloodyMarks(ctx, hx, hy, facing);
   if (back) return;
-  // ojos cerrados de contenta (como dos arquitos), naricita y sonrisita
-  ctx.strokeStyle = B && chasing ? '#ffe36b' : line; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
-  for (const side of [-1, 1]) {
-    ctx.beginPath(); ctx.arc(hx + side * 3.6, hy + 0.5, 2, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
-  }
-  ctx.strokeStyle = line; ctx.lineWidth = 0.9;
+  // los ojos no se ven (la maceta los tapa, Elora): solo la naricita y la sonrisita
+  ctx.strokeStyle = line; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
   if (inv) { ctx.fillStyle = '#e8303c'; dot(ctx, hx, hy + 3.1, 1.6); ctx.fillStyle = 'rgba(255,255,255,0.6)'; dot(ctx, hx - 0.5, hy + 2.6, 0.45); }   // la nariz pintada de rojo con pintacaras (Elora)
   else { ctx.fillStyle = B ? '#2a0306' : '#8a5a48'; dot(ctx, hx, hy + 3.3, 0.8); }
   ctx.beginPath(); ctx.moveTo(hx - 2, hy + 4.6); ctx.quadraticCurveTo(hx - 1, hy + 6, hx, hy + 4.8); ctx.quadraticCurveTo(hx + 1, hy + 6, hx + 2, hy + 4.6); ctx.stroke();

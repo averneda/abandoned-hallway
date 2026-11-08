@@ -436,7 +436,7 @@ function llama(ctx, k) {
 const OJOS_PELUCHE = {
   carot: [[[-3.6, -1], [3.6, -1]], 2.2], froggy: [[[-6.4, -8.6], [6.4, -8.6]], 1.9], oct: [[[-5.7, -5.4], [0.6, -5.4]], 1.7],
   tarda: [[[-4, -4.6], [2.9, -4.6]], 1.5], gek: [[[-4.3, -6], [4.4, -6]], 2.4], draila: [[[-2.1, -10.6], [2, -10.6]], 1.6],
-  katy: [[[-2.9, 0], [3.1, 0]], 1.7], jely: [[[-3.6, -5.7], [3.7, -5.7]], 1.9], hoppy: [[[-3.4, 0.6], [3.1, 0.6]], 1.6],
+  katy: [[[-2.9, 0], [3.1, 0]], 1.7], jely: [[[-3.6, -5.7], [3.7, -5.7]], 1.9],   // Hoppy no: la maceta le tapa los ojos
   drake: [[[-3.1, -4.6], [3.1, -4.6]], 1.7], reno: [[[-3.4, -4.6], [3.4, -4.6]], 1.7],
 };
 // Un ojo de botón: negro, con el borde y los cuatro agujeritos cosidos con hilo clarito
