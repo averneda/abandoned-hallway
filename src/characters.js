@@ -99,26 +99,27 @@ export const SKINS = {
     },
   },
   // Las skins de Navidad (las pensó Elora con Clad, con el quiz). De momento solo salen, gratis, con el modo Navidad
-  // (Elora: «pon las skins en el código»); el precio para venderlas lo dirá Elora (price: null = todavía no se venden)
+  // (Elora: «pon las skins en el código»). Se venden solo en Navidad (del 5 al 30 de diciembre, todos los años) por
+  // 50 monedas cada una (Elora); con el modo Navidad son gratis
   invierno: {
     emoji: '🎄', navidad: true,
     personajes: {
-      froggy: { price: null },   // abrigo azul, gorro torcido que tapa un ojo, bufanda y guantes
-      carot: { price: null },    // abrigo largo rosa con bordes blancos, bufanda y gorro que tapa la oreja caída
-      hoppy: { price: null },    // de reno: jersey MUY peludito, felpa con cuernos y nariz pintada
-      katy: { price: null },     // de Papá Noel: jersey, gorro, barba de mentira y la mancha blanca
-      tarda: { price: null },    // de muñeco de nieve, con su taza de chocolate
-      gek: { price: null },      // plumífero rojo y guantes
-      draila: { price: null },   // disfrazada de árbol de Navidad
-      drake: { price: null },    // de elfo mágico
-      oct: { price: null },      // abrigo largo negro, gorro con pompón morado, guantes de tentáculo y bufanda
-      jely: { price: null },     // de estrella fugaz
-      reno: { price: null },     // Chop: abrigo a rayas rojas y verdes y gorrito con agujero para el cuerno del lazo
+      froggy: { price: 50 },   // abrigo azul, gorro torcido que tapa un ojo, bufanda y guantes
+      carot: { price: 50 },    // abrigo largo rosa con bordes blancos, bufanda y gorro que tapa la oreja caída
+      hoppy: { price: 50 },    // de reno: jersey MUY peludito, felpa con cuernos y nariz pintada
+      katy: { price: 50 },     // de Papá Noel: jersey, gorro, barba de mentira y la mancha blanca
+      tarda: { price: 50 },    // de muñeco de nieve, con su taza de chocolate
+      gek: { price: 50 },      // plumífero rojo y guantes
+      draila: { price: 50 },   // disfrazada de árbol de Navidad
+      drake: { price: 50 },    // de elfo mágico
+      oct: { price: 50 },      // abrigo largo negro, gorro con pompón morado, guantes de tentáculo y bufanda
+      jely: { price: 50 },     // de estrella fugaz
+      reno: { price: 50 },     // Chop: abrigo a rayas rojas y verdes y gorrito con agujero para el cuerno del lazo
     },
   },
-  osito: { emoji: '🧸', navidad: true, personajes: { tarda: { price: null } } },               // jersey, gorro de oso y guantes
+  osito: { emoji: '🧸', navidad: true, personajes: { tarda: { price: 50 } } },               // jersey, gorro de oso y guantes
   // plumíferos (Draila y Drake) y el jersey largo con gorro de lana de Jely
-  abrigo: { emoji: '🧥', navidad: true, personajes: { draila: { price: null }, drake: { price: null }, jely: { price: null } } },
+  abrigo: { emoji: '🧥', navidad: true, personajes: { draila: { price: 50 }, drake: { price: 50 }, jely: { price: 50 } } },
 };
 export function skinsDe(id) { return Object.keys(SKINS).filter((k) => SKINS[k].personajes[id]); }
 // El personaje con una skin puesta (una copia: el personaje de siempre no cambia). Sin skin, el de siempre.

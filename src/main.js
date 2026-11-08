@@ -41,7 +41,11 @@ const skinsElegidas = {};
 const skinsCompradas = {};
 const comprada = (id, skin) => !!(skinsCompradas[id] && skinsCompradas[id].includes(skin));
 // las de Navidad (SKINS[...].navidad), de momento solo con el modo Navidad y gratis (Elora)
-const tieneSkin = (id, skin) => (SKINS[skin] && SKINS[skin].navidad) ? flags.modoNavidad : flags.modoPijama || (skinsListas() && comprada(id, skin));
+const esDeNavidad = (skin) => !!(SKINS[skin] && SKINS[skin].navidad);
+// las de Navidad: gratis con el modo Navidad, o compradas (se venden solo en Navidad, Elora). Una que compraste es tuya
+// y te la puedes poner también fuera de Navidad [PROVISIONAL]
+const tieneSkin = (id, skin) => esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) : flags.modoPijama || (skinsListas() && comprada(id, skin));
+const hayNavidadComprada = () => Object.values(skinsCompradas).some((l) => l.some(esDeNavidad));
 // El calendario de Adviento (Elora): qué casillas has abierto y si ya te dieron los regalos finales
 let adviento = advientoVacio();
 // El minijuego del árbol de Navidad (idea del padre de Elora): los adornos que has cogido en los pasillos, cómo
@@ -213,11 +217,12 @@ function gotoLobby() {
         onChoose: (ch) => { run.character = aplicarSkin(ch); save(); lobby.setCharacter(run.character); close(); },
         // las skins: en el modo pijama, gratis y de todos; desde que salen (martes 10, 16:00), se compran con
         // monedas, solo de los personajes que tienes. Si es el personaje que llevas, se lo pone ya
-        skins: flags.modoPijama || skinsListas() || flags.modoNavidad ? {
-          gratis: (skin) => (SKINS[skin] && SKINS[skin].navidad) || flags.modoPijama,
-          disponible: (skin) => (SKINS[skin] && SKINS[skin].navidad) ? flags.modoNavidad : flags.modoPijama || skinsListas(),
+        skins: flags.modoPijama || skinsListas() || esNavidad() || hayNavidadComprada() ? {
+          gratis: (skin) => esDeNavidad(skin) ? flags.modoNavidad : flags.modoPijama,
+          disponible: (skin) => esDeNavidad(skin) || flags.modoPijama || skinsListas(),
           // de qué personajes se enseñan: en el modo pijama o Navidad, de todos (gratis); si no, solo de los tuyos
-          puede: (id, skin) => ((SKINS[skin] && SKINS[skin].navidad) ? flags.modoNavidad : flags.modoPijama) || tienes().has(id),
+          // las de Navidad: en Navidad, de tus personajes (se compran); con el modo Navidad, de todos (gratis); y las que ya tienes
+          puede: (id, skin) => esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) || (esNavidad() && tienes().has(id)) : flags.modoPijama || tienes().has(id),
           tiene: (id, skin) => tieneSkin(id, skin),
           monedas: () => wallet.coins,
           comprar: (ch, skin, precio) => {
