@@ -2,7 +2,7 @@
 // (y la tele en pequeñito al lado; antes era una estantería)
 // y una puerta para entrar a los pasillos.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, skinsListas, horaSkins, ahoraJuego, NAVIDAD } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, skinsListas, horaSkins, ahoraJuego, NAVIDAD, fechaNavidad } from './config.js';
 import { T, loadMap, setTile } from './level.js';
 import { LOBBY } from './maps.js';
 import { Game, dist } from './game.js';
@@ -17,9 +17,9 @@ import { hoyJuego } from './adviento.js';
 export function esNavidad(hoy = hoyJuego()) {
   try { if (new URLSearchParams(location.search).get('navidad') === '1') return true; } catch (e) { /* nada */ }
   try { if (localStorage.getItem('holeway.modoNavidad') === '1') return true; } catch (e) { /* nada */ }
-  const dia = (txt) => { const [a, m, d] = txt.split('-').map(Number); return new Date(a, m - 1, d); };
   const h = new Date(hoy); h.setHours(0, 0, 0, 0);
-  return h >= dia(NAVIDAD.desde) && h <= dia(NAVIDAD.hasta);
+  const anio = h.getFullYear();   // la Navidad se repite cada año (Elora)
+  return h >= fechaNavidad('desde', anio) && h <= fechaNavidad('hasta', anio);
 }
 
 // La música del lobby: la de Navidad cuando es Navidad (o con el modo Navidad), si no la de siempre (Elora)
@@ -27,14 +27,14 @@ export function cancionLobby() { return esNavidad() ? 'navidad' : 'lobby'; }
 // Y la de los pasillos: en Navidad, la de los pasillos de Navidad (Elora)
 export function cancionPasillo() { return esNavidad() ? 'pasilloNavidad' : 'pasillo'; }
 
-// ¿Sale el cartel «¡La Navidad se acerca!»? Desde NAVIDAD.cartelDesde hasta el día antes del evento
+// ¿Sale el cartel «¡La Navidad se acerca!»? Desde NAVIDAD.cartelDesde hasta el primer día del evento, cada año
 // (con index.html?cartelnavidad=1 sale siempre, para verlo)
 export function cartelNavidad(hoy = hoyJuego()) {
   try { if (new URLSearchParams(location.search).get('cartelnavidad') === '1') return true; } catch (e) { /* nada */ }
   if (!NAVIDAD.cartelDesde) return false;
-  const dia = (txt) => { const [a, m, d] = txt.split('-').map(Number); return new Date(a, m - 1, d); };
   const h = new Date(hoy); h.setHours(0, 0, 0, 0);
-  return h >= dia(NAVIDAD.cartelDesde) && h <= dia(NAVIDAD.desde);   // el primer día del evento sigue (Elora)
+  const anio = h.getFullYear();   // cada año (Elora)
+  return h >= fechaNavidad('cartelDesde', anio) && h <= fechaNavidad('desde', anio);   // el primer día del evento sigue (Elora)
 }
 
 export class Lobby extends Game {
@@ -292,8 +292,7 @@ export class Lobby extends Game {
     }
     // el texto (el primer día del evento: «¡Ya es Navidad!»)
     const hoy = hoyJuego(); hoy.setHours(0, 0, 0, 0);
-    const [a, m, d] = NAVIDAD.desde.split('-').map(Number);
-    const faltan = Math.round((new Date(a, m - 1, d) - hoy) / 86400000);
+    const faltan = Math.round((fechaNavidad('desde', hoy.getFullYear()) - hoy) / 86400000);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff6dc'; ctx.font = 'bold 11.5px "Segoe UI", Arial';
     ctx.fillText(t('lobby.navidad'), cx, top + h * 0.34);

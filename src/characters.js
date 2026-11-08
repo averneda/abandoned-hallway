@@ -307,23 +307,6 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
       }
     }
   }
-  // la capa "Tun" de Tarda: una burbuja que gira y la hace inmortal
-  if (opts.capa) {
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = '#c9a3f0';
-    ctx.beginPath(); ctx.ellipse(0, -5, 17, 21, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 0.95;
-    ctx.strokeStyle = '#efe0ff'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.ellipse(0, -5, 17, 21, 0, 0, Math.PI * 2); ctx.stroke();
-    // estrellitas girando
-    ctx.fillStyle = '#fff';
-    for (let i = 0; i < 4; i++) {
-      const a = walk * 0.25 + i * Math.PI / 2;
-      ctx.beginPath(); ctx.arc(Math.cos(a) * 17, -5 + Math.sin(a) * 21, 2.2, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.restore();
-  }
   // pintura fosforita de Caty: el Bloodie brilla del color que ha salido esta vez
   // (opts.pintado es uno de PINTURAS_FOSFORITO)
   if (opts.pintado) {
@@ -1236,6 +1219,35 @@ function drawTarda(ctx, pal, facing, walk, opts) {
   const ex = facing === 'left' ? -2 : facing === 'right' ? 2 : 0;
   // La Tarda de la tienda del lobby (opts.alta) es más alta y lleva su cinta; la jugable es más
   // bajita y no lleva ni la cinta ni las monedas (Elora).
+  // la Bolita Tun (Elora): Tarda hecha una bolita, como los ositos de agua cuando se secan. Un barril con
+  // rayas, las patitas escondidas, los ojos cerrados y unas zetas de dormir. Medio transparente: los Bloodies
+  // no la ven. En pijama, la bolita es el osito gris con sus orejitas.
+  if (opts.tun && !B) {
+    const color = pj ? gris : skin, osc = pj ? grisOsc : dark;
+    ctx.save(); ctx.globalAlpha *= 0.8;
+    if (pj) for (const side of [-1, 1]) {
+      ctx.fillStyle = gris; dot(ctx, side * 6, -4, 3);
+      ctx.fillStyle = '#f2a7b8'; dot(ctx, side * 6, -4, 1.6);
+    }
+    ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(0, 3, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = osc; ctx.beginPath(); ctx.ellipse(5, 4, 4, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = osc; ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    for (const x of [-5.5, 5.5]) { ctx.moveTo(x, -3.6); ctx.quadraticCurveTo(x * 1.25, 3, x, 9.6); }
+    ctx.stroke();
+    if (facing !== 'up') {
+      ctx.strokeStyle = line; ctx.lineWidth = 0.8; ctx.lineCap = 'round';
+      for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(ex + side * 2.2, 2, 1.2, Math.PI * 0.1, Math.PI * 0.9); ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(ex, 4.6, 0.9, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
+    }
+    ctx.restore();
+    // las zetas de dormir, que suben
+    const z = (performance.now() / 900) % 1;
+    ctx.fillStyle = '#efe0ff'; ctx.font = 'bold 5px "Segoe UI", Arial'; ctx.textAlign = 'center';
+    ctx.globalAlpha *= 1 - z;
+    ctx.fillText('z', 7 + z * 3, -5 - z * 8); ctx.font = 'bold 4px "Segoe UI", Arial'; ctx.fillText('z', 10 + z * 3, -9 - z * 8);
+    return;
+  }
   const alta = !!opts.alta;
   const top = alta ? -34 : -22, bot = 8;   // el cuerpo, de arriba abajo
   const fy = top + 27;   // la cara y la cinta se colocan respecto a lo alto del cuerpo

@@ -31,9 +31,10 @@ export function hoyJuego() {
 }
 
 // Las casillas de un calendario ('grande' o 'chico'): [{ fecha, dia }]
-export function casillas(cual) {
+// (las fechas de ADVIENTO son mes-día: el calendario se repite cada año, Elora; anio: el de hoy)
+export function casillas(cual, anio = hoyJuego().getFullYear()) {
   const c = ADVIENTO[cual];
-  return Array.from({ length: c.dias }, (_, i) => { const fecha = sumarDias(c.primerDia, i); return { fecha, dia: Number(fecha.slice(8)) }; });
+  return Array.from({ length: c.dias }, (_, i) => { const fecha = sumarDias(anio + '-' + c.primerDia, i); return { fecha, dia: Number(fecha.slice(8)) }; });
 }
 
 // Cómo está una casilla: 'abierta' (ya la abriste), 'hoy' (se puede abrir ahora), 'perdida' (su día pasó
@@ -48,8 +49,13 @@ export function estadoCasilla(fecha, abiertas, hoy = hoyJuego()) {
 // ¿Están abiertas todas las casillas de ese calendario?
 export function completo(cual, abiertas) { return casillas(cual).every((c) => abiertas.includes(c.fecha)); }
 
-// Lo que se guarda: { abiertas: [fechas], premioGrande: bool, premioChico: bool }
-export function estadoVacio() { return { abiertas: [], premioGrande: false, premioChico: false }; }
+// Lo que se guarda: { anio, abiertas: [fechas], premioGrande: bool, premioChico: bool }. Cada año el calendario
+// empieza de nuevo (Elora: "que la próxima Navidad pase lo mismo"): si lo guardado es de otro año, se vacía.
+export function estadoVacio(anio = hoyJuego().getFullYear()) { return { anio, abiertas: [], premioGrande: false, premioChico: false }; }
+export function estadoDeEsteAnio(estado) {
+  const anio = hoyJuego().getFullYear();
+  return estado && estado.anio === anio ? estado : estadoVacio(anio);
+}
 
 // Abre la casilla de hoy de ese calendario (o, con fecha, una que se te pasó: recuperarla). Devuelve lo que
 // te dan: { monedas, cintas, personaje, final: 'grande' | 'chico' | null } o null si no se puede abrir.

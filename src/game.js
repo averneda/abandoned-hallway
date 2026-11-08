@@ -133,7 +133,8 @@ export class Game {
       hearts: maxHearts(character), anxiety: ANXIETY.start, invuln: 0, jump: 0, jumping: false,
       kx: 0, ky: 0, moving: false, cooldown: 0,
       tongue: null,  // lengua de Gec: {dir, len, max, phase, target}
-      capa: 0,       // segundos que le queda la capa Tun de Tarda (inmortal, pero más lento)
+      tun: 0,        // segundos que le quedan a Tarda hecha una bolita Tun (quieta, invisible e inmortal)
+      tunUsos: ABILITIES.tarda.usos,   // las bolitas que le quedan en este pasillo (Elora: 3 por pasillo)
       fly: 0,        // segundos que le quedan a Drake volando (pasa por encima de trastos y nadie le coge)
       supercarrera: 0, // segundos que le quedan a Hoppy corriendo a toda velocidad (sin cansarse)
       nariz: 0,        // segundos que le quedan a Chop con la Nariz brillante (ve más lejos en la oscuridad)
@@ -215,7 +216,7 @@ export class Game {
       if (p.sinCorrer >= STAMINA.regenDelay) p.stamina = Math.min(STAMINA.max, p.stamina + STAMINA.regen * dt);
     }
     let speed = (corriendo ? PLAYER.run : PLAYER.walk) * statMul(this.ch, 'velocidad');
-    if (p.capa > 0) speed *= ABILITIES.tarda.slow;   // con la capa Tun se va más despacio
+    if (p.tun > 0) speed = 0;   // hecha una bolita Tun, Tarda no se mueve (Elora)
     if (turbo) speed = PLAYER.run * ABILITIES.hoppy.speed * statMul(this.ch, 'velocidad');   // Supercarrera de Hoppy
     if (this.flood > 0) speed *= ABILITIES.jely.playerFast;   // Jely nada más rápido en el agua
     // en la nieve se va más despacio (Elora), salvo volando o en el aire
@@ -223,12 +224,12 @@ export class Game {
       speed *= NIEVE.lento;
       if (!this.avisoNieve) { this.avisoNieve = true; this.say(t('msg.nieve'), 3); }
     }
-    p.moving = len > 0;
-    p.corriendo = corriendo;   // (Gec va en monopatín cuando corre)
-    p.facing = facingOf(ax.x, ax.y, p.facing);
+    p.moving = len > 0 && p.tun <= 0;
+    p.corriendo = corriendo && p.tun <= 0;   // (Gec va en monopatín cuando corre)
+    if (p.tun <= 0) p.facing = facingOf(ax.x, ax.y, p.facing);
     if (p.moving) { p.walk += dt * (corriendo ? 16 : 11); p.andando = (p.andando || 0) + dt; } else p.andando = 0;
 
-    if (input.wasPressed('jump') && !p.jumping && p.fly <= 0) { p.jumping = true; p.jump = this.jumpTime; }
+    if (input.wasPressed('jump') && !p.jumping && p.fly <= 0 && p.tun <= 0) { p.jumping = true; p.jump = this.jumpTime; }
     if (p.jumping) {
       p.jump -= dt;
       if (this.ch.ability === 'carot') speed *= ABILITIES.carot.airSpeed;
@@ -240,11 +241,18 @@ export class Game {
     if (p.cooldown > 0) p.cooldown -= dt;
     if (this.ch.ability === 'gek' && input.wasPressed('ability') && p.cooldown <= 0 && !p.tongue) this.shootTongue();
     if (this.ch.ability === 'draila' && input.wasPressed('ability') && p.cooldown <= 0) this.bite();
-    if (this.ch.ability === 'tarda' && input.wasPressed('ability') && p.cooldown <= 0) {
-      p.capa = ABILITIES.tarda.time;
-      p.cooldown = ABILITIES.tarda.cooldown;
-      this.say(t('msg.capa'), 2);
-      sfx.capa();
+    // Bolita Tun de Tarda (Elora): se hace una bolita; si se vuelve a pulsar, sale antes
+    if (this.ch.ability === 'tarda' && input.wasPressed('ability')) {
+      if (p.tun > 0) this.salirTun();
+      else if (p.tunUsos <= 0) this.say(t('msg.tunNo'), 2);
+      else if (p.cooldown <= 0) {
+        p.tunUsos--;
+        p.tun = ABILITIES.tarda.time;
+        p.cooldown = ABILITIES.tarda.cooldown;
+        for (const e of this.enemies) { e.chasing = false; e.lastSeen = null; }   // dejan de verla
+        this.say(t('msg.tun'), 2);
+        sfx.capa();
+      }
     }
     if (this.ch.ability === 'katy' && input.wasPressed('ability') && p.cooldown <= 0) this.paint();
     if (this.ch.ability === 'hoppy' && input.wasPressed('ability') && p.cooldown <= 0 && p.supercarrera <= 0) {
@@ -268,7 +276,7 @@ export class Game {
       // (0,35 s es lo que tarda en bajar; así baja siempre ya fuera del trasto)
       if (p.fly < 0.35 && collides(L, p.x, p.y, p.r, 'player', false)) p.fly = 0.35;
     }
-    if (p.capa > 0) p.capa -= dt;
+    if (p.tun > 0) { p.tun -= dt; if (p.tun <= 0) this.salirTun(); }
     if (p.tongue) {
       const tg = p.tongue;
       if (tg.phase === 'out') {
@@ -303,6 +311,14 @@ export class Game {
   }
 
   // Gec lanza la lengua hacia donde mira. Si toca algo sólido antes de 7 casillas, se engancha ahí.
+  // Tarda sale de la bolita Tun: se despierta tranquila y se le baja la ansiedad (Elora)
+  salirTun() {
+    const p = this.player;
+    p.tun = 0;
+    p.anxiety = Math.max(0, p.anxiety - ABILITIES.tarda.calma);
+    this.say(t('msg.tunFin'), 2);
+  }
+
   shootTongue() {
     const L = this.level, p = this.player;
     const [dx, dy] = FACING_VEC[p.facing];
@@ -491,7 +507,7 @@ export class Game {
       if (this.enNieve(e.x, e.y)) edt *= NIEVE.lento;   // y en la nieve también (Elora)
 
       // Solo te ven si no hay pared ni trasto alto en medio.
-      const sees = e.recoil <= 0 && d < ENEMY.sightTiles * TILE * statMul(this.ch, 'sigilo') && canSee(L, e.x, e.y, p.x, p.y);
+      const sees = p.tun <= 0 && e.recoil <= 0 && d < ENEMY.sightTiles * TILE * statMul(this.ch, 'sigilo') && canSee(L, e.x, e.y, p.x, p.y);
       if (sees) { e.chasing = true; e.lostFor = 0; e.lastSeen = { x: p.x, y: p.y }; }
       else if (e.chasing) {
         e.lostFor += dt;
@@ -531,7 +547,7 @@ export class Game {
 
       // te toca (Carot pasa por encima si está saltando)
       const overJump = this.ch.ability === 'carot' && p.jumping;
-      const inmortal = p.capa > 0 || p.fly > 0;   // la capa Tun de Tarda o Drake volando
+      const inmortal = p.tun > 0 || p.fly > 0;   // Tarda hecha una bolita Tun o Drake volando
       if (d < e.r + p.r && p.invuln <= 0 && e.recoil <= 0 && !overJump && !inmortal && !p.seguro) {
         p.hearts -= 1;
         p.invuln = PLAYER.invuln;
@@ -547,7 +563,7 @@ export class Game {
 
     // --- ansiedad (sube con Bloodies cerca, baja cuando estás tranquilo) ---
     const nr = ANXIETY.nearRadiusTiles * TILE;
-    if (nearest < nr && !frozen && !p.seguro) p.anxiety += (ANXIETY.nearGain * (1 - nearest / nr) + 2) * dt * statMul(this.ch, 'cordura');
+    if (nearest < nr && !frozen && !p.seguro && p.tun <= 0) p.anxiety += (ANXIETY.nearGain * (1 - nearest / nr) + 2) * dt * statMul(this.ch, 'cordura');
     else p.anxiety -= ANXIETY.calm * dt;
     p.anxiety = Math.max(0, Math.min(ANXIETY.max, p.anxiety));
 
@@ -703,7 +719,7 @@ export class Game {
       music.play('fuego');         // música rápida y nerviosa mientras viene Drake (Elora)
     } else if (f.fase === 'aviso' && f.t >= DRAKE.warn) {
       f.fase = 'fuego'; f.t = 0;
-      const libre = p.seguro || p.enHueco || p.capa > 0 || p.fly > 0;
+      const libre = p.seguro || p.enHueco || p.tun > 0 || p.fly > 0;
       if (libre) this.say(t('msg.fuegoSalvado'), 3);
       else {
         p.hearts = Math.max(0, p.hearts - DRAKE.damage);
@@ -854,7 +870,7 @@ export class Game {
     // los andares que inventó Elora en su Taller de Andares (solo andando por el suelo, sin saltar ni volar)
     const pose = p.moving && !p.jumping && p.fly <= 0 && !p.tongue ? poseAndando(this.ch.id, !!p.corriendo, p.andando || 0) : null;
     drawCharacter(ctx, this.ch, p.x, p.y, p.facing, p.moving || (p.tongue && p.tongue.phase === 'dash') ? p.walk : 0, jumpH,
-      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { capa: p.capa > 0, flap: p.fly > 0 ? this.time * 14 : null, skate: !!p.corriendo, lengua: !!p.tongue, pose, nariz: p.nariz > 0 });
+      p.invuln > 0 && Math.floor(this.time * 12) % 2 === 0, { tun: p.tun > 0, flap: p.fly > 0 ? this.time * 14 : null, skate: !!p.corriendo, lengua: !!p.tongue, pose, nariz: p.nariz > 0 });
     // sin estamina: gotas de sudor de cansancio (Elora)
     if (p.agotado) this.drawSweat(ctx, p.x, p.y - jumpH);
     // Supercarrera de Hoppy: rayas de velocidad detrás
@@ -1287,9 +1303,11 @@ export class Game {
       else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
     } else if (this.ch.ability === 'tarda') {
       const name = t('ability.tarda.name');
-      if (p.capa > 0) { ctx.fillStyle = '#c9a3f0'; ctx.fillText(`${name}: ${Math.ceil(p.capa)}s`, x, y); }
-      else if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }
-      else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }), x, y); }
+      const quedan = ` (${p.tunUsos}/${ABILITIES.tarda.usos})`;   // las bolitas que le quedan en este pasillo
+      if (p.tun > 0) { ctx.fillStyle = '#c9a3f0'; ctx.fillText(`${name}: ${Math.ceil(p.tun)}s` + quedan, x, y); }
+      else if (p.tunUsos <= 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.tunNo', { name }), x, y); }
+      else if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }) + quedan, x, y); }
+      else { ctx.fillStyle = '#ffe36b'; ctx.fillText(t('hud.abilityReady', { name }) + quedan, x, y); }
     } else if (this.ch.ability === 'draila' || this.ch.ability === 'katy') {
       const name = t('ability.' + this.ch.ability + '.name');
       if (p.cooldown > 0) { ctx.fillStyle = '#a99db3'; ctx.fillText(t('hud.abilityWait', { name, s: Math.ceil(p.cooldown) }), x, y); }

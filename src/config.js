@@ -68,7 +68,10 @@ export const ABILITIES = {
   // Draila: da un mordisco que lanza una onda de 5 casillas. Los Bloodies que toca salen despedidos.
   draila: { rangeTiles: 5, speed: 420, push: 520, stun: 1.6, cooldown: 6 },
   // Tarda: se envuelve en su capa "Tun". No le pueden hacer daño, pero va más lento.
-  tarda: { time: 8, slow: 0.7, cooldown: 22 },
+  // Bolita Tun (Elora, 8-11-2026; antes era la capa Tun): se hace una bolita unos segundos; no se mueve, los
+  // Bloodies no la ven ni le hacen daño, y al salir se le baja la ansiedad. usos: 3 veces por pasillo (Elora).
+  // time, cooldown y calma [PROVISIONAL]
+  tarda: { time: 6, cooldown: 20, calma: 35, usos: 3 },
   // Caty: pinta a TODOS los Bloodies del mapa de azul fosforito (el color de su mancha).
   // Es un mini-localizador: dura poco, pero te dice dónde están todos, estén donde estén.
   katy: { time: 3, cooldown: 10 },
@@ -166,7 +169,13 @@ export function skinsListas(ahora = ahoraJuego()) {
 // destaparChop: si el primer día del evento, en el cartel de cerca, la silueta de Chop se destapa (Elora: no, sigue
 // siendo secreto hasta que lo ganes en el calendario)
 // desde: Elora lo cambió del 21 al 5 de diciembre (8-11-2026)
-export const NAVIDAD = { desde: '2026-12-05', hasta: '2026-12-30', cartelDesde: '2026-11-11', destaparChop: false };   // cartel: el día después de las skins (Elora)
+// Las fechas son mes-día: la Navidad se repite igual todos los años (Elora: "que la próxima Navidad pase lo mismo").
+export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-11', destaparChop: false };   // cartel: en 2026, el día después de las skins (Elora)
+// La fecha de este año (o del año que se diga) de una de esas fechas: fechaNavidad('desde') → Date
+export function fechaNavidad(clave, anio = ahoraJuego().getFullYear()) {
+  const [m, d] = NAVIDAD[clave].split('-').map(Number);
+  return new Date(anio, m - 1, d);
+}
 // La nieve de los pasillos en Navidad (Elora): montones de nieve en el suelo; si los pisas vas más despacio,
 // y los Bloodies también (Elora: "un 20 %"). Solo en Navidad (o con el modo Navidad), no en el Bonus.
 // lento: la velocidad encima de la nieve (0.8 = un 20 % más despacio).
@@ -180,8 +189,8 @@ export const NIEVE = { lento: 0.8, cadaCasillas: 45, radio: [1.2, 2.4] };
 // precioRecuperar: lo que cuesta abrir un día que se te pasó (Elora: 1.000 monedas).
 export const ADVIENTO = {
   precioRecuperar: 1000,
-  grande: { primerDia: '2026-12-05', dias: 21, porPagina: 7, monedasCadaDia: 20, personaje: 'reno' },
-  chico: { primerDia: '2026-12-26', dias: 5, premioMonedas: 50, findeMonedas: 30, findeCintas: 3 },
+  grande: { primerDia: '12-05', dias: 21, porPagina: 7, monedasCadaDia: 20, personaje: 'reno', siYaLoTienes: 100 },   // si ya tienes a Chop (de otro año): 100 monedas (Elora)   // (mes-día: cada año)
+  chico: { primerDia: '12-26', dias: 5, premioMonedas: 50, findeMonedas: 30, findeCintas: 3 },
 };
 export const BONUS_EVERY = 5;   // cada cuántos pasillos toca el Bonus
 // El pasillo de Drake (Elora): en el pasillo 50 hay un mapa inmenso (dos hojas de Elora) sin Bloodies.

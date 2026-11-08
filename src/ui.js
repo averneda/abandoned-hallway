@@ -1,4 +1,4 @@
-import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO } from './config.js';
+import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
@@ -797,12 +797,12 @@ export class UI {
   // destapaChop: si ese día la silueta de Chop se destapa (lo decide Elora)
   showCartelNavidad({ onClose, destapaChop }) {
     this.clear();
-    const [a, m, d] = NAVIDAD.desde.split('-').map(Number), empieza = new Date(a, m - 1, d);
+    const empieza = fechaNavidad('desde');   // la de este año
     const fiesta = ahoraJuego() >= empieza;
     const fondo = this.el('div', 'screen dim cartel-fondo');
     const s = this.el('div', 'cartel-grande navidad' + (fiesta ? ' fiesta' : ''));
     s.appendChild(this.el('h2', 'cartel-titulo', t(fiesta ? 'nav.fiesta' : 'nav.titulo')));
-    s.appendChild(this.el('p', 'cartel-cuando', fiesta ? t('nav.feliz') : t('nav.cuando', { d: Number(NAVIDAD.desde.slice(8)), h: Number(NAVIDAD.hasta.slice(8)) })));
+    s.appendChild(this.el('p', 'cartel-cuando', fiesta ? t('nav.feliz') : t('nav.cuando', { d: fechaNavidad('desde').getDate(), h: fechaNavidad('hasta').getDate() })));
     const reloj = this.el('div', 'cartel-reloj');
     if (!fiesta) s.appendChild(reloj);
     const pintarReloj = () => {
@@ -843,9 +843,10 @@ export class UI {
     this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); this.clear(); onClose(); } };
   }
 
-  showAdviento({ estado, onAbrir, onClose, monedas, precio }) {
+  // tieneChop: el grande se llama «Calendario secreto» hasta que tienes a Chop; luego, «Calendario de Chop» (Elora)
+  showAdviento({ estado, onAbrir, onClose, monedas, precio, tieneChop }) {
     const otraVez = (texto) => {
-      this.showAdviento({ estado, onAbrir, onClose, monedas, precio });
+      this.showAdviento({ estado, onAbrir, onClose, monedas, precio, tieneChop });
       if (texto) { const n = this.root.querySelector('.adv-nota'); if (n) n.textContent = texto; }
     };
     this.clear();
@@ -899,7 +900,7 @@ export class UI {
       return b;
     };
     const pregunta = this.el('div', 'adv-pregunta');
-    s.append(bloque('grande', 'adv.grande', 'adv.grandeFinal'), bloque('chico', 'adv.chico', 'adv.chicoFinal'), pregunta, nota);
+    s.append(bloque('grande', tieneChop && tieneChop() ? 'adv.grandeChop' : 'adv.grande', 'adv.grandeFinal'), bloque('chico', 'adv.chico', 'adv.chicoFinal'), pregunta, nota);
     s.appendChild(this.el('p', 'small adv-ayuda', t('adv.ayuda', { n: precio.toLocaleString(getLang() === 'en' ? 'en-US' : 'de-DE') })));
     s.appendChild(this.button(t('adv.cerrar'), () => { this.advPagina = null; onClose(); }));
     this.root.appendChild(s);

@@ -11,7 +11,7 @@ import { Title } from './title.js';
 import { TouchControls } from './touch.js';
 import { music } from './music.js';
 import { characterById, conSkin, SKINS } from './characters.js';
-import { abrir as abrirAdviento, estadoVacio as advientoVacio } from './adviento.js';
+import { abrir as abrirAdviento, estadoVacio as advientoVacio, estadoDeEsteAnio } from './adviento.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -69,7 +69,10 @@ try {
   flags.modoNavidad = localStorage.getItem('holeway.modoNavidad') === '1';
   Object.assign(skinsElegidas, JSON.parse(localStorage.getItem('holeway.skins') || '{}'));
   Object.assign(skinsCompradas, JSON.parse(localStorage.getItem('holeway.skinsCompradas') || '{}'));
-  adviento = { ...advientoVacio(), ...JSON.parse(localStorage.getItem('holeway.adviento') || '{}') };
+  // el calendario de este año (los de antes de 2027 no guardaban el año: eran de 2026)
+  const guardado = JSON.parse(localStorage.getItem('holeway.adviento') || 'null');
+  if (guardado && guardado.anio == null) guardado.anio = 2026;
+  adviento = estadoDeEsteAnio(guardado ? { ...advientoVacio(2026), ...guardado } : null);
   const chId = localStorage.getItem('holeway.character');
   if (chId && tienes().has(chId)) run.character = aplicarSkin(characterById(chId));
 } catch (e) { /* nada */ }
@@ -229,16 +232,22 @@ function gotoLobby() {
         estado: adviento,
         monedas: () => wallet.coins,
         precio: ADVIENTO.precioRecuperar,
+        tieneChop: () => unlocked.has(ADVIENTO.grande.personaje),
         // fecha: un día que se te pasó y recuperas por 1.000 monedas (Elora)
         onAbrir: (cual, fecha) => {
           if (fecha && wallet.coins < ADVIENTO.precioRecuperar) return '';
           const p = abrirAdviento(cual, adviento, undefined, fecha);
           if (!p) return '';
           if (fecha) wallet.coins -= ADVIENTO.precioRecuperar;
+          // si ya tenías a Chop (de otro año), el regalo final son 100 monedas (Elora)
+          const yaLoTenias = p.personaje && unlocked.has(p.personaje);
+          const extra = yaLoTenias ? ADVIENTO.grande.siYaLoTienes : 0;
+          wallet.coins += extra;
           wallet.coins += p.monedas;
           wallet.tapes += p.cintas;                         // las cintas van al inventario
-          if (p.personaje) unlocked.add(p.personaje);       // el personaje secreto (sale en la tienda cuando exista)
+          if (p.personaje) unlocked.add(p.personaje);       // el personaje secreto: Chop
           save();
+          if (p.final === 'grande' && yaLoTenias) return (p.monedas ? t('adv.monedas', { n: p.monedas }) + ' ' : '') + t('adv.finalGrandeYa', { n: ADVIENTO.grande.dias, m: extra });
           if (p.final === 'grande') return (p.monedas ? t('adv.monedas', { n: p.monedas }) + ' ' : '') + t('adv.finalGrande', { n: ADVIENTO.grande.dias }) + ' ' + t('adv.finalGrandeLuego');
           if (p.final === 'chico') return t('adv.finalChico');
           if (fecha) return t('adv.recuperado');
