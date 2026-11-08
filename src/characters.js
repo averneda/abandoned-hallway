@@ -117,7 +117,8 @@ export const SKINS = {
     },
   },
   osito: { emoji: '🧸', navidad: true, personajes: { tarda: { price: null } } },               // jersey, gorro de oso y guantes
-  abrigo: { emoji: '🧥', navidad: true, personajes: { draila: { price: null }, drake: { price: null } } },   // plumíferos
+  // plumíferos (Draila y Drake) y el jersey largo con gorro de lana de Jely
+  abrigo: { emoji: '🧥', navidad: true, personajes: { draila: { price: null }, drake: { price: null }, jely: { price: null } } },
 };
 export function skinsDe(id) { return Object.keys(SKINS).filter((k) => SKINS[k].personajes[id]); }
 // El personaje con una skin puesta (una copia: el personaje de siempre no cambia). Sin skin, el de siempre.
@@ -1337,6 +1338,11 @@ function drawJely(ctx, pal, facing, walk, opts) {
   // por un círculo, los piquitos de la estrella son los tentáculos, y el vestido con rayas en zigzag de lado a
   // lado: de abajo arriba, morado oscuro, morado clarito y amarillo clarito
   const inv = pal.skin === 'invierno' && !B;
+  // la otra skin de Navidad (la pensó Elora con el quiz): un jersey largo como un vestido, que le tapa la parte de
+  // abajo (Elora: «que no se le vean los pies»), azul oscuro con copitos y burbujas moradas, amarillas y azul
+  // clarito, y un gorro de lana con rayitas de esos tres colores, sin pompón
+  const ab = pal.skin === 'abrigo' && !B;
+  const JERSEY = ['#b48cf0', '#f7d75a', '#a9dcff'];   // morado, amarillo y azul clarito (Elora)
   const body = pj ? '#2d5ec4' : pal.color, bodyDark = pj ? '#1d3f8c' : pal.dark, base = B ? '#5e0810' : '#c3b6ea';
   const line = B ? '#2a0306' : '#1f2a33';
   const ex = facing === 'left' ? -2 : facing === 'right' ? 2 : 0;
@@ -1381,7 +1387,41 @@ function drawJely(ctx, pal, facing, walk, opts) {
   ctx.save(); ctx.globalAlpha *= 0.35; ctx.fillStyle = bodyDark;
   ctx.beginPath(); ctx.moveTo(2.5, hy + 4); ctx.lineTo(5, hy + 4); ctx.quadraticCurveTo(5, 2, 11 + sway, 10); ctx.lineTo(7 + sway, 10); ctx.quadraticCurveTo(3, 2, 2.5, hy + 4); ctx.closePath(); ctx.fill();
   ctx.restore();
-  if (inv) {
+  if (ab) {
+    // el jersey largo: más largo que el cuerpo, para que tape el borde de abajo, con el cuello y el bajo de canalé
+    const jersey = () => {
+      ctx.beginPath(); ctx.moveTo(-5.6, hy + 2.6); ctx.lineTo(5.6, hy + 2.6); ctx.quadraticCurveTo(5.6, 2, 11.6 + sway, 11.4);
+      ctx.lineTo(-11.6 + sway, 11.4); ctx.quadraticCurveTo(-5.6, 2, -5.6, hy + 2.6); ctx.closePath();
+    };
+    ctx.fillStyle = '#1e2b66'; jersey(); ctx.fill();
+    ctx.save(); jersey(); ctx.clip();
+    // los copitos y las burbujas, siempre en el mismo sitio
+    const COSAS = [[-2.6, -9.6, 'c', 0], [2.4, -8, 'b', 1], [-1, -5.2, 'b', 2], [3.6, -3.6, 'c', 1], [-4.4, -2.2, 'c', 2],
+      [0.6, -1.2, 'c', 0], [-6.6, 2.4, 'b', 0], [4.8, 1.2, 'b', 2], [-2, 3.2, 'c', 1], [1.8, 5, 'b', 1], [7.4, 5.4, 'c', 2], [-7.4, 6.4, 'c', 1]];
+    for (const [cx0, cy, tipo, k] of COSAS) {
+      const cx = cx0 + sway * Math.max(0, cy + 4) / 14;
+      if (tipo === 'c') {
+        ctx.strokeStyle = JERSEY[k]; ctx.lineWidth = 0.45; ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (let a = 0; a < 3; a++) { const an = a * Math.PI / 3; ctx.moveTo(cx - Math.cos(an) * 1.4, cy - Math.sin(an) * 1.4); ctx.lineTo(cx + Math.cos(an) * 1.4, cy + Math.sin(an) * 1.4); }
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = JERSEY[k]; dot(ctx, cx, cy, 1.15);
+        ctx.fillStyle = 'rgba(255,255,255,0.75)'; dot(ctx, cx - 0.4, cy - 0.4, 0.35);
+      }
+    }
+    // el bajo y el cuello de canalé, un poco más oscuros, con rayitas
+    ctx.fillStyle = '#16204d'; ctx.fillRect(-13, 9.2, 26, 3); ctx.fillRect(-7, hy + 2, 14, 1.8);
+    ctx.strokeStyle = '#2a3a80'; ctx.lineWidth = 0.4;
+    ctx.beginPath();
+    for (let x = -12; x <= 12; x += 1.2) { ctx.moveTo(x + sway, 9.4); ctx.lineTo(x + sway, 11.6); }
+    for (let x = -5; x <= 5; x += 1.2) { ctx.moveTo(x, hy + 2.6); ctx.lineTo(x, hy + 3.8); }
+    ctx.stroke();
+    // la sombra de un lado
+    ctx.globalAlpha *= 0.3; ctx.fillStyle = '#05081c';
+    ctx.beginPath(); ctx.moveTo(2.8, hy + 4); ctx.lineTo(5.6, hy + 4); ctx.quadraticCurveTo(5.6, 2, 11.6 + sway, 11.4); ctx.lineTo(7.4 + sway, 11.4); ctx.quadraticCurveTo(3.2, 2, 2.8, hy + 4); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  } else if (inv) {
     // el vestido de rayas en zigzag: morado oscuro abajo, morado clarito en medio y amarillo clarito arriba
     ctx.save();
     ctx.beginPath(); ctx.moveTo(-5, hy + 3); ctx.lineTo(5, hy + 3); ctx.quadraticCurveTo(5, 2, 11 + sway, 10.5);
@@ -1450,6 +1490,22 @@ function drawJely(ctx, pal, facing, walk, opts) {
     ctx.beginPath(); ctx.ellipse(hx - 4.5, hy - 5.5, 1.8, 3, -0.6, 0, Math.PI * 2); ctx.fill();
   }
   if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (ab) {
+    // el gorro de lana con rayitas moradas, amarillas y azul clarito y el borde doblado
+    const gorro = () => {
+      ctx.beginPath(); ctx.moveTo(hx - 10, hy - 5.6);
+      ctx.bezierCurveTo(hx - 10.4, hy - 18.5, hx + 10.4, hy - 18.5, hx + 10, hy - 5.6); ctx.closePath();
+    };
+    ctx.save(); gorro(); ctx.clip();
+    for (let k = 0; k < 7; k++) { ctx.fillStyle = JERSEY[k % 3]; ctx.fillRect(hx - 12, hy - 18 + k * 2, 24, 2.05); }
+    ctx.globalAlpha *= 0.22; ctx.fillStyle = '#1e2b66'; ctx.beginPath(); ctx.ellipse(hx + 7, hy - 10, 4, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // el borde doblado (morado), de canalé
+    ctx.fillStyle = '#8f63d6'; rrect(ctx, hx - 10.6, hy - 8.4, 21.2, 3, 1.2); ctx.fill();
+    ctx.strokeStyle = '#6f45b8'; ctx.lineWidth = 0.4;
+    ctx.beginPath(); for (let x = -9.6; x <= 9.7; x += 1.2) { ctx.moveTo(hx + x, hy - 8); ctx.lineTo(hx + x, hy - 5.8); } ctx.stroke();
+    // sin pompón (Elora)
+  }
   if (pj) {
     // el gorro de dormir: cae hacia un lado y acaba en el pompón
     ctx.fillStyle = '#2350b8';
