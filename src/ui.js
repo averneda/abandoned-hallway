@@ -7,6 +7,7 @@ import { PAD_ACTIONS } from './input.js';
 import { TapePlayer, grabacionDeCinta } from './tapes.js';
 import { music } from './music.js';
 import { casillas, estadoCasilla } from './adviento.js';
+import { cancionLobby } from './lobby.js';
 
 // ---- nombres de las cintas (Elora): quien juega puede ponerle nombre a cada cinta; se guarda en
 // el navegador. Si no le pone ninguno, sale el de siempre ('tape.G.name' en src/i18n.js, o "Cinta").
@@ -444,7 +445,7 @@ export class UI {
     const cv = document.createElement('canvas'); cv.width = 960; cv.height = 600; cv.className = 'tv-canvas';
     const row = this.el('div', 'row');
     const player = new TapePlayer(cv, n, () => { again.classList.remove('hidden'); });
-    const salir = () => { player.parar(); this.tapePlayer = null; if (onExit) { onExit(); return; } music.play('lobby'); this.showTapes(back); };
+    const salir = () => { player.parar(); this.tapePlayer = null; if (onExit) { onExit(); return; } music.play(cancionLobby()); this.showTapes(back); };
     const again = this.button(t('tapes.again'), () => { player.parar(); this.playTape(n, back, onExit); });
     again.classList.add('hidden');
     row.append(again, this.button(t('tapes.back'), salir, true));

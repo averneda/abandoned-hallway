@@ -4,6 +4,7 @@
 //   'alegre' → saltarina y rápida en tono mayor, para la sala Bonus.
 //   'lobby'  → tranquila y un poco misteriosa, como de sala de espera, para el lobby.
 //   'fuego'  → rápida y nerviosa, mientras el Drake Sangriento viene a escupir fuego (Elora).
+//   'navidad' → vals alegre con campanitas y cascabeles, para el lobby en Navidad (Elora).
 
 import { audioContext } from './audio.js';
 
@@ -18,6 +19,8 @@ function hz(nombre) {
 }
 
 // Cada canción: pares [nota, duración en tiempos]. null = silencio.
+// Opcional: 'campanas' (otra pista de notas cortitas y agudas) y 'cascabeles' (un número por tiempo:
+// 0 = nada, 1 = cascabel).
 const CANCIONES = {
   // Tono de La menor con notas "equivocadas" a propósito (Si bemol, Mi bemol, Fa sostenido).
   miedo: {
@@ -95,6 +98,33 @@ const CANCIONES = {
       ['C2', 1], ['C3', 1], ['C2', 1], ['C3', 1], ['A#1', 1], ['A#2', 1], ['A1', 1], ['A2', 1],
     ],
   },
+  // Fa mayor, en vals (de tres en tres), como una cajita de música de Navidad, con campanitas y
+  // cascabeles. La pidió Elora para el lobby en Navidad (melodía inventada, no es ningún villancico).
+  navidad: {
+    tiempo: 0.24,
+    voz: 'triangle', volVoz: 0.14,
+    bajoTipo: 'sine', volBajo: 0.13,
+    melodia: [
+      ['C5', 2], ['A4', 1],   ['F5', 2], ['E5', 1],   ['D5', 1], ['E5', 1], ['F5', 1],   ['C5', 3],
+      ['A4', 2], ['A#4', 1],  ['C5', 2], ['A5', 1],   ['G5', 1], ['F5', 1], ['E5', 1],   ['F5', 3],
+      ['A5', 2], ['G5', 1],   ['F5', 2], ['D5', 1],   ['E5', 1], ['F5', 1], ['G5', 1],   ['C5', 3],
+      ['D5', 2], ['A#4', 1],  ['C5', 1], ['D5', 1], ['E5', 1],   ['A5', 1], ['G5', 1], ['E5', 1],   ['F5', 3],
+    ],
+    // "um-pa-pa": la nota de abajo y dos más de su acorde, un acorde por compás
+    bajo: [
+      ['F2', 1], ['C3', 1], ['A2', 1],    ['F2', 1], ['C3', 1], ['A2', 1],
+      ['A#1', 1], ['F2', 1], ['D2', 1],   ['C2', 1], ['G2', 1], ['E2', 1],
+      ['F2', 1], ['C3', 1], ['A2', 1],    ['F2', 1], ['C3', 1], ['A2', 1],
+      ['C2', 1], ['G2', 1], ['E2', 1],    ['F2', 1], ['C3', 1], ['A2', 1],
+      ['F2', 1], ['C3', 1], ['A2', 1],    ['D2', 1], ['A2', 1], ['F2', 1],
+      ['C2', 1], ['G2', 1], ['E2', 1],    ['C2', 1], ['G2', 1], ['E2', 1],
+      ['G2', 1], ['D3', 1], ['A#2', 1],   ['C2', 1], ['G2', 1], ['E2', 1],
+      ['C2', 1], ['G2', 1], ['E2', 1],    ['F2', 1], ['C3', 1], ['A2', 1],
+    ],
+    campanas: [['C6', 0.5], [null, 2.5], ['A5', 0.5], ['C6', 0.5], [null, 2]],
+    tipoCampana: 'sine', volCampana: 0.07,
+    cascabeles: [0, 1, 1],
+  },
 };
 
 const ADELANTO = 0.6;  // cuánto se programa por delante
@@ -139,7 +169,7 @@ export class Music {
     o.stop(t0 + dur + 0.05);
   }
 
-  // play('miedo'), play('alegre'), play('lobby') o play('fuego'). Si ya suena esa, no hace nada.
+  // play('miedo'), play('alegre'), play('lobby'), play('fuego') o play('navidad'). Si ya suena esa, no hace nada.
   play(nombre) {
     if (this.playing && this.cancion === nombre) return;
     if (!CANCIONES[nombre]) return;
@@ -150,9 +180,9 @@ export class Music {
     this.songGain.connect(this.gain);
     this.cancion = nombre;
     this.playing = true;
-    this.melIdx = 0; this.bajoIdx = 0;
+    this.melIdx = 0; this.bajoIdx = 0; this.campIdx = 0; this.cascIdx = 0;
     this.melT = this.ctx.currentTime + 0.12;
-    this.bajoT = this.melT;
+    this.bajoT = this.melT; this.campT = this.melT; this.cascT = this.melT;
     this.tick();
     this.timer = setInterval(() => this.tick(), 200);
   }
@@ -180,6 +210,40 @@ export class Music {
       this.bajoT += dur;
       this.bajoIdx++;
     }
+    // campanitas (si la canción tiene)
+    while (c.campanas && this.campT < hasta) {
+      const [n, t] = c.campanas[this.campIdx % c.campanas.length];
+      const dur = t * c.tiempo;
+      if (n) this.nota(hz(n), this.campT, dur * 0.9, c.tipoCampana, c.volCampana);
+      this.campT += dur;
+      this.campIdx++;
+    }
+    // cascabeles (si la canción tiene): un "chis" cortito y agudo
+    while (c.cascabeles && this.cascT < hasta) {
+      if (c.cascabeles[this.cascIdx % c.cascabeles.length]) this.cascabel(this.cascT);
+      this.cascT += c.tiempo;
+      this.cascIdx++;
+    }
+  }
+
+  // Un golpe de cascabel: ruido muy agudo que se apaga enseguida.
+  cascabel(t0) {
+    const c = this.ctx;
+    if (!this.ruido) {
+      const n = Math.floor(c.sampleRate * 0.2);
+      this.ruido = c.createBuffer(1, n, c.sampleRate);
+      const d = this.ruido.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = this.ruido;
+    f.type = 'highpass'; f.frequency.value = 7000;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.05, t0 + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+    src.connect(f).connect(g).connect(this.songGain);
+    src.start(t0);
+    src.stop(t0 + 0.15);
   }
 
   stop() {

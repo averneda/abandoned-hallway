@@ -22,6 +22,9 @@ export function esNavidad(hoy = hoyJuego()) {
   return h >= dia(NAVIDAD.desde) && h <= dia(NAVIDAD.hasta);
 }
 
+// La música del lobby: la de Navidad cuando es Navidad (o con el modo Navidad), si no la de siempre (Elora)
+export function cancionLobby() { return esNavidad() ? 'navidad' : 'lobby'; }
+
 // ¿Sale el cartel «¡La Navidad se acerca!»? Desde NAVIDAD.cartelDesde hasta el día antes del evento
 // (con index.html?cartelnavidad=1 sale siempre, para verlo)
 export function cartelNavidad(hoy = hoyJuego()) {

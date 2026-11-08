@@ -1557,22 +1557,23 @@ function drawReno(ctx, pal, facing, walk, opts) {
   }
   if (pj) {
     // el camisón largo rojo con arbolitos de Navidad (por delante y por detrás); redondito, con los hombros
-    // curvos, los lados que se abren en curva y el bajo ondulado (Elora: "menos cuadrado")
+    // curvos, los lados que se abren en curva y el bajo ondulado (Elora: "menos cuadrado"), y pegado al
+    // cuerpo (Elora: "muy ancho")
     const camisonRedondo = (relleno) => {
       ctx.beginPath();
-      ctx.moveTo(-5, -9.5);
-      ctx.quadraticCurveTo(0, -10.6, 5, -9.5);
-      ctx.quadraticCurveTo(8.4, -8.6, 8, -4.5);
-      ctx.bezierCurveTo(7.6, 0, 10.2, 3.5, 9.6, 7);
-      for (let k = 0; k < 4; k++) { const x0 = 9.6 - k * 4.8; ctx.quadraticCurveTo(x0 - 2.4, 9.4, x0 - 4.8, 7.6); }
-      ctx.bezierCurveTo(-10.2, 3.5, -7.6, 0, -8, -4.5);
-      ctx.quadraticCurveTo(-8.4, -8.6, -5, -9.5);
+      ctx.moveTo(-4.6, -9.5);
+      ctx.quadraticCurveTo(0, -10.4, 4.6, -9.5);
+      ctx.quadraticCurveTo(6.8, -8.8, 6.6, -4.5);
+      ctx.bezierCurveTo(6.4, 0, 7.6, 3.5, 7.2, 7);
+      for (let k = 0; k < 4; k++) { const x0 = 7.2 - k * 3.6; ctx.quadraticCurveTo(x0 - 1.8, 9.2, x0 - 3.6, 7.6); }
+      ctx.bezierCurveTo(-7.6, 3.5, -6.4, 0, -6.6, -4.5);
+      ctx.quadraticCurveTo(-6.8, -8.8, -4.6, -9.5);
       ctx.closePath(); ctx.fillStyle = relleno; ctx.fill();
     };
     camisonRedondo(jersey);
     ctx.save(); ctx.clip(); ctx.globalAlpha *= 0.4; ctx.fillStyle = jerseyOsc;
-    ctx.beginPath(); ctx.ellipse(7.5, 1, 3.4, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    for (const [ax, ay, t] of [[-3.6, -5.5, 1], [3, -3.5, 0.9], [-2.5, 2.2, 1], [4, 4, 0.9], [-5.8, 5.6, 0.8], [0.6, -0.8, 0.8]]) {
+    ctx.beginPath(); ctx.ellipse(5.6, 1, 2.6, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    for (const [ax, ay, t] of [[-2.8, -5.5, 0.9], [2.4, -3.5, 0.85], [-2, 2.2, 0.9], [3.1, 4.2, 0.85], [-4.4, 5.6, 0.75], [0.5, -0.8, 0.75]]) {
       ctx.fillStyle = '#2e9a4c';
       ctx.beginPath(); ctx.moveTo(ax, ay - 2 * t); ctx.lineTo(ax + 1.4 * t, ay + 0.8 * t); ctx.lineTo(ax - 1.4 * t, ay + 0.8 * t); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#ffd83a'; dot(ctx, ax, ay - 2.1 * t, 0.45 * t);

@@ -5,7 +5,7 @@ import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
 import { Game } from './game.js';
-import { Lobby } from './lobby.js';
+import { Lobby, cancionLobby } from './lobby.js';
 import { Intro } from './intro.js';
 import { Title } from './title.js';
 import { TouchControls } from './touch.js';
@@ -223,7 +223,7 @@ function gotoLobby() {
     onStart: () => startLevel(1),
   });
   scene = lobby;
-  music.play('lobby');   // musiquilla tranquila del lobby, pedida por Elora
+  music.play(cancionLobby());   // musiquilla del lobby (en Navidad, la de Navidad), pedidas por Elora
   ui.clear();
   // Tarda saluda la primera vez que entras al lobby.
   if (!flags.lobbySeen) {
