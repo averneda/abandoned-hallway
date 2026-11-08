@@ -1,10 +1,14 @@
 // Musiquillas de fondo, hechas con el sintetizador del navegador (estilo Game Boy).
 // Son melodías inventadas para el juego, no copias de nada.
-//   'miedo'  → notas largas y raras en tono menor, para los pasillos.
+//   'pasillo' → lenta y rarita, en vals, con campanitas y cascabeles a lo lejos: la música de los
+//              pasillos (Elora la eligió: "está tan guay que quiero que sea la de los pasillos").
+//   'miedo'  → notas largas y raras en tono menor: la de los pasillos de antes (ya no suena).
 //   'alegre' → saltarina y rápida en tono mayor, para la sala Bonus.
 //   'lobby'  → tranquila y un poco misteriosa, como de sala de espera, para el lobby.
 //   'fuego'  → rápida y nerviosa, mientras el Drake Sangriento viene a escupir fuego (Elora).
 //   'navidad' → vals alegre con campanitas y cascabeles, para el lobby en Navidad (Elora).
+//   'pasilloNavidad' → lenta y mecida como un villancico de cuna, un poco misteriosa: los pasillos
+//              en Navidad (Elora).
 
 import { audioContext } from './audio.js';
 
@@ -20,9 +24,10 @@ function hz(nombre) {
 
 // Cada canción: pares [nota, duración en tiempos]. null = silencio.
 // Opcional: 'campanas' (otra pista de notas cortitas y agudas) y 'cascabeles' (un número por tiempo:
-// 0 = nada, 1 = cascabel).
+// 0 = nada, 1 = cascabel; un número más pequeño suena más bajito, como más lejos).
 const CANCIONES = {
   // Tono de La menor con notas "equivocadas" a propósito (Si bemol, Mi bemol, Fa sostenido).
+  // Era la de los pasillos; ahora suena 'pasillo' (Elora). Se deja por si se quiere volver a usar.
   miedo: {
     tiempo: 0.36,       // segundos por tiempo: lento, como un reloj parado
     voz: 'square', volVoz: 0.09,
@@ -125,6 +130,66 @@ const CANCIONES = {
     tipoCampana: 'sine', volCampana: 0.07,
     cascabeles: [0, 1, 1],
   },
+  // La menor, lenta y rarita, en vals, como una cajita de música que se ha quedado sola en el
+  // pasillo, con campanitas sueltas y cascabeles a lo lejos (melodía inventada). Clad la hizo para los
+  // pasillos en Navidad, pero a Elora le gustó tanto que es la de los pasillos de siempre.
+  pasillo: {
+    tiempo: 0.34,
+    voz: 'triangle', volVoz: 0.12,
+    bajoTipo: 'triangle', volBajo: 0.12,
+    melodia: [
+      ['A4', 2], ['E5', 1],   ['D5', 1], ['C5', 1], ['B4', 1],   ['C5', 2], ['A4', 1],   ['G#4', 3],
+      ['A4', 2], ['C5', 1],   ['F5', 2], ['E5', 1],   ['D#5', 1], ['E5', 1], ['B4', 1],   ['A4', 3],
+      ['E5', 2], ['F5', 1],   ['E5', 1], ['D5', 1], ['C5', 1],   ['D5', 2], ['A#4', 1],  ['A4', 3],
+      ['F4', 2], ['A4', 1],   ['G#4', 1], ['B4', 1], ['D5', 1],   ['C5', 1], ['B4', 1], ['G#4', 1],   ['A4', 3],
+    ],
+    // una nota larga por compás
+    bajo: [
+      ['A2', 3], ['G2', 3], ['A2', 3], ['E2', 3],
+      ['A2', 3], ['D2', 3], ['B1', 3], ['A2', 3],
+      ['F2', 3], ['A2', 3], ['A#1', 3], ['A2', 3],
+      ['F2', 3], ['E2', 3], ['E2', 3], ['A2', 3],
+    ],
+    campanas: [['E6', 0.5], [null, 5.5], ['A5', 0.5], [null, 5.5], ['C6', 0.5], [null, 5.5], ['B5', 0.5], [null, 5.5]],
+    tipoCampana: 'sine', volCampana: 0.05,
+    cascabeles: [0.5, 0, 0, 0, 0, 0, 0.35, 0.25, 0, 0, 0, 0],
+  },
+  // Sol mayor, lenta y mecida (de seis en seis, como una nana), con aire de villancico: acordes de
+  // Navidad, y de vez en cuando un acorde menor (Do menor) que la vuelve misteriosa, para que siga
+  // siendo de pasillo. Campanitas de cajita de música en cada compás y cascabeles suaves.
+  // La pidió Elora para los pasillos en Navidad: "que tenga un aire de Navidad, que no solo sea con
+  // cosas de Navidad" (melodía inventada, no es ningún villancico).
+  pasilloNavidad: {
+    tiempo: 0.22,
+    voz: 'triangle', volVoz: 0.13,
+    bajoTipo: 'sine', volBajo: 0.12,
+    melodia: [
+      ['B4', 2], ['D5', 1], ['G5', 2], ['F#5', 1],   ['E5', 3], ['C5', 3],
+      ['D5', 2], ['B4', 1], ['G4', 2], ['A4', 1],    ['A4', 6],
+      ['B4', 2], ['E5', 1], ['G5', 2], ['F#5', 1],   ['E5', 2], ['D5', 1], ['C5', 3],
+      ['D#5', 3], ['C5', 2], ['G4', 1],              ['D5', 6],
+      ['G5', 2], ['F#5', 1], ['E5', 2], ['D5', 1],   ['E5', 2], ['G5', 1], ['C6', 3],
+      ['C6', 2], ['B5', 1], ['A5', 2], ['E5', 1],    ['F#5', 3], ['A5', 3],
+      ['B5', 2], ['A5', 1], ['G5', 2], ['D5', 1],    ['D#5', 2], ['D5', 1], ['C5', 3],
+      ['F#5', 3], ['A4', 3],                         ['G4', 6],
+    ],
+    // los acordes: Sol, Do, Sol, Re / Mi menor, Do, Do menor, Sol / Sol, Do, La menor, Re / Sol, Do menor, Re, Sol
+    bajo: [
+      ['G2', 3], ['D3', 3],   ['C3', 3], ['G2', 3],   ['G2', 3], ['D3', 3],   ['D2', 3], ['A2', 3],
+      ['E2', 3], ['B2', 3],   ['C3', 3], ['G2', 3],   ['C3', 3], ['D#3', 3],  ['G2', 3], ['D3', 3],
+      ['G2', 3], ['D3', 3],   ['C3', 3], ['G2', 3],   ['A2', 3], ['E3', 3],   ['D2', 3], ['A2', 3],
+      ['B1', 3], ['D3', 3],   ['C3', 3], ['D#3', 3],  ['D3', 3], ['C3', 3],   ['G2', 6],
+    ],
+    campanas: [
+      ['D6', 1.5], [null, 4.5], ['E6', 1.5], [null, 4.5], ['B5', 1.5], [null, 4.5], ['A5', 1.5], [null, 4.5],
+      ['E6', 1.5], [null, 4.5], ['C6', 1.5], [null, 4.5], ['D#6', 1.5], [null, 4.5], ['D6', 1.5], [null, 4.5],
+      ['B5', 1.5], [null, 4.5], ['E6', 1.5], [null, 4.5], ['E6', 1.5], [null, 4.5], ['A5', 1.5], [null, 4.5],
+      ['D6', 1.5], [null, 4.5], ['D#6', 1.5], [null, 4.5], ['A5', 1.5], [null, 4.5], ['D6', 1.5], [null, 4.5],
+    ],
+    tipoCampana: 'sine', volCampana: 0.06,
+    cascabeles: [0.35, 0, 0, 0.25, 0, 0],
+  },
+
 };
 
 const ADELANTO = 0.6;  // cuánto se programa por delante
@@ -169,7 +234,7 @@ export class Music {
     o.stop(t0 + dur + 0.05);
   }
 
-  // play('miedo'), play('alegre'), play('lobby'), play('fuego') o play('navidad'). Si ya suena esa, no hace nada.
+  // play('miedo'), play('alegre'), play('lobby'), play('fuego'), play('navidad'), play('pasillo') o play('pasilloNavidad'). Si ya suena esa, no hace nada.
   play(nombre) {
     if (this.playing && this.cancion === nombre) return;
     if (!CANCIONES[nombre]) return;
@@ -187,7 +252,7 @@ export class Music {
     this.timer = setInterval(() => this.tick(), 200);
   }
 
-  start() { this.play('miedo'); }
+  start() { this.play('pasillo'); }
 
   tick() {
     if (!this.playing || !this.ctx) return;
@@ -220,14 +285,15 @@ export class Music {
     }
     // cascabeles (si la canción tiene): un "chis" cortito y agudo
     while (c.cascabeles && this.cascT < hasta) {
-      if (c.cascabeles[this.cascIdx % c.cascabeles.length]) this.cascabel(this.cascT);
+      const fuerza = c.cascabeles[this.cascIdx % c.cascabeles.length];
+      if (fuerza) this.cascabel(this.cascT, fuerza);
       this.cascT += c.tiempo;
       this.cascIdx++;
     }
   }
 
   // Un golpe de cascabel: ruido muy agudo que se apaga enseguida.
-  cascabel(t0) {
+  cascabel(t0, fuerza = 1) {
     const c = this.ctx;
     if (!this.ruido) {
       const n = Math.floor(c.sampleRate * 0.2);
@@ -239,7 +305,7 @@ export class Music {
     src.buffer = this.ruido;
     f.type = 'highpass'; f.frequency.value = 7000;
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.05, t0 + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.05 * fuerza, t0 + 0.005);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
     src.connect(f).connect(g).connect(this.songGain);
     src.start(t0);

@@ -677,7 +677,7 @@ export class Game {
       f.fase = 'vuelta'; f.t = 0;
     } else if (f.fase === 'vuelta' && f.t >= DRAKE.flyTime) {
       f.fase = 'espera'; f.t = 0;
-      music.play('miedo');
+      music.play(this.musica || 'pasillo');   // la del pasillo (en Navidad, la de Navidad)
     }
     // Drake está viniendo y aún no te has escondido: te sube un poco la ansiedad (Elora)
     if (f.fase === 'aviso' && !p.seguro && !p.enHueco) p.anxiety += DRAKE.anxiety * dt * statMul(this.ch, 'cordura');

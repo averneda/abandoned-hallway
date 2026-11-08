@@ -5,7 +5,7 @@ import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
 import { Game } from './game.js';
-import { Lobby, cancionLobby } from './lobby.js';
+import { Lobby, cancionLobby, cancionPasillo } from './lobby.js';
 import { Intro } from './intro.js';
 import { Title } from './title.js';
 import { TouchControls } from './touch.js';
@@ -287,8 +287,9 @@ function startLevel(n, reintento = false) {
     },
   });
   scene = game;
-  // Musiquilla de miedo en los pasillos y alegre en el Bonus.
-  music.play(game.level.noButton ? 'alegre' : 'miedo');
+  // Musiquilla de miedo en los pasillos (en Navidad, la de miedo de Navidad) y alegre en el Bonus.
+  game.musica = cancionPasillo();
+  music.play(game.level.noButton ? 'alegre' : game.musica);
   ui.clear();
   // Tarda explica el juego la primera vez que entras al pasillo 1.
   if (n === 1 && !flags.tutorialSeen) {
