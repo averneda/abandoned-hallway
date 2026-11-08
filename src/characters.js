@@ -88,6 +88,7 @@ export const SKINS = {
       hoppy: { price: 40 },    // con un peluchito
       katy: { price: 40 },     // pijama entero lila (Elora) y un peluchito
       oct: { price: 40 },        // bata gris con lazo y sombrerito de paja, sin gafas (dibujo de Elora)
+      reno: { price: 40 },       // Chop: camisón largo rojo con arbolitos y gorro de Papá Noel (lo pensó Elora; lo hizo Clad)
       drake: { price: 40 },      // bata amarilla clarita con llamitas y un peluchito de humano (lo pensó Elora; lo hizo Clad)
       // ya hechos a partir de su dibujo de Elora (foto en assets/referencias/skins/<id>-pijama.webp)
       carot: { price: 40 },    // camisón rosa de corazones y un peluchito blanco con manchas
@@ -1526,7 +1527,9 @@ function drawReno(ctx, pal, facing, walk, opts) {
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color;
   const hocico = B ? '#c9a0a0' : '#ecd6ad', cuerno = B ? '#3a0408' : '#7a2e1e';
-  const jersey = B ? '#5e0810' : '#e2646e', jerseyOsc = B ? '#3a0408' : '#b8454f';
+  // skin de pijama (la pensó Elora): camisón largo rojo con arbolitos de Navidad y gorro de Papá Noel
+  const pj = pal.skin === 'pijama' && !B;
+  const jersey = B ? '#5e0810' : pj ? '#d23240' : '#e2646e', jerseyOsc = B ? '#3a0408' : pj ? '#a3222e' : '#b8454f';
   const blanco = B ? '#c9a0a0' : '#f7f6f0', rojo = B ? '#5e0810' : '#d42a36', verde = B ? '#3a0408' : '#2e9a4c';
   const pezuna = B ? '#2a0306' : '#5a2418', line = B ? '#2a0306' : '#3a2016';
   const lado = facing === 'left' ? -1 : 1;   // hacia dónde vuela la bufanda
@@ -1552,11 +1555,35 @@ function drawReno(ctx, pal, facing, walk, opts) {
     ctx.beginPath(); ctx.moveTo(side * 5.5, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
     ctx.fillStyle = pezuna; dot(ctx, h[0], h[1], 1.6);
   }
+  if (pj) {
+    // el camisón largo rojo con arbolitos de Navidad (por delante y por detrás); redondito, con los hombros
+    // curvos, los lados que se abren en curva y el bajo ondulado (Elora: "menos cuadrado")
+    const camisonRedondo = (relleno) => {
+      ctx.beginPath();
+      ctx.moveTo(-5, -9.5);
+      ctx.quadraticCurveTo(0, -10.6, 5, -9.5);
+      ctx.quadraticCurveTo(8.4, -8.6, 8, -4.5);
+      ctx.bezierCurveTo(7.6, 0, 10.2, 3.5, 9.6, 7);
+      for (let k = 0; k < 4; k++) { const x0 = 9.6 - k * 4.8; ctx.quadraticCurveTo(x0 - 2.4, 9.4, x0 - 4.8, 7.6); }
+      ctx.bezierCurveTo(-10.2, 3.5, -7.6, 0, -8, -4.5);
+      ctx.quadraticCurveTo(-8.4, -8.6, -5, -9.5);
+      ctx.closePath(); ctx.fillStyle = relleno; ctx.fill();
+    };
+    camisonRedondo(jersey);
+    ctx.save(); ctx.clip(); ctx.globalAlpha *= 0.4; ctx.fillStyle = jerseyOsc;
+    ctx.beginPath(); ctx.ellipse(7.5, 1, 3.4, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    for (const [ax, ay, t] of [[-3.6, -5.5, 1], [3, -3.5, 0.9], [-2.5, 2.2, 1], [4, 4, 0.9], [-5.8, 5.6, 0.8], [0.6, -0.8, 0.8]]) {
+      ctx.fillStyle = '#2e9a4c';
+      ctx.beginPath(); ctx.moveTo(ax, ay - 2 * t); ctx.lineTo(ax + 1.4 * t, ay + 0.8 * t); ctx.lineTo(ax - 1.4 * t, ay + 0.8 * t); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffd83a'; dot(ctx, ax, ay - 2.1 * t, 0.45 * t);
+    }
+  } else {
   // el jersey rojo-rosa
   ctx.fillStyle = jersey; rrect(ctx, -6.5, -9, 13, 13.5, 3.5); ctx.fill();
   ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = jerseyOsc; ctx.fillRect(3.5, -8, 2.5, 11.5); ctx.restore();
   ctx.fillStyle = jerseyOsc; ctx.fillRect(-6.5, 2.6, 13, 1.6);   // el borde de abajo
-  if (!back && !B) {
+  }
+  if (!back && !B && !pj) {
     // el arbolito y las letras verdes de «MERRY CHRISTMAS» (a este tamaño, dos rayitas de letras)
     ctx.fillStyle = verde;
     ctx.beginPath(); ctx.moveTo(0, -7.6); ctx.lineTo(1.8, -4.4); ctx.lineTo(-1.8, -4.4); ctx.closePath(); ctx.fill();
@@ -1594,6 +1621,18 @@ function drawReno(ctx, pal, facing, walk, opts) {
   }
   // la cabeza
   ctx.fillStyle = skin; dot(ctx, hx, hy, 8);
+  // en pijama, el gorro de Papá Noel (sin bufanda): rojo, con el borde blanco y el pompón que cae a un lado
+  if (pj) {
+    ctx.fillStyle = '#d42a36';
+    ctx.beginPath(); ctx.moveTo(hx - 7, hy - 4.5);
+    ctx.quadraticCurveTo(hx - 3, hy - 15, hx + 4, hy - 13);
+    ctx.quadraticCurveTo(hx + 10, hy - 11, hx + 11.5, hy - 4);
+    ctx.lineTo(hx + 9.6, hy - 3.6); ctx.quadraticCurveTo(hx + 8, hy - 7, hx + 6, hy - 5.5);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#f7f6f0'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(hx - 7.4, hy - 4.2); ctx.quadraticCurveTo(hx - 0.5, hy - 8, hx + 6.6, hy - 5.4); ctx.stroke();
+    ctx.fillStyle = '#f7f6f0'; dot(ctx, hx + 11, hy - 3, 1.9);
+  } else {
   // la bufanda blanca con rayas rojas y verdes, y la punta larga que vuela hacia un lado
   ctx.fillStyle = blanco; rrect(ctx, -6.5, -10, 13, 3.4, 1.6); ctx.fill();
   const punta = [[lado * 4, -9], [lado * 9, -8.4], [lado * 12, -10.4], [lado * 15.5, -8.6]];
@@ -1610,6 +1649,7 @@ function drawReno(ctx, pal, facing, walk, opts) {
       const py = u * u * u * punta[0][1] + 3 * u * u * k * (punta[1][1] + ola) + 3 * u * k * k * (punta[2][1] - ola) + k * k * k * punta[3][1];
       ctx.fillStyle = c; dot(ctx, px, py, 1.15);
     }
+  }
   }
   if (B) bloodyMarks(ctx, hx, hy, facing);
   if (back) return;

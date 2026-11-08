@@ -37,8 +37,14 @@ const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEn
 const skinsElegidas = {};
 // El calendario de Adviento (Elora): qué casillas has abierto y si ya te dieron los regalos finales
 let adviento = advientoVacio();
-// Los personajes que tienes: los comprados y, en el modo Navidad, también el reno (gratis, sin guardarlo)
-function tienes() { return flags.modoNavidad ? new Set([...unlocked, 'reno']) : unlocked; }
+// Los personajes que tienes: los comprados y, gratis y sin guardarlo, el reno en el modo Navidad y Drake en el
+// modo pijama (Elora: para probar su pijama)
+function tienes() {
+  const extra = [];
+  if (flags.modoNavidad) extra.push('reno');
+  if (flags.modoPijama) extra.push('drake');
+  return extra.length ? new Set([...unlocked, ...extra]) : unlocked;
+}
 function aplicarSkin(ch) { return conSkin(ch, flags.modoPijama ? skinsElegidas[ch.id] : null); }
 const run = { character: characterById('carot'), level: 1, tapes: 0 };
 try {
@@ -116,7 +122,12 @@ function gotoMenu() {
     // el modo pijama secreto (Elora): se pone y se quita con el código
     pijama: {
       activo: () => flags.modoPijama,
-      cambiar: (on) => { flags.modoPijama = on; run.character = aplicarSkin(run.character); save(); },
+      cambiar: (on) => {
+        flags.modoPijama = on;
+        // al quitarlo, si llevabas a Drake sin haberlo comprado, vuelves a Carot
+        run.character = aplicarSkin(tienes().has(run.character.id) ? run.character : characterById('carot'));
+        save();
+      },
     },
     // el modo Navidad secreto (Elora): lobby de Navidad y el reno gratis; al quitarlo, si llevabas el reno
     // y no lo has ganado, vuelves a Carot
