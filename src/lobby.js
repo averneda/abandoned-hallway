@@ -11,6 +11,7 @@ import { t } from './i18n.js';
 import { sfx } from './sound.js';
 import { coinValue } from './coins.js';
 import { hoyJuego, casillas } from './adviento.js';
+import { drawArbolCompleto } from './adornos.js';
 
 // ¿Es Navidad? (NAVIDAD en src/config.js). Sale siempre en el modo Navidad secreto (el código de Elora)
 // y con index.html?navidad=1, para probarlo.
@@ -97,10 +98,12 @@ export class Lobby extends Game {
     if (dist(p.x, p.y, this.npc.x, this.npc.y) < TILE * 1.9) this.near = 'tarda';
     else if (this.shelf.some((v) => dist(p.x, p.y, v.x, v.y + TILE) < TILE * 1.3)) this.near = 'tapes';
     else if (this.calendario && dist(p.x, p.y, this.calendario.x, this.calendario.y + TILE * 1.5) < TILE * 1.4) this.near = 'adviento';
+    else if (this.arbol && this.cb.onArbol && dist(p.x, p.y, this.arbol.tx * TILE + TILE / 2, this.arbol.ty * TILE + TILE * 1.6) < TILE * 2.4) this.near = 'arbol';
     else if (this.cb.onCartel && (this.cartelSkinsVisible() || cartelNavidad()) && dist(p.x, p.y, this.cartelSkinsPos().x, this.cartelSkinsPos().y) < TILE * 1.6) this.near = 'cartel';
     if (this.near && input.wasPressed('interact')) {
       if (this.near === 'tarda') this.cb.onShop();
       else if (this.near === 'adviento') this.cb.onAdviento();
+      else if (this.near === 'arbol') this.cb.onArbol();
       else if (this.near === 'cartel') this.cb.onCartel(cartelNavidad() ? 'navidad' : 'skins');
       else this.cb.onTapes();
       return;
@@ -312,54 +315,10 @@ export class Lobby extends Game {
   // El árbol de Navidad del lobby (Elora pidió el árbol; lo dibuja Clad): tres pisos verdes, la estrella
   // amarilla arriba, bolas de colores y lucecitas que se encienden y apagan, en una maceta roja.
   // (x, y): el centro de abajo.
+  // El árbol de Navidad (Elora). Es el del minijuego (idea de su padre): empieza vacío y lleva lo que tú le pongas
+  // (los adornos, las luces y la punta). Grande, mucho más alto que los personajes (Elora).
   drawArbol(ctx, x, y) {
-    const tt = this.time;
-    // grande, mucho más alto que los personajes (Elora)
-    ctx.save(); ctx.translate(x, y); ctx.scale(2.5, 2.5); ctx.translate(-x, -y);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x + 2, y, 24, 6, 0, 0, Math.PI * 2); ctx.fill();   // sombra
-    // la maceta y el tronco
-    ctx.fillStyle = '#6b4226'; ctx.fillRect(x - 4, y - 16, 8, 8);
-    ctx.fillStyle = '#c0392b';
-    ctx.beginPath(); ctx.moveTo(x - 11, y - 12); ctx.lineTo(x + 11, y - 12); ctx.lineTo(x + 8, y); ctx.lineTo(x - 8, y); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#e8c547'; ctx.fillRect(x - 11, y - 12, 22, 3);
-    // los tres pisos de ramas (de abajo arriba, cada uno más pequeño)
-    const pisos = [[y - 14, 26, 24], [y - 30, 21, 22], [y - 45, 15, 20]];
-    for (const [base, ancho, alto] of pisos) {
-      ctx.fillStyle = '#1f7a3a';
-      ctx.beginPath(); ctx.moveTo(x - ancho, base); ctx.lineTo(x, base - alto); ctx.lineTo(x + ancho, base); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#2e9a4c';   // el lado con luz
-      ctx.beginPath(); ctx.moveTo(x - ancho, base); ctx.lineTo(x, base - alto); ctx.lineTo(x - 2, base); ctx.closePath(); ctx.fill();
-    }
-    // la guirnalda dorada
-    ctx.strokeStyle = '#f2d24a'; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(x - 18, y - 24); ctx.quadraticCurveTo(x, y - 18, x + 20, y - 27); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x - 13, y - 41); ctx.quadraticCurveTo(x + 2, y - 35, x + 14, y - 43); ctx.stroke();
-    // bolas de colores (cada una, su trazo)
-    const bolas = [[-14, -19, '#e23b4a'], [9, -22, '#3a8ee8'], [-3, -27, '#f2d24a'], [15, -17, '#b65fe0'],
-      [-8, -36, '#3a8ee8'], [8, -38, '#e23b4a'], [-1, -50, '#e23b4a']];
-    for (const [bx, by, c] of bolas) {
-      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + bx, y + by, 2.4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(x + bx - 0.8, y + by - 0.8, 0.8, 0, Math.PI * 2); ctx.fill();
-    }
-    // lucecitas que se encienden y se apagan
-    const luces = [[-20, -16], [-6, -18], [4, -16], [20, -18], [-12, -30], [12, -31], [-6, -44], [6, -46], [0, -58]];
-    luces.forEach(([lx, ly], i) => {
-      const on = Math.sin(tt * 3 + i * 1.7) > -0.2;
-      ctx.fillStyle = on ? ['#fff3a0', '#ffb3c8', '#b3e6ff'][i % 3] : 'rgba(255,255,255,0.25)';
-      ctx.beginPath(); ctx.arc(x + lx, y + ly, on ? 1.5 : 1, 0, Math.PI * 2); ctx.fill();
-    });
-    // la estrella de arriba, que brilla
-    const r = 7 + Math.sin(tt * 2.5) * 0.6;
-    ctx.fillStyle = 'rgba(255, 230, 120, 0.25)'; ctx.beginPath(); ctx.arc(x, y - 66, r + 5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffd83a';
-    ctx.beginPath();
-    for (let k = 0; k < 10; k++) {
-      const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * 0.45 : r;
-      const px = x + Math.cos(a) * rr, py = y - 66 + Math.sin(a) * rr;
-      if (k) ctx.lineTo(px, py); else ctx.moveTo(px, py);
-    }
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
+    drawArbolCompleto(ctx, x, y, 2.5, this.cb.arbol ? this.cb.arbol() : null, this.time);
   }
 
   // Caja de cartón abierta con las cintas asomando (cuantas más tengas, más asoman; como mucho 6).
@@ -445,7 +404,7 @@ export class Lobby extends Game {
     // avisos
     ctx.textAlign = 'center';
     let yy = VIEW_H - 40;
-    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento', cartel: 'lobby.cartel' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
+    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento', cartel: 'lobby.cartel', arbol: 'lobby.arbol' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
     else { ctx.font = `16px ${font}`; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText(t('lobby.door'), VIEW_W / 2, yy); yy -= 30; }
     this.renderMessages(ctx, yy, font);
     ctx.restore();

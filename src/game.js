@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS } from './characters.js';
 // de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
@@ -10,6 +10,7 @@ import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
 import { poseAndando } from './andares.js';
+import { sortearAdorno, drawAdorno, adorno } from './adornos.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
 const ESTAMINA = '#2fe0a6';   // verde-turquesa de la estamina (barra y bolitas)
@@ -150,6 +151,8 @@ export class Game {
     // Nieve en el suelo (Navidad, Elora): una casilla con 1 tiene nieve. No en el Bonus ni en el lobby.
     this.nieve = callbacks && callbacks.nieve && !L.noButton && !L.lobby ? hacerNieve(L, this.rand) : null;
     this.navidad = !!(callbacks && callbacks.navidad);   // en Navidad, los Bloodies con gorrito y el Drake Sangriento de Papá Noel (Elora)
+    // y adornos para el árbol del lobby (Elora): de 5 a 10 por pasillo; no en el Bonus ni en el pasillo de Drake
+    if (callbacks && callbacks.adornos && !L.noButton && !L.lobby && !L.fuego) this.ponerAdornos(L);
     this.avisoNieve = false;
 
     this.enemies = L.enemies.map((e, i) => ({
@@ -436,6 +439,10 @@ export class Game {
         p.agotado = false;
         this.say(t('msg.stamina'), 1.5); sfx.stamina();
       }
+      else if (it.type === 'adorno') {
+        this.say(t('msg.adorno', { name: t('adorno.' + it.adorno) }), 2); sfx.coin();
+        if (this.cb.onAdorno) this.cb.onAdorno(it.adorno);
+      }
       // Nariz brillante de Chop (Elora): cada objeto que coges (menos las monedas) le da 5 s más de luz
       if (this.ch.ability === 'chop' && it.type !== 'coin') {
         if (p.nariz <= 0) this.say(t('msg.nariz'), 1.5);
@@ -588,6 +595,25 @@ export class Game {
   }
 
   // Monedas que aparecen y desaparecen durante los primeros segundos del Bonus.
+  // Los adornos del árbol de Navidad (Elora): de 5 a 10 por pasillo, en sitios al azar del suelo, lejos de donde
+  // empiezas y sin pisar otros objetos. Cuantos más puntos vale, más raro es (ARBOL.rareza).
+  ponerAdornos(L) {
+    const [a, b] = ARBOL.porPasillo, n = a + Math.floor(Math.random() * (b - a + 1));
+    const stx = Math.floor(L.spawn.x / TILE), sty = Math.floor(L.spawn.y / TILE);
+    const ocupadas = new Set(L.items.map((it) => Math.floor(it.x / TILE) + ',' + Math.floor(it.y / TILE)));
+    const suelo = [];
+    for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
+      if (tileAt(L, tx, ty) !== T.FLOOR || ocupadas.has(tx + ',' + ty)) continue;
+      if ((L.seguro && L.seguro[ty * L.w + tx]) || (L.refugio && L.refugio[ty * L.w + tx])) continue;
+      if (Math.abs(tx - stx) + Math.abs(ty - sty) <= 4) continue;
+      suelo.push([tx, ty]);
+    }
+    for (let i = 0; i < n && suelo.length; i++) {
+      const [tx, ty] = suelo.splice(Math.floor(Math.random() * suelo.length), 1)[0];
+      L.items.push({ type: 'adorno', adorno: sortearAdorno(ARBOL), x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, taken: false });
+    }
+  }
+
   updateCoinRush(dt) {
     const L = this.level, r = L.coinRush, p = this.player;
     // las que ya estaban: se les acaba el tiempo
@@ -1100,7 +1126,10 @@ export class Game {
       if (it.taken) continue;
       const bob = Math.sin(this.time * 3 + it.x) * 2;
       if (it.type === 'tape') this.drawTape(ctx, it.x, it.y + bob);
-      else if (it.type === 'food') {
+      else if (it.type === 'adorno') {
+        this.brillo(ctx, it.x, it.y + bob, 16, '#fff0b0', 0.55);
+        drawAdorno(ctx, it.adorno, it.x, it.y + bob, adorno(it.adorno).sec === 'grandes' ? 26 : adorno(it.adorno).pj ? 22 : 16, this.time);
+      } else if (it.type === 'food') {
         ctx.fillStyle = '#d9a04b'; ctx.beginPath(); ctx.arc(it.x, it.y + bob, 7, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#f3c477'; ctx.beginPath(); ctx.arc(it.x - 2, it.y - 2 + bob, 3, 0, Math.PI * 2); ctx.fill();
       } else if (it.type === 'heart') {
@@ -1195,10 +1224,11 @@ export class Game {
     for (const e of this.enemies) {
       if (e.pintado > 0) hole(e.x - cam.x, e.y - cam.y, TILE * 2.6, 0.9);
     }
-    // Las monedas de la lluvia brillan, para poder encontrarlas.
+    // Las monedas de la lluvia brillan, para poder encontrarlas. Los adornos de Navidad brillan un poquito [PROVISIONAL]
     for (const it of L.items) {
-      if (it.taken || it.ttl == null) continue;
-      hole(it.x - cam.x, it.y - cam.y, TILE * 2.2, 0.75);
+      if (it.taken) continue;
+      if (it.ttl != null) hole(it.x - cam.x, it.y - cam.y, TILE * 2.2, 0.75);
+      else if (it.type === 'adorno') hole(it.x - cam.x, it.y - cam.y, TILE * 0.9, 0.55);
     }
     d.globalAlpha = 1;
     ctx.drawImage(this.dark, 0, 0, VIEW_W, VIEW_H);

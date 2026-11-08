@@ -242,3 +242,35 @@ button.cartel-x:hover, button.cartel-x:focus-visible { background: #fff6dc; colo
 .sueno.e1, .sueno.e3, .sueno.e5 { animation: suenoBrilla 1.8s ease-in-out infinite; }
 .sueno.e2, .sueno.e4 { animation: suenoBrilla 1.8s ease-in-out 0.9s infinite; }
 @media (prefers-reduced-motion: reduce) { .sueno { animation: none !important; } }
+
+/* El minijuego del árbol de Navidad (idea del padre de Elora): el inventario a la izquierda y el árbol en grande */
+.screen.arbolj { padding: 12px; background: rgba(6, 4, 12, 0.82); }
+.arbolj-caja { display: flex; gap: 14px; align-items: stretch; height: 576px; }
+.arbolj-inv { width: 430px; overflow-y: auto; background: var(--panel); border: 3px solid #3b2f47; border-radius: 14px; padding: 10px 12px; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.arbolj-titulo { font-size: 20px; font-weight: 800; }
+.arbolj-vacio { font-size: 15px !important; }
+.arbolj-sec-tit { font-size: 13px; font-weight: 700; color: #ffd95a; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.arbolj-rejilla { display: flex; flex-wrap: wrap; gap: 6px; }
+.arbolj-item { min-width: 0; width: 76px; padding: 4px 2px 3px; border-radius: 10px; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 1px; background: #241d2c; }
+.arbolj-item canvas { width: 46px; height: 46px; }
+.arbolj-item.on { border-color: #6be07a; background: #1d3a26; }
+.arbolj-item.bloqueada { opacity: 0.55; }
+.arbolj-cuantos { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72px; }
+.arbolj-der { width: 400px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.arbolj-info { font-size: 14px; font-weight: 700; color: #ffd95a; min-height: 18px; }
+.arbolj-lienzo { width: 344px; height: 425px; border-radius: 14px; border: 3px solid #3b2f47; touch-action: none; cursor: pointer; background: #1d1830; }
+.arbolj-botones { display: flex; gap: 6px; }
+.arbolj-boton { min-width: 0; font-size: 13px; padding: 6px 10px; border-radius: 10px; }
+.arbolj-boton:disabled { opacity: 0.4; cursor: default; }
+.arbolj-ayuda { font-size: 13px; color: var(--muted); max-width: 390px; min-height: 34px; }
+.arbolj-x { position: absolute; top: 8px; right: 10px; min-width: 0; width: 42px; height: 42px; padding: 0; border-radius: 50%; font-size: 20px; }
+.tienda-puntas { font-size: 17px; padding: 8px 18px; }
+.puntas-fila .card { width: 150px; }
+.screen.arbol-tienda { gap: 8px; padding: 14px; }
+.arbol-tienda-lista { max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 8px; }
+.arbol-tienda-lista .arbolj-sec-tit { text-align: left; }
+.puntas-fila { gap: 8px; }
+.puntas-fila .card.mini { width: 104px; padding: 6px 4px; gap: 2px; border-radius: 12px; }
+.card.mini canvas { width: 56px; height: 56px; }
+.card.mini .name { font-size: 14px; }
+.arbolj-nota { font-size: 12px; color: var(--muted); margin-top: 4px; }

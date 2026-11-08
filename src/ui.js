@@ -1,4 +1,4 @@
-import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad } from './config.js';
+import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
@@ -8,6 +8,7 @@ import { TapePlayer, grabacionDeCinta } from './tapes.js';
 import { music } from './music.js';
 import { casillas, estadoCasilla, textoDia, hoyJuego } from './adviento.js';
 import { cancionLobby } from './lobby.js';
+import { ADORNOS, SECCIONES, PUNTAS, adorno, drawAdorno, drawPunta, drawArbolCompleto, puedeIr, esGrande, puntosNuevos, TAM_ADORNO, MACETAS_ORDEN, drawMaceta } from './adornos.js';
 
 // ---- nombres de las cintas (Elora): quien juega puede ponerle nombre a cada cinta; se guarda en
 // el navegador. Si no le pone ninguno, sale el de siempre ('tape.G.name' en src/i18n.js, o "Cinta").
@@ -521,7 +522,7 @@ export class UI {
 
   // ---------------- la tienda de Tarda (dibujo de Elora): "Depositar cintas" y "Cambiar personaje"
   // Se ve el dibujo entero; las dos franjas de la izquierda son los botones.
-  showTarda({ onDeposit, onCharacters, onClose }) {
+  showTarda({ onDeposit, onCharacters, onPuntas, onClose }) {
     this.clear();
     const s = this.el('div', 'screen dim tienda');
     const hoja = this.el('div', 'tienda-hoja');
@@ -534,12 +535,17 @@ export class UI {
     op2.className = 'tienda-op'; op2.style.clipPath = 'polygon(0 26.4%, 54.5% 11.2%, 54.5% 25%, 0 44.6%)';
     hoja.append(op1, op2);
     hoja.appendChild(this.el('div', 'tienda-ayuda', t('shop.pick')));
-    s.append(hoja, this.button(t('shop.close'), onClose));
+    s.appendChild(hoja);
+    // en Navidad, Tarda vende las cosas para la punta del árbol (Elora)
+    const ops = [op1, op2];
+    if (onPuntas) { const op3 = this.button(t('shop.puntas'), onPuntas); op3.className = 'tienda-puntas'; s.appendChild(op3); ops.push(op3); }
+    s.appendChild(this.button(t('shop.close'), onClose));
     this.root.appendChild(s);
     op1.focus();
+    const paso = (k) => { const i = ops.indexOf(document.activeElement); ops[(i + k + ops.length) % ops.length].focus(); };
     this.keyHandler = (e) => {
-      if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { e.preventDefault(); op2.focus(); }
-      else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); op1.focus(); }
+      if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { e.preventDefault(); paso(1); }
+      else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); paso(-1); }
       else if (e.code === 'Escape' || e.code === 'KeyE') onClose();
     };
   }
@@ -924,5 +930,303 @@ export class UI {
     n.style.pointerEvents = 'none';
     this.root.appendChild(n);
     setTimeout(() => n.remove(), ms);
+  }
+
+  // ---------------- el minijuego del árbol de Navidad (idea del padre de Elora; lo pensó Elora)
+  // Sale el árbol en grande con el inventario de adornos a la izquierda (Elora). Eliges un adorno y tocas el
+  // árbol para ponerlo; un adorno puesto se arrastra para moverlo; si lo quitas, se pierde. Las luces van aparte:
+  // solo unas a la vez. Al poner algo en la punta, los adornos nuevos se cobran (1 punto = 1 moneda).
+  // Con el mando o el teclado: se elige en el inventario con la cruceta y A; en el árbol, la cruceta mueve
+  // la mano, A pone o coge y B vuelve al inventario.
+  //   arbol: { adornos: [{id, x, y, pagado}], luces: {id, pagado} | null, punta }   (se cambia aquí mismo)
+  //   inventario: { id: cuántos }   (se cambia aquí mismo)   puntas: Set con las de la punta que tienes
+  //   onGuardar(): guardar   onTerminar(punta): pone la punta y devuelve las monedas ganadas
+  showArbol({ arbol, inventario, puntas, macetas, onGuardar, onTerminar, onClose }) {
+    this.clear();
+    // Elora: al volver al árbol se quita la punta y se puede seguir decorando
+    if (arbol.punta) { arbol.punta = null; onGuardar(); }
+    const s = this.el('div', 'screen dim arbolj');
+    const caja = this.el('div', 'arbolj-caja');
+    const inv = this.el('div', 'arbolj-inv');
+    const der = this.el('div', 'arbolj-der');
+    const info = this.el('div', 'arbolj-info');
+    const W = 380, H = 470, S = 5.4, BX = W / 2, BY = H - 50;   // abajo queda sitio para las cosas grandes
+    const cv = document.createElement('canvas'); cv.width = W * 2; cv.height = H * 2; cv.className = 'arbolj-lienzo';
+    const ctx = cv.getContext('2d');
+    const ayuda = this.el('div', 'arbolj-ayuda', t('arbol.ayuda'));
+    const botones = this.el('div', 'arbolj-botones');
+    const cerrar = this.el('button', 'arbolj-x', '✕'); cerrar.setAttribute('aria-label', t('shop.close'));
+    cerrar.onclick = () => { this.input && this.input.clear(); onClose(); };
+
+    let sel = null;            // el adorno del inventario que vas a poner
+    let elegido = null;        // el adorno puesto que has tocado (para quitarlo)
+    let cogido = null;         // el adorno puesto que estás moviendo (con el ratón, el dedo, el mando o el teclado)
+    let modoArbol = false;     // con el mando o el teclado: moviendo la mano por el árbol
+    const mano = { x: 0, y: -30 };
+    let raton = null;          // por dónde va el ratón (para enseñar el adorno antes de ponerlo)
+    const avisar = (txt) => { ayuda.textContent = txt; };
+
+    const tam = (id) => TAM_ADORNO(id);
+    const tocado = (x, y) => {
+      for (let i = arbol.adornos.length - 1; i >= 0; i--) {
+        const a = arbol.adornos[i];
+        if (Math.hypot(a.x - x, a.y - y) < tam(a.id) / 2 + 0.6) return i;
+      }
+      return -1;
+    };
+    const quitarPunta = () => { if (arbol.punta) arbol.punta = null; };
+    const poner = (x, y) => {
+      if (!sel || !inventario[sel]) return;
+      if (!puedeIr(sel, x, y)) { avisar(t(esGrande(sel) ? 'arbol.fueraGrande' : 'arbol.fuera')); return; }
+      inventario[sel] -= 1;
+      if (inventario[sel] <= 0) delete inventario[sel];
+      arbol.adornos.push({ id: sel, x, y, pagado: false });
+      elegido = arbol.adornos.length - 1;
+      quitarPunta();
+      if (!inventario[sel]) sel = null;
+      onGuardar(); pintarInventario(); pintarBotones();
+      avisar(t('arbol.puesto'));
+    };
+    const mover = (i, x, y) => { if (puedeIr(arbol.adornos[i].id, x, y)) { arbol.adornos[i].x = x; arbol.adornos[i].y = y; } };
+
+    // ---- el inventario (a la izquierda, Elora)
+    const pintarInventario = () => {
+      inv.innerHTML = '';
+      inv.appendChild(this.el('div', 'arbolj-titulo', t('arbol.inventario')));
+      const hay = Object.keys(inventario).some((id) => inventario[id] > 0 && adorno(id));
+      if (!hay) inv.appendChild(this.el('p', 'arbolj-vacio', t('arbol.vacio')));
+      for (const sec of SECCIONES) {
+        const lista = ADORNOS.filter((a) => a.sec === sec && inventario[a.id] > 0);
+        if (!lista.length) continue;
+        const bloque = this.el('div', 'arbolj-sec');
+        bloque.appendChild(this.el('div', 'arbolj-sec-tit', t('arbol.sec.' + sec)));
+        const rejilla = this.el('div', 'arbolj-rejilla');
+        for (const a of lista) {
+          const b = this.el('button', 'arbolj-item' + (sel === a.id ? ' on' : ''));
+          b.title = t('adorno.' + a.id);
+          const c = document.createElement('canvas'); c.width = 80; c.height = 80;
+          drawAdorno(c.getContext('2d'), a.id, 40, a.pj ? 46 : 40, a.pj ? 70 : 56, 1);
+          b.append(c, this.el('span', 'arbolj-cuantos', '×' + inventario[a.id]));
+          b.onclick = () => {
+            if (a.sec === 'luces') return ponerLuces(a.id, b);
+            sel = sel === a.id ? null : a.id;
+            if (sel) { modoArbol = !!(this.input && this.input.padConnected); avisar(t(a.sec === 'grandes' ? 'arbol.elegidoGrande' : 'arbol.elegido', { name: t('adorno.' + a.id) })); }
+            pintarInventario();
+          };
+          rejilla.appendChild(b);
+        }
+        bloque.appendChild(rejilla);
+        inv.appendChild(bloque);
+      }
+      // lo de la punta: la que tengas termina el árbol (Elora)
+      const bloque = this.el('div', 'arbolj-sec');
+      bloque.appendChild(this.el('div', 'arbolj-sec-tit', t('arbol.sec.punta')));
+      const rejilla = this.el('div', 'arbolj-rejilla');
+      for (const id of PUNTAS) {
+        const tiene = puntas.has(id);
+        const b = this.el('button', 'arbolj-item punta' + (tiene ? '' : ' bloqueada'));
+        b.title = t('punta.' + id) + (tiene ? '' : ' · ' + t('arbol.bloqueada'));
+        const c = document.createElement('canvas'); c.width = 80; c.height = 80;
+        drawPunta(c.getContext('2d'), id, 40, 40, 52, 1);
+        b.append(c, this.el('span', 'arbolj-cuantos', tiene ? t('punta.' + id) : '🔒'));
+        b.onclick = () => {
+          if (!tiene) { avisar(t('arbol.bloqueadaAyuda', { name: t('punta.' + id) })); return; }
+          const n = onTerminar(id);
+          sel = null; elegido = null; modoArbol = false;
+          avisar(n ? t('arbol.terminado', { n }) : t('arbol.terminadoCero'));
+          if (n) this.toast('🎄 ' + t('arbol.terminado', { n }));
+          pintarInventario(); pintarBotones();
+        };
+        rejilla.appendChild(b);
+      }
+      bloque.appendChild(rejilla);
+      inv.appendChild(bloque);
+      // el color de la maceta (Elora): los que tienes; los demás, en la tienda de Tarda
+      const bm = this.el('div', 'arbolj-sec');
+      bm.appendChild(this.el('div', 'arbolj-sec-tit', t('arbol.sec.maceta')));
+      const rm = this.el('div', 'arbolj-rejilla');
+      for (const id of MACETAS_ORDEN.filter((m) => macetas.has(m))) {
+        const b = this.el('button', 'arbolj-item maceta' + ((arbol.maceta || 'marron') === id ? ' on' : ''));
+        b.title = t('maceta.' + id);
+        const c = document.createElement('canvas'); c.width = 80; c.height = 80;
+        const cx = c.getContext('2d'); cx.translate(40, 64); cx.scale(3, 3); drawMaceta(cx, id);
+        const nueva = !(arbol.macetasCobradas || []).includes(id);   // aún da sus 3 puntos (Elora)
+        b.append(c, this.el('span', 'arbolj-cuantos', nueva ? '+' + ARBOL.puntosMaceta + ' pt' : t('maceta.' + id)));
+        b.onclick = () => { arbol.maceta = id; quitarPunta(); onGuardar(); pintarInventario(); };
+        rm.appendChild(b);
+      }
+      bm.appendChild(rm);
+      if (macetas.size < MACETAS_ORDEN.length) bm.appendChild(this.el('div', 'arbolj-nota', t('arbol.macetasTienda')));
+      inv.appendChild(bm);
+      pintarInfo();
+    };
+    const ponerLuces = (id, b) => {
+      if (arbol.luces && !b.dataset.preguntado) { b.dataset.preguntado = '1'; avisar(t('arbol.lucesCambiar')); return; }
+      inventario[id] -= 1;
+      if (inventario[id] <= 0) delete inventario[id];
+      arbol.luces = { id, pagado: false };   // las de antes se pierden (Elora)
+      quitarPunta();
+      onGuardar(); pintarInventario(); pintarBotones();
+      avisar(t('arbol.lucesPuestas'));
+    };
+    const pintarInfo = () => { const n = puntosNuevos(arbol, ARBOL.puntosMaceta); info.textContent = t('arbol.nuevos', { n, m: n * ARBOL.monedasPorPunto }); };
+
+    // ---- los botones de debajo del árbol
+    const pintarBotones = () => {
+      botones.innerHTML = '';
+      const quitar = this.el('button', 'arbolj-boton', t('arbol.quitar'));
+      quitar.disabled = elegido == null || !arbol.adornos[elegido];
+      quitar.onclick = () => {
+        if (!quitar.dataset.preguntado) { quitar.dataset.preguntado = '1'; quitar.textContent = t('arbol.quitarSeguro'); return; }
+        arbol.adornos.splice(elegido, 1);   // se pierde (Elora)
+        elegido = null; quitarPunta(); onGuardar(); pintarBotones(); pintarInfo();
+      };
+      const borrar = this.el('button', 'arbolj-boton', t('arbol.borrar'));
+      borrar.disabled = !arbol.adornos.length && !arbol.luces;
+      borrar.onclick = () => {
+        if (!borrar.dataset.preguntado) { borrar.dataset.preguntado = '1'; borrar.textContent = t('arbol.borrarSeguro'); return; }
+        arbol.adornos = []; arbol.luces = null; arbol.punta = null;   // todo se pierde (Elora)
+        elegido = null; onGuardar(); pintarBotones(); pintarInfo();
+      };
+      const moverB = this.el('button', 'arbolj-boton', t('arbol.mover'));
+      moverB.disabled = !arbol.adornos.length;
+      moverB.onclick = () => { sel = null; modoArbol = true; avisar(t('arbol.ayudaMando')); pintarInventario(); };
+      botones.append(quitar, borrar, moverB);
+    };
+
+    // ---- el ratón y el dedo
+    const aArbol = (e) => {
+      const r = cv.getBoundingClientRect();
+      const px = (e.clientX - r.left) * W / r.width, py = (e.clientY - r.top) * H / r.height;
+      return { x: (px - BX) / S, y: (py - BY) / S };
+    };
+    cv.addEventListener('pointerdown', (e) => {
+      const p = aArbol(e);
+      const i = tocado(p.x, p.y);
+      if (i >= 0) { elegido = i; cogido = i; try { cv.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } pintarBotones(); }
+      else if (sel) poner(p.x, p.y);
+      else { elegido = null; pintarBotones(); }
+    });
+    cv.addEventListener('pointermove', (e) => { raton = aArbol(e); if (cogido != null) mover(cogido, raton.x, raton.y); });
+    cv.addEventListener('pointerup', () => { if (cogido != null) { cogido = null; quitarPunta(); onGuardar(); } });
+    cv.addEventListener('pointerleave', () => { raton = null; });
+
+    // ---- el mando y el teclado en el árbol
+    const accion = () => {
+      if (cogido != null) { cogido = null; quitarPunta(); onGuardar(); avisar(t('arbol.ayudaMando')); return; }
+      const i = tocado(mano.x, mano.y);
+      if (i >= 0) { elegido = i; cogido = i; pintarBotones(); avisar(t('arbol.moviendo')); return; }
+      if (sel) poner(mano.x, mano.y);
+    };
+    const salirArbol = () => { if (cogido != null) { cogido = null; onGuardar(); } modoArbol = false; avisar(t('arbol.ayuda')); };
+    const moverMano = (dx, dy) => {
+      mano.x = Math.max(-28, Math.min(28, mano.x + dx));
+      mano.y = Math.max(-66, Math.min(1, mano.y + dy));
+      if (cogido != null) mover(cogido, mano.x, mano.y);
+    };
+    this.keyHandler = (e) => {
+      const d = { ArrowLeft: [-1.5, 0], ArrowRight: [1.5, 0], ArrowUp: [0, -1.5], ArrowDown: [0, 1.5] }[e.code];
+      if (d && sel && !modoArbol) modoArbol = true;   // con el teclado: elegiste un adorno y mueves la mano
+      if (modoArbol) {
+        if (d) { e.preventDefault(); moverMano(d[0], d[1]); return; }
+        if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); accion(); return; }
+        if (e.code === 'Escape' || e.code === 'KeyE') { e.preventDefault(); salirArbol(); return; }
+      }
+      if (e.code === 'Escape' || e.code === 'KeyE') onClose();
+    };
+    this.padTick = () => {
+      const input = this.input;
+      if (!modoArbol) { this.padNavigate(); return; }
+      for (const el of this.root.querySelectorAll('.padfocus')) el.classList.remove('padfocus');
+      if (input.padDir.x || input.padDir.y) moverMano(input.padDir.x * 0.7, input.padDir.y * 0.7);
+      if (input.padPressed.has('jump') || input.padPressed.has('interact')) { accion(); input.clear(); }
+      else if (input.padPressed.has('run') || input.padPressed.has('pause')) { salirArbol(); input.clear(); }
+    };
+
+    // ---- dibujar el árbol (sin parar, para que las luces se enciendan y se apaguen)
+    const t0 = performance.now();
+    const pintar = () => {
+      if (!cv.isConnected) return;
+      const tt = (performance.now() - t0) / 1000;
+      ctx.setTransform(2, 0, 0, 2, 0, 0);
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#1d1830'); g.addColorStop(1, '#3a2c3f');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // copitos de nieve cayendo
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      for (let k = 0; k < 26; k++) {
+        const x = (k * 97 + Math.sin(tt * 0.6 + k) * 12) % W, y = (k * 53 + tt * (12 + (k % 5) * 4)) % H;
+        ctx.beginPath(); ctx.arc(x, y, 1 + (k % 3) * 0.6, 0, Math.PI * 2); ctx.fill();
+      }
+      drawArbolCompleto(ctx, BX, BY, S, arbol, tt);
+      ctx.save(); ctx.translate(BX, BY); ctx.scale(S, S);
+      // el adorno tocado, con un círculo
+      if (elegido != null && arbol.adornos[elegido]) {
+        const a = arbol.adornos[elegido];
+        ctx.strokeStyle = '#6be07a'; ctx.lineWidth = 0.5; ctx.setLineDash([1.2, 0.8]);
+        ctx.beginPath(); ctx.arc(a.x, a.y, tam(a.id) / 2 + 1, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      }
+      // el adorno que vas a poner, medio transparente donde está el ratón o la mano
+      const donde = modoArbol ? mano : raton;
+      if (sel && donde) {
+        ctx.globalAlpha = puedeIr(sel, donde.x, donde.y) ? 0.6 : 0.25;
+        drawAdorno(ctx, sel, donde.x, donde.y, tam(sel), tt);
+        ctx.globalAlpha = 1;
+      }
+      // la mano del mando
+      if (modoArbol) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.arc(mano.x, mano.y, 2.2, 0, Math.PI * 2); ctx.moveTo(mano.x - 3.6, mano.y); ctx.lineTo(mano.x + 3.6, mano.y);
+        ctx.moveTo(mano.x, mano.y - 3.6); ctx.lineTo(mano.x, mano.y + 3.6); ctx.stroke();
+      }
+      ctx.restore();
+      pintarInfo();
+      requestAnimationFrame(pintar);
+    };
+
+    der.append(info, cv, botones, ayuda);
+    caja.append(inv, der);
+    s.append(caja, cerrar);
+    this.root.appendChild(s);
+    pintarInventario(); pintarBotones();
+    requestAnimationFrame(pintar);
+  }
+
+  // ---------------- la tienda de Tarda: las cosas para la punta del árbol (Elora: 50 monedas cada una,
+  // para siempre; la estrella es gratis)
+  showPuntas({ tienes, macetas, monedas, precio, precioMaceta, onComprar, onBack }) {
+    this.clear();
+    const s = this.el('div', 'screen dim arbol-tienda');
+    s.appendChild(this.el('h2', '', t('puntas.title')));
+    s.appendChild(this.el('p', 'small', t('puntas.help', { n: precio })));
+    const lista = this.el('div', 'arbol-tienda-lista');
+    // tipo: 'punta' o 'maceta'. Para no comprar sin querer, el primer toque pregunta y el segundo compra.
+    const tarjeta = (tipo, id, tiene, coste, dibujar) => {
+      const c = this.el('div', 'card mini' + (tiene ? ' current' : ''));
+      const cv = document.createElement('canvas'); cv.width = 96; cv.height = 96;
+      dibujar(cv.getContext('2d'));
+      c.appendChild(cv);
+      c.appendChild(this.el('div', 'name', t(tipo + '.' + id)));
+      const pie = this.el('div', 'skin-precio', tiene ? t('puntas.tuya') : t('puntas.precio', { n: coste }));
+      c.appendChild(pie);
+      c.onclick = () => {
+        if (tiene) return;
+        if (monedas() < coste) { pie.textContent = t('puntas.faltan', { n: coste - monedas() }); return; }
+        if (c.dataset.preguntado) { onComprar(tipo, id); return; }
+        c.dataset.preguntado = '1'; pie.textContent = t('puntas.comprar', { n: coste });
+      };
+      return c;
+    };
+    lista.appendChild(this.el('div', 'arbolj-sec-tit', t('arbol.sec.punta')));
+    const fila = this.el('div', 'cards puntas-fila');
+    for (const id of PUNTAS) fila.appendChild(tarjeta('punta', id, tienes.has(id), precio, (cx) => drawPunta(cx, id, 48, 48, 64, 1)));
+    lista.appendChild(fila);
+    lista.appendChild(this.el('div', 'arbolj-sec-tit', t('arbol.sec.maceta')));
+    const fila2 = this.el('div', 'cards puntas-fila');
+    for (const id of MACETAS_ORDEN) fila2.appendChild(tarjeta('maceta', id, macetas.has(id), precioMaceta, (cx) => { cx.translate(48, 78); cx.scale(3.6, 3.6); drawMaceta(cx, id); }));
+    lista.appendChild(fila2);
+    s.append(lista, this.button(t('puntas.back'), onBack));
+    this.root.appendChild(s);
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyE') onBack(); };
   }
 }

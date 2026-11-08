@@ -182,6 +182,22 @@ export function fechaNavidad(clave, anio = ahoraJuego().getFullYear()) {
 // cadaCasillas: sale un montón por cada tantas casillas de suelo [PROVISIONAL]; radio: lo grande que es
 // cada montón, en casillas [PROVISIONAL].
 export const NIEVE = { lento: 0.8, cadaCasillas: 45, radio: [1.2, 2.4] };
+
+// El minijuego del árbol de Navidad (idea del padre de Elora; lo pensó Elora): los adornos salen por los pasillos
+// en Navidad (de 5 a 10 por pasillo, Elora) y al poner la punta cada punto es 1 moneda (Elora).
+//   rareza: % de que un adorno valga 1, 2, 3, 5 o 10 puntos (Elora: los puntos dicen lo raro que es) [PROVISIONAL los %]
+//   precioPunta: lo que cuesta en la tienda de Tarda cada cosa para la punta (menos la estrella, gratis) (Elora)
+export const ARBOL = {
+  porPasillo: [5, 10],
+  rareza: { 1: 45, 2: 22, 3: 15, 5: 12, 10: 6 },
+  monedasPorPunto: 1,
+  precioPunta: 50,
+  // las cosas grandes para debajo del árbol (Elora: de 10 a 50 puntos): % de que un adorno sea una cosa grande,
+  // y de las grandes, % de cada valor [PROVISIONAL]
+  grandes: { prob: 8, rareza: { 10: 45, 20: 25, 30: 15, 40: 10, 50: 5 } },
+  precioMaceta: 50,   // cada color de la maceta en la tienda de Tarda (la marrón, gratis) [PROVISIONAL el precio]
+  puntosMaceta: 3,    // cada color da 3 puntos, solo la primera vez que terminas el árbol con él (Elora)
+};
 // El calendario de Adviento del lobby (Elora): sale durante el evento de Navidad. Ver src/adviento.js.
 // grande: del 5 al 25 de diciembre (Elora, 8-11-2026: 21 casillas, en páginas de 7); 20 monedas cada día y, si
 // abres todas, el personaje secreto (Chop, id 'reno'). chico: del 26 al 30; si abres los 5, 50 monedas más el

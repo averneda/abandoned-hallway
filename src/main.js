@@ -1,6 +1,6 @@
 // Arranque del juego y paso entre pantallas: menú → lobby → (cinemática) → pasillos.
 
-import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas } from './config.js';
+import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ARBOL } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
@@ -12,6 +12,7 @@ import { TouchControls } from './touch.js';
 import { music } from './music.js';
 import { characterById, conSkin, SKINS } from './characters.js';
 import { abrir as abrirAdviento, estadoVacio as advientoVacio, estadoDeEsteAnio } from './adviento.js';
+import { arbolVacio, puntosNuevos, adorno, PUNTAS, MACETAS, MACETA_GRATIS } from './adornos.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -43,6 +44,12 @@ const comprada = (id, skin) => !!(skinsCompradas[id] && skinsCompradas[id].inclu
 const tieneSkin = (id, skin) => (SKINS[skin] && SKINS[skin].navidad) ? flags.modoNavidad : flags.modoPijama || (skinsListas() && comprada(id, skin));
 // El calendario de Adviento (Elora): qué casillas has abierto y si ya te dieron los regalos finales
 let adviento = advientoVacio();
+// El minijuego del árbol de Navidad (idea del padre de Elora): los adornos que has cogido en los pasillos, cómo
+// está el árbol del lobby y las cosas para la punta que tienes (la estrella siempre; las demás, de la tienda)
+const adornosInv = {};
+let arbol = arbolVacio();
+const puntasTuyas = new Set(['estrella']);
+const macetasTuyas = new Set([MACETA_GRATIS]);   // los colores de la maceta que tienes (la marrón, gratis: Elora)
 // Los personajes que tienes: los comprados y, gratis y sin guardarlo, el reno en el modo Navidad y Drake en el
 // modo pijama (Elora: para probar su pijama)
 function tienes() {
@@ -74,6 +81,12 @@ try {
   const guardado = JSON.parse(localStorage.getItem('holeway.adviento') || 'null');
   if (guardado && guardado.anio == null) guardado.anio = 2026;
   adviento = estadoDeEsteAnio(guardado ? { ...advientoVacio(2026), ...guardado } : null);
+  for (const [id, n] of Object.entries(JSON.parse(localStorage.getItem('holeway.adornos') || '{}'))) if (adorno(id) && n > 0) adornosInv[id] = n;
+  const arbolGuardado = JSON.parse(localStorage.getItem('holeway.arbol') || 'null');
+  if (arbolGuardado && Array.isArray(arbolGuardado.adornos)) arbol = { ...arbolVacio(), ...arbolGuardado, adornos: arbolGuardado.adornos.filter((a) => adorno(a.id)) };
+  for (const id of JSON.parse(localStorage.getItem('holeway.puntas') || '[]')) if (PUNTAS.includes(id)) puntasTuyas.add(id);
+  for (const id of JSON.parse(localStorage.getItem('holeway.macetas') || '[]')) if (MACETAS[id]) macetasTuyas.add(id);
+  if (!macetasTuyas.has(arbol.maceta)) arbol.maceta = MACETA_GRATIS;
   const chId = localStorage.getItem('holeway.character');
   if (chId && tienes().has(chId)) run.character = aplicarSkin(characterById(chId));
 } catch (e) { /* nada */ }
@@ -93,6 +106,10 @@ function save() {
     localStorage.setItem('holeway.skins', JSON.stringify(skinsElegidas));
     localStorage.setItem('holeway.skinsCompradas', JSON.stringify(skinsCompradas));
     localStorage.setItem('holeway.adviento', JSON.stringify(adviento));
+    localStorage.setItem('holeway.adornos', JSON.stringify(adornosInv));
+    localStorage.setItem('holeway.arbol', JSON.stringify(arbol));
+    localStorage.setItem('holeway.puntas', JSON.stringify([...puntasTuyas]));
+    localStorage.setItem('holeway.macetas', JSON.stringify([...macetasTuyas]));
   } catch (e) { /* nada */ }
 }
 
@@ -106,6 +123,7 @@ const practiceTaken = new Set();
 const common = {
   onCoin: (k) => { wallet.coins += k; save(); },
   onTape: () => { wallet.tapes += 1; save(); },
+  onAdorno: (id) => { adornosInv[id] = (adornosInv[id] || 0) + 1; save(); },   // un adorno para el árbol (Elora)
   totalCoins: () => wallet.coins,
   totalTapes: () => wallet.tapes,
   cintasEnCaja: () => cajaCintas.size,
@@ -165,7 +183,18 @@ function gotoLobby() {
       lobby.paused = true;
       const close = () => { ui.clear(); lobby.paused = false; input.clear(); };
       // la tienda de Tarda (dibujo de Elora): Depositar cintas o Cambiar personaje
-      const menu = () => ui.showTarda({ onDeposit: depositar, onCharacters: () => open(), onClose: close });
+      const menu = () => ui.showTarda({ onDeposit: depositar, onCharacters: () => open(), onPuntas: esNavidad() ? puntas : null, onClose: close });
+      // en Navidad, las cosas para la punta del árbol y los colores de la maceta (Elora: para siempre)
+      const puntas = () => ui.showPuntas({
+        tienes: puntasTuyas, macetas: macetasTuyas, monedas: () => wallet.coins, precio: ARBOL.precioPunta, precioMaceta: ARBOL.precioMaceta,
+        onComprar: (tipo, id) => {
+          if (tipo === 'maceta') { wallet.coins -= ARBOL.precioMaceta; macetasTuyas.add(id); }
+          else { wallet.coins -= ARBOL.precioPunta; puntasTuyas.add(id); }
+          save(); puntas();
+          ui.toast((tipo === 'maceta' ? '🎨 ' : '⭐ ') + t(tipo === 'maceta' ? 'puntas.compradaMaceta' : 'puntas.comprada', { name: t(tipo + '.' + id) }));
+        },
+        onBack: menu,
+      });
       const depositar = () => ui.showDeposit({
         inventario: inventarioCintas(),
         onDeposit: (nums) => {
@@ -259,6 +288,27 @@ function gotoLobby() {
         onClose: () => { ui.clear(); lobby.paused = false; input.clear(); },
       });
     },
+    // el árbol de Navidad (Elora): cómo está, para dibujarlo, y el minijuego de decorarlo
+    arbol: () => arbol,
+    onArbol: () => {
+      lobby.paused = true;
+      ui.showArbol({
+        arbol, inventario: adornosInv, puntas: puntasTuyas, macetas: macetasTuyas,
+        onGuardar: save,
+        onTerminar: (punta) => {
+          // los adornos nuevos se cobran: 1 punto = 1 moneda (Elora); los que ya estaban no vuelven a dar
+          const n = puntosNuevos(arbol, ARBOL.puntosMaceta) * ARBOL.monedasPorPunto;
+          for (const a of arbol.adornos) a.pagado = true;
+          arbol.macetasCobradas = [...new Set([...(arbol.macetasCobradas || []), arbol.maceta])];   // el color, solo una vez
+          if (arbol.luces) arbol.luces.pagado = true;
+          arbol.punta = punta;
+          wallet.coins += n;
+          save();
+          return n;
+        },
+        onClose: () => { ui.clear(); lobby.paused = false; input.clear(); },
+      });
+    },
     onStart: () => startLevel(1),
   });
   scene = lobby;
@@ -291,6 +341,7 @@ function startLevel(n, reintento = false) {
     startHearts: run.hearts,
     nieve: esNavidad(),   // en Navidad, montones de nieve en los pasillos (Elora)
     navidad: esNavidad(), // y los Bloodies con gorrito de Papá Noel (Elora)
+    adornos: esNavidad(), // y adornos para el árbol del lobby (Elora)
     // Tarda explicando el pasillo de Drake (Elora)
     onDialogue: (lines) => {
       game.paused = true;
@@ -364,7 +415,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Gancho para pruebas automáticas (no afecta al juego).
-window.holewayDebug = { get scene() { return scene; }, run, unlocked, wallet, flags, gotoLobby, startLevel, music, input, touch };
+window.holewayDebug = { get scene() { return scene; }, run, unlocked, wallet, flags, gotoLobby, startLevel, music, input, touch, adornosInv, get arbol() { return arbol; }, puntasTuyas, macetasTuyas };
 
 // Atajo para ver una grabación directamente, sin buscar la cinta en los pasillos:
 // index.html?cinta=1 (lo usa ver-cinta.bat). Primero hay que pulsar el botón, para que el
