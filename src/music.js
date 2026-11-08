@@ -155,12 +155,12 @@ const CANCIONES = {
     cascabeles: [0.5, 0, 0, 0, 0, 0, 0.35, 0.25, 0, 0, 0, 0],
   },
   // Sol mayor, lenta y mecida (de seis en seis, como una nana), con aire de villancico: acordes de
-  // Navidad, y de vez en cuando un acorde menor (Do menor) que la vuelve misteriosa, para que siga
-  // siendo de pasillo. Campanitas de cajita de música en cada compás y cascabeles suaves.
+  // Navidad, y de vez en cuando un acorde menor (Do menor) o uno mágico (La bemol) que la vuelven
+  // misteriosa, para que siga siendo de pasillo (Elora: "un poquito más de misterio"). Campanitas de cajita de música en cada compás y cascabeles suaves.
   // La pidió Elora para los pasillos en Navidad: "que tenga un aire de Navidad, que no solo sea con
   // cosas de Navidad" (melodía inventada, no es ningún villancico).
   pasilloNavidad: {
-    tiempo: 0.22,
+    tiempo: 0.25,
     voz: 'triangle', volVoz: 0.13,
     bajoTipo: 'sine', volBajo: 0.12,
     melodia: [
@@ -168,26 +168,26 @@ const CANCIONES = {
       ['D5', 2], ['B4', 1], ['G4', 2], ['A4', 1],    ['A4', 6],
       ['B4', 2], ['E5', 1], ['G5', 2], ['F#5', 1],   ['E5', 2], ['D5', 1], ['C5', 3],
       ['D#5', 3], ['C5', 2], ['G4', 1],              ['D5', 6],
-      ['G5', 2], ['F#5', 1], ['E5', 2], ['D5', 1],   ['E5', 2], ['G5', 1], ['C6', 3],
+      ['G5', 2], ['F#5', 1], ['E5', 2], ['D5', 1],   ['D#5', 2], ['G#5', 1], ['C6', 3],
       ['C6', 2], ['B5', 1], ['A5', 2], ['E5', 1],    ['F#5', 3], ['A5', 3],
       ['B5', 2], ['A5', 1], ['G5', 2], ['D5', 1],    ['D#5', 2], ['D5', 1], ['C5', 3],
       ['F#5', 3], ['A4', 3],                         ['G4', 6],
     ],
-    // los acordes: Sol, Do, Sol, Re / Mi menor, Do, Do menor, Sol / Sol, Do, La menor, Re / Sol, Do menor, Re, Sol
+    // los acordes: Sol, Do, Sol, Re / Mi menor, Do, Do menor, Sol / Sol, La bemol, La menor, Re / Sol, Do menor, Re, Sol
     bajo: [
       ['G2', 3], ['D3', 3],   ['C3', 3], ['G2', 3],   ['G2', 3], ['D3', 3],   ['D2', 3], ['A2', 3],
       ['E2', 3], ['B2', 3],   ['C3', 3], ['G2', 3],   ['C3', 3], ['D#3', 3],  ['G2', 3], ['D3', 3],
-      ['G2', 3], ['D3', 3],   ['C3', 3], ['G2', 3],   ['A2', 3], ['E3', 3],   ['D2', 3], ['A2', 3],
+      ['G2', 3], ['D3', 3],   ['G#2', 3], ['D#3', 3], ['A2', 3], ['E3', 3],   ['D2', 3], ['A2', 3],
       ['B1', 3], ['D3', 3],   ['C3', 3], ['D#3', 3],  ['D3', 3], ['C3', 3],   ['G2', 6],
     ],
     campanas: [
       ['D6', 1.5], [null, 4.5], ['E6', 1.5], [null, 4.5], ['B5', 1.5], [null, 4.5], ['A5', 1.5], [null, 4.5],
       ['E6', 1.5], [null, 4.5], ['C6', 1.5], [null, 4.5], ['D#6', 1.5], [null, 4.5], ['D6', 1.5], [null, 4.5],
-      ['B5', 1.5], [null, 4.5], ['E6', 1.5], [null, 4.5], ['E6', 1.5], [null, 4.5], ['A5', 1.5], [null, 4.5],
+      ['B5', 1.5], [null, 4.5], ['D#6', 1.5], [null, 4.5], ['E6', 1.5], [null, 4.5], ['A5', 1.5], [null, 4.5],
       ['D6', 1.5], [null, 4.5], ['D#6', 1.5], [null, 4.5], ['A5', 1.5], [null, 4.5], ['D6', 1.5], [null, 4.5],
     ],
-    tipoCampana: 'sine', volCampana: 0.06,
-    cascabeles: [0.35, 0, 0, 0.25, 0, 0],
+    tipoCampana: 'sine', volCampana: 0.05,
+    cascabeles: [0.25, 0, 0, 0.15, 0, 0],
   },
 
 };
