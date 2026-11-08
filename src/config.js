@@ -143,6 +143,12 @@ export const SKINS_LISTAS = false;
 // cartelDesde: el día que sale el cartel «¡La Navidad se acerca!» con la cuenta atrás hasta 'desde' (Elora:
 // el día después de poner las skins de pijama para todos). null = todavía no. Para verlo: index.html?cartelnavidad=1
 export const NAVIDAD = { desde: '2026-12-21', hasta: '2026-12-30', cartelDesde: null };
+// La nieve de los pasillos en Navidad (Elora): montones de nieve en el suelo; si los pisas vas más despacio,
+// y los Bloodies también (Elora: "un 20 %"). Solo en Navidad (o con el modo Navidad), no en el Bonus.
+// lento: la velocidad encima de la nieve (0.8 = un 20 % más despacio).
+// cadaCasillas: sale un montón por cada tantas casillas de suelo [PROVISIONAL]; radio: lo grande que es
+// cada montón, en casillas [PROVISIONAL].
+export const NIEVE = { lento: 0.8, cadaCasillas: 45, radio: [1.2, 2.4] };
 // El calendario de Adviento del lobby (Elora): sale durante el evento de Navidad. Ver src/adviento.js.
 // grande: del 21 al 25; 20 monedas cada día y, si abres los 5, el personaje secreto (el reno; 'reno' es
 // el id que tendrá cuando Elora lo dibuje). chico: del 26 al 30; si abres los 5, 50 monedas más el regalo

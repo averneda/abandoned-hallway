@@ -5,7 +5,7 @@ import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
 import { Game } from './game.js';
-import { Lobby, cancionLobby, cancionPasillo } from './lobby.js';
+import { Lobby, cancionLobby, cancionPasillo, esNavidad } from './lobby.js';
 import { Intro } from './intro.js';
 import { Title } from './title.js';
 import { TouchControls } from './touch.js';
@@ -250,6 +250,7 @@ function startLevel(n, reintento = false) {
   const game = new Game(run.character, n, {
     ...common,
     startHearts: run.hearts,
+    nieve: esNavidad(),   // en Navidad, montones de nieve en los pasillos (Elora)
     // Tarda explicando el pasillo de Drake (Elora)
     onDialogue: (lines) => {
       game.paused = true;

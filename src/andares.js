@@ -3,7 +3,7 @@
 // Cada andar es una lista de pasos (posturas: brazos, piernas, inclinar, subir) y una velocidad
 // (pasos por segundo). El personaje va pasando de un paso al siguiente, suavemente.
 // Un personaje que no está aquí (o sin "andar" o sin "correr") se mueve como siempre.
-// Todos los ha hecho Elora (7-11-2026); Gec corre como siempre, en su monopatín (Elora).
+// Todos los ha hecho Elora (7-11-2026; Chop y Drake, 8-11-2026); Gec corre como siempre, en su monopatín (Elora).
 export const ANDARES = {
   // Carot
   carot: {
@@ -118,10 +118,37 @@ export const ANDARES = {
       { bi: -9, bd: 5, pi: -14, pd: 15, cuerpo: 0, sube: 0 },
       { bi: 63, bd: -63, pi: 52, pd: -40, cuerpo: 0, sube: 0 },
     ] },
+  },  // Chop (Elora, 8-11-2026)
+  reno: {
+    andar: { velocidad: 4, pasos: [
+      { bi: -50, bd: -39, pi: 58, pd: 0, cuerpo: 0, sube: 0 },
+      { bi: -21, bd: 26, pi: 4, pd: 0, cuerpo: 0, sube: 0 },
+      { bi: 61, bd: 88, pi: 4, pd: -35, cuerpo: 0, sube: 0 },
+      { bi: -17, bd: 21, pi: 4, pd: 1, cuerpo: 0, sube: 0 },
+    ] },
+    correr: { velocidad: 11, pasos: [
+      { bi: 110, bd: -107, pi: 61, pd: 0, cuerpo: 0, sube: 0 },
+      { bi: 98, bd: -99, pi: 1, pd: -56, cuerpo: 0, sube: 0 },
+      { bi: 76, bd: -80, pi: 76, pd: -84, cuerpo: 0, sube: 0 },
+    ] },
+  },
+  // Drake (Elora, 8-11-2026; también mueve las alas: ai y ad)
+  drake: {
+    andar: { velocidad: 4, pasos: [
+      { bi: 49, bd: -49, pi: 34, pd: 0, ai: -62, ad: 60, cuerpo: 0, sube: 0 },
+      { bi: 69, bd: -68, pi: 4, pd: 0, ai: -50, ad: 50, cuerpo: 0, sube: 0 },
+      { bi: 60, bd: -66, pi: 4, pd: -19, ai: -58, ad: 53, cuerpo: 0, sube: 0 },
+    ] },
+    correr: { velocidad: 5, pasos: [
+      { bi: 26, bd: -16, pi: 30, pd: -11, ai: 21, ad: -20, cuerpo: 0, sube: 0 },
+      { bi: 48, bd: -44, pi: 28, pd: -16, ai: 4, ad: -6, cuerpo: 0, sube: 0 },
+      { bi: 15, bd: -16, pi: 49, pd: -43, ai: -19, ad: 20, cuerpo: 0, sube: 0 },
+      { bi: 15, bd: -16, pi: 49, pd: -43, ai: -19, ad: 20, cuerpo: 0, sube: 0 },
+    ] },
   },
 };
 
-const PARTES = ['bi', 'bd', 'pi', 'pd', 'cuerpo', 'sube'];
+const PARTES = ['bi', 'bd', 'pi', 'pd', 'ai', 'ad', 'cuerpo', 'sube'];
 
 // La postura en este momento, o null si ese personaje se mueve como siempre.
 // segundos: el tiempo que lleva andando o corriendo.

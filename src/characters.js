@@ -40,8 +40,9 @@ export const CHARACTERS = [
   { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#98cc84', dark: '#5e9a4c', shape: 'lizard', price: 80, ability: 'gek',   // hermano adoptivo de Draila (Elora)
     stats: { velocidad: 80, cordura: 60, sigilo: 40, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/gek.webp',
     fichaCuadro: { left: 65.5, top: 33, right: 3, bottom: 5 } },
-  { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#ee7a4a', dark: '#b64c26', shape: 'dragon', price: 200, secreto: true, ability: 'drake',   // sale en la tienda al escapar del pasillo 50 (Elora)
-    stats: { velocidad: 100, cordura: 100, sigilo: 100, resistencia: 100 }, corazones: 5 },
+  { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#df5f7a', dark: '#ad3a55', shape: 'dragon', price: 200, secreto: true, ability: 'drake',   // sale en la tienda al escapar del pasillo 50 (Elora)
+    stats: { velocidad: 100, cordura: 100, sigilo: 100, resistencia: 100 }, corazones: 5,
+    ficha: 'assets/sprites/fichas/drake.webp', fichaCuadro: { left: 69, top: 22, right: 2.5, bottom: 4 } },
   { id: 'draila', name: 'Draila', species: { es: 'Cocodrilo', en: 'Crocodile' }, color: '#3f8f5a', dark: '#245c38', shape: 'crocodile', price: 100, ability: 'draila', stats: { velocidad: 30, cordura: 60, sigilo: 50, resistencia: 40 }, corazones: 3,
     ficha: 'assets/sprites/fichas/draila.webp', fichaCuadro: { left: 67.5, top: 22, right: 3, bottom: 5 } },
   { id: 'katy', name: 'Caty', species: { es: 'Gata', en: 'Cat' }, color: '#f08a3c', dark: '#c0561c', shape: 'cat', price: 150, ability: 'katy',
@@ -110,9 +111,10 @@ const BLOODY = { color: '#a3141c', dark: '#5e0810' };
 
 // Poses (el editor de andar y correr de Elora): opts.pose = { bi, bd, pi, pd, cuerpo, sube }, en grados
 // (sube en píxeles). bi/bd: brazo izquierdo/derecho (el de la izquierda de la pantalla mirando de frente);
-// pi/pd: las piernas; cuerpo: inclinar todo el cuerpo; sube: subir o bajar. 0 = la postura de siempre.
+// pi/pd: las piernas; ai/ad: las alas de Drake (Elora); cuerpo: inclinar todo el cuerpo; sube: subir o bajar.
+// 0 = la postura de siempre.
 // Positivo = girar en el sentido de las agujas del reloj.
-export const PARTES_POSE = ['bi', 'bd', 'pi', 'pd', 'cuerpo', 'sube'];
+export const PARTES_POSE = ['bi', 'bd', 'pi', 'pd', 'ai', 'ad', 'cuerpo', 'sube'];
 const angPose = (opts, k) => (opts.pose && opts.pose[k] ? opts.pose[k] * Math.PI / 180 : 0);
 const brazoPose = (opts, side) => angPose(opts, side < 0 ? 'bi' : 'bd');
 const piernaPose = (opts, side) => angPose(opts, side < 0 ? 'pi' : 'pd');
@@ -224,8 +226,6 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
     // cuerpo
     ctx.fillStyle = body;
     ctx.beginPath(); ctx.ellipse(0, 0, 11, 12, 0, 0, Math.PI * 2); ctx.fill();
-    // Drake en pijama (lo pensó Elora): bata amarilla clarita con llamitas de fuego y un peluchito de humano
-    if (ch.shape === 'dragon' && pal.skin === 'pijama' && !opts.bloody) batoDrake(ctx, facing);
     if (ch.shape === 'tardigrade') {
       ctx.strokeStyle = dark; ctx.lineWidth = 2;
       for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(-9, i * 5); ctx.lineTo(9, i * 5); ctx.stroke(); }
@@ -370,14 +370,21 @@ function estrella(ctx, x, y, r) {
 }
 // La bata de Drake (Elora): amarilla clarita, con llamitas de fuego, un cinturón con lazo y, de frente,
 // un peluchito de humano abrazado con un brazo.
-function batoDrake(ctx, facing) {
+function batoDrake(ctx, facing, piel) {
   const bata = '#fbe9a2', bataOsc = '#e3c76a';
-  ctx.fillStyle = bata;
-  ctx.beginPath(); ctx.ellipse(0, 0.5, 11.4, 12, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.save(); ctx.globalAlpha *= 0.5; ctx.fillStyle = bataOsc;
-  ctx.beginPath(); ctx.ellipse(6, 1, 4.5, 10.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  // la bata larga, hasta las rodillas, un poco más ancha por abajo
+  const forma = () => {
+    ctx.beginPath();
+    ctx.moveTo(-5.5, -9.5); ctx.quadraticCurveTo(0, -10.5, 5.5, -9.5);
+    ctx.quadraticCurveTo(7.6, -8.4, 7.4, -4); ctx.lineTo(8.2, 7.4);
+    ctx.quadraticCurveTo(0, 8.8, -8.2, 7.4); ctx.lineTo(-7.4, -4);
+    ctx.quadraticCurveTo(-7.6, -8.4, -5.5, -9.5); ctx.closePath();
+  };
+  forma(); ctx.fillStyle = bata; ctx.fill();
+  ctx.save(); forma(); ctx.clip(); ctx.globalAlpha *= 0.5; ctx.fillStyle = bataOsc;
+  ctx.beginPath(); ctx.ellipse(6.4, 0, 3.4, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   // las llamitas: rojas por fuera y naranjas por dentro
-  for (const [lx, ly, t] of [[-6, -6, 1], [5, -5, 0.8], [-2, 6, 1.1], [7, 6, 0.9], [-8, 3, 0.8], [1, -1, 0.7]]) {
+  for (const [lx, ly, t] of [[-4.5, -6, 0.9], [4, -5, 0.75], [-2, 5.5, 1], [5, 5, 0.85], [-5.6, 1.6, 0.75], [1.2, -1.5, 0.65]]) {
     ctx.fillStyle = '#e8452c';
     ctx.beginPath(); ctx.moveTo(lx, ly - 3 * t); ctx.quadraticCurveTo(lx + 2.2 * t, ly, lx, ly + 1.6 * t); ctx.quadraticCurveTo(lx - 2.2 * t, ly, lx, ly - 3 * t); ctx.fill();
     ctx.fillStyle = '#ffa53a';
@@ -385,13 +392,13 @@ function batoDrake(ctx, facing) {
   }
   // el cuello en pico y el cinturón
   ctx.strokeStyle = bataOsc; ctx.lineWidth = 0.9;
-  ctx.beginPath(); ctx.moveTo(-4, -10); ctx.lineTo(0, -3); ctx.lineTo(4, -10); ctx.moveTo(0, -3); ctx.lineTo(0, 11); ctx.stroke();
-  ctx.fillStyle = bataOsc; ctx.fillRect(-10.6, 2, 21.2, 1.8);
+  ctx.beginPath(); ctx.moveTo(-3.5, -9.8); ctx.lineTo(0, -4); ctx.lineTo(3.5, -9.8); ctx.moveTo(0, -4); ctx.lineTo(0, 8); ctx.stroke();
+  ctx.fillStyle = bataOsc; ctx.fillRect(-7.5, 1.6, 15, 1.7);
   if (facing === 'up') return;
-  ctx.beginPath(); ctx.ellipse(2.6, 2.9, 1.6, 1, -0.4, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(5.4, 2.9, 1.6, 1, 0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(2.4, 2.5, 1.5, 0.9, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(5, 2.5, 1.5, 0.9, 0.4, 0, Math.PI * 2); ctx.fill();
   // el peluchito de humano: pelo marrón, cara clarita, camiseta azul y pantalón
-  const px = -3, py = 1.8;
+  const px = -3, py = 0.8;
   ctx.fillStyle = '#3a5a9e'; ctx.fillRect(px - 1.1, py + 5.6, 1, 2.4); ctx.fillRect(px + 0.2, py + 5.6, 1, 2.4);
   ctx.fillStyle = '#5aa0e8'; rrect(ctx, px - 2, py + 2, 4, 4, 1); ctx.fill();
   ctx.fillStyle = '#f2c9a5'; dot(ctx, px - 2.6, py + 3.2, 0.8); dot(ctx, px + 2.6, py + 3.2, 0.8);
@@ -401,8 +408,8 @@ function batoDrake(ctx, facing) {
   ctx.strokeStyle = '#b5485a'; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.arc(px, py + 0.8, 0.7, 0.3, Math.PI - 0.3); ctx.stroke();
   // el brazo de Drake (en la manga amarilla) que lo abraza
   ctx.strokeStyle = bata; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-9.5, 0); ctx.quadraticCurveTo(-8.5, 6.5, -1.5, 6); ctx.stroke();
-  ctx.fillStyle = '#ee7a4a'; dot(ctx, -1.2, 5.9, 1.5);
+  ctx.beginPath(); ctx.moveTo(-7, -5); ctx.quadraticCurveTo(-7.5, 4.5, -1.5, 5); ctx.stroke();
+  ctx.fillStyle = piel; dot(ctx, -1.2, 4.9, 1.5);
 }
 
 // Una luna creciente (pijamas de Froggy y Jely): un círculo amarillo y otro del color de fondo encima.
@@ -1547,14 +1554,6 @@ function drawReno(ctx, pal, facing, walk, opts) {
       ctx.fillStyle = pezuna; rrect(ctx, side * 3.4 - 2.2, 9 + lift, 4.4, 2.6, 1); ctx.fill();
     });
   }
-  // brazos con las mangas del jersey y las pezuñas (de Bloodie que persigue, arriba)
-  for (const side of [-1, 1]) {
-    const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.4);
-    const h = girar(chasing ? [side * 13 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 2], [side * 5.5, -6], brazoPose(opts, side));
-    ctx.strokeStyle = jersey; ctx.lineWidth = 3.2;
-    ctx.beginPath(); ctx.moveTo(side * 5.5, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
-    ctx.fillStyle = pezuna; dot(ctx, h[0], h[1], 1.6);
-  }
   if (pj) {
     // el camisón largo rojo con arbolitos de Navidad (por delante y por detrás); redondito, con los hombros
     // curvos, los lados que se abren en curva y el bajo ondulado (Elora: "menos cuadrado"), y pegado al
@@ -1594,6 +1593,17 @@ function drawReno(ctx, pal, facing, walk, opts) {
     for (let x = -4.4; x <= 3.6; x += 1.6) { ctx.moveTo(x, -2.6); ctx.lineTo(x + 0.9, -2.6); }
     for (let x = -5; x <= 4.2; x += 1.4) { ctx.moveTo(x, -0.6); ctx.lineTo(x + 0.8, -0.6); }
     ctx.stroke();
+  }
+  // brazos con las mangas del jersey y las pezuñas (de Bloodie que persigue, arriba). Van encima del
+  // jersey: así, si se ponen en la barriga, se ven por delante (Elora)
+  for (const side of [-1, 1]) {
+    const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.4);
+    const h = girar(chasing ? [side * 13 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 2], [side * 5.5, -6], brazoPose(opts, side));
+    ctx.strokeStyle = jerseyOsc; ctx.lineWidth = 3.9;
+    ctx.beginPath(); ctx.moveTo(side * 5.5, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
+    ctx.strokeStyle = jersey; ctx.lineWidth = 3.2;
+    ctx.beginPath(); ctx.moveTo(side * 5.5, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
+    ctx.fillStyle = pezuna; dot(ctx, h[0], h[1], 1.6);
   }
   if (back) cola();
   // los cuernos grandes marrón oscuro: un tronco que sube y tres puntas hacia dentro (como una E)
@@ -1671,6 +1681,124 @@ function drawReno(ctx, pal, facing, walk, opts) {
   }
   ctx.strokeStyle = line; ctx.lineWidth = 0.7;
   ctx.beginPath(); ctx.moveTo(mx - 1.6, hy + 4.2); ctx.quadraticCurveTo(mx, hy + 5.6, mx + 1.6, hy + 4.2); ctx.stroke();
+}
+
+// Drake, el dragón (ficha de Elora): rosa-rojo, con el hocico largo, las orejas puntiagudas (rojas por dentro),
+// los ojos cerrados de contento y un colmillito; unas alas enormes de murciélago, rosas, con el borde de picos;
+// una camiseta amarilla que pone «FIRE» (Elora: "fire", fuego) con un monstruito de fuego dibujado; las patas
+// rosas con garras y la cola larga naranja con rayas. Volando (opts.flap), las alas baten.
+// En pijama, la bata amarilla clarita con llamitas y el peluchito de humano (batoDrake). De Bloodie, ala rota.
+function drawDrake(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
+  const piel = pal.color, oscuro = pal.dark;
+  const pj = pal.skin === 'pijama' && !B;
+  const membrana = B ? '#7a1018' : '#f3c2cc', camiseta = B ? '#5e0810' : '#f6e23a', camOsc = B ? '#3a0408' : '#d8bf1c';
+  const cola = B ? '#5e0810' : '#f2a03a', colaRaya = B ? '#2a0306' : '#c9701a', line = B ? '#2a0306' : '#4a2230';
+  const lado = facing === 'left' ? -1 : facing === 'right' ? 1 : 0;
+  const hx = lado * 1.5, hy = -15;
+  const step = Math.sin(walk) * 1.5;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // las alas enormes, detrás (volando baten más)
+  // volando (su habilidad), las alas suben y bajan mucho (Elora): arriba del todo y abajo del todo
+  const vuela = opts.flap != null;
+  const sf = vuela ? Math.sin(opts.flap) : 0;
+  const bate = vuela ? sf * (sf > 0 ? 0.85 : 0.55) : Math.sin(walk * 0.5) * 0.06;
+  const grande = vuela ? 1.25 : 1;
+  const alto = vuela ? 1 - 0.35 * Math.max(0, sf) : 1;   // abajo, el ala se ve más corta (de canto)
+  for (const side of [-1, 1]) {
+    // con una pose (el Taller de Andares de Elora), cada ala se puede mover
+    const alaPose = angPose(opts, side < 0 ? 'ai' : 'ad');
+    ctx.save(); ctx.translate(side * 4, -7); if (alaPose) ctx.rotate(alaPose);
+    ctx.rotate(side * (bate - (vuela ? 0.25 : 0.1))); ctx.scale(side * grande, grande * alto);
+    const roto = B && side === 1;
+    const largo = roto ? 0.6 : 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(9 * largo, -11); ctx.lineTo(22 * largo, -9);
+    ctx.lineTo(20 * largo, 1); ctx.lineTo(16 * largo, -2); ctx.lineTo(13 * largo, 4); ctx.lineTo(9 * largo, 0); ctx.lineTo(5 * largo, 6); ctx.lineTo(1.5, 3);
+    ctx.closePath(); ctx.fillStyle = membrana; ctx.fill();
+    // los huesos del ala, del color de la piel
+    ctx.strokeStyle = piel; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(9 * largo, -11); ctx.lineTo(22 * largo, -9);
+    ctx.moveTo(9 * largo, -11); ctx.lineTo(16 * largo, -2); ctx.moveTo(9 * largo, -11); ctx.lineTo(9 * largo, 0); ctx.stroke();
+    ctx.restore();
+  }
+  // la cola larga naranja con rayas, hacia un lado (detrás)
+  const cl = lado || 1, ola = Math.sin(walk * 0.8) * 1.5;
+  const colaCurva = () => { ctx.beginPath(); ctx.moveTo(cl * 2, 5); ctx.quadraticCurveTo(cl * 10, 10 + ola, cl * 17, 6 - ola); };
+  ctx.strokeStyle = cola; ctx.lineWidth = 3.6; colaCurva(); ctx.stroke();
+  ctx.strokeStyle = colaRaya; ctx.lineWidth = 0.8;
+  ctx.beginPath(); for (const k of [0.35, 0.55, 0.75]) { const x = cl * (2 + 15 * k), y = 5 + (k < 0.6 ? 4 : 2.5); ctx.moveTo(x - 1, y - 1.6); ctx.lineTo(x + 1, y + 1.6); } ctx.stroke();
+  // las patas rosas con garras
+  for (const side of [-1, 1]) {
+    const lift = side * step > 0 ? -side * step * 0.6 : 0;
+    girado(ctx, piernaPose(opts, side), side * 3.4, 3, () => {
+      ctx.fillStyle = piel; ctx.fillRect(side * 3.4 - 1.8, 3, 3.6, 7 + lift);
+      ctx.beginPath(); ctx.ellipse(side * 3.6, 10 + lift, 2.7, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = line; ctx.lineWidth = 0.6;
+      ctx.beginPath(); for (let i = -1; i <= 1; i++) { ctx.moveTo(side * 3.6 + i * 1.3, 11); ctx.lineTo(side * 3.6 + i * 1.6, 12.2 + lift); } ctx.stroke();
+    });
+  }
+  // los brazos rosas, en las mangas de la camiseta, con garritas (de Bloodie que persigue, arriba)
+  for (const side of [-1, 1]) {
+    if (pj && side === -1 && !back) continue;   // en pijama, ese brazo abraza al peluchito
+    const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.4);
+    const h = girar(chasing ? [side * 13 + sw, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 2], [side * 5.5, -6], brazoPose(opts, side));
+    ctx.strokeStyle = piel; ctx.lineWidth = 2.8;
+    ctx.beginPath(); ctx.moveTo(side * 5.5, -6); ctx.lineTo(h[0], h[1]); ctx.stroke();
+    ctx.fillStyle = piel; dot(ctx, h[0], h[1], 1.6);
+    ctx.strokeStyle = pj ? '#fbe9a2' : camiseta; ctx.lineWidth = 3.4;
+    const m = [side * 5.5 + (h[0] - side * 5.5) * 0.4, -6 + (h[1] + 6) * 0.4];
+    ctx.beginPath(); ctx.moveTo(side * 5.5, -6); ctx.lineTo(m[0], m[1]); ctx.stroke();
+  }
+  if (pj) batoDrake(ctx, facing, piel);
+  else {
+    // la camiseta amarilla
+    ctx.fillStyle = camiseta; rrect(ctx, -6.5, -9.5, 13, 13, 3); ctx.fill();
+    ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = camOsc; ctx.fillRect(3.4, -8.5, 2.6, 11); ctx.restore();
+    if (!back && !B) {
+      // «FIRE» (con letras de fuego) y el monstruito de fuego: llama roja con la carita clarita y dientes
+      ctx.fillStyle = '#3b3330'; ctx.font = 'bold 3.6px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('FIRE', 0, -6.6);
+      ctx.fillStyle = '#e8452c';
+      ctx.beginPath(); ctx.moveTo(0, -4.6); ctx.quadraticCurveTo(1.2, -3.2, 2.2, -4); ctx.quadraticCurveTo(3.4, -1, 2.2, 2.2);
+      ctx.lineTo(-2.2, 2.2); ctx.quadraticCurveTo(-3.4, -1, -2.2, -4); ctx.quadraticCurveTo(-1.2, -3.2, 0, -4.6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffb48a'; ctx.beginPath(); ctx.ellipse(0, -0.8, 1.5, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2a2020'; dot(ctx, -0.6, -1.4, 0.25); dot(ctx, 0.6, -1.4, 0.25);
+      ctx.fillStyle = '#fff'; ctx.fillRect(-0.7, -0.4, 1.4, 0.5);
+    }
+  }
+  // las orejas puntiagudas, rojas por dentro
+  for (const side of [-1, 1]) {
+    ctx.fillStyle = piel;
+    ctx.beginPath(); ctx.moveTo(hx + side * 2.8, hy - 6); ctx.lineTo(hx + side * 7.5, hy - 12.5); ctx.lineTo(hx + side * 7.6, hy - 3.5); ctx.closePath(); ctx.fill();
+    if (!back) {
+      ctx.fillStyle = B ? '#3a0408' : '#e0263a';
+      ctx.beginPath(); ctx.moveTo(hx + side * 4.2, hy - 6); ctx.lineTo(hx + side * 7, hy - 10.4); ctx.lineTo(hx + side * 6.9, hy - 5); ctx.closePath(); ctx.fill();
+    }
+  }
+  // la cabeza
+  ctx.fillStyle = piel; dot(ctx, hx, hy, 8);
+  // el hocico largo: de lado sale hacia donde mira; de frente, hacia abajo
+  const sx = hx + lado * 7, sy = hy + (lado ? 1.5 : 3.6);
+  ctx.fillStyle = piel; ctx.beginPath(); ctx.ellipse(sx, sy, lado ? 6 : 4.4, lado ? 3.6 : 3.4, 0, 0, Math.PI * 2); ctx.fill();
+  if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (back) return;
+  ctx.fillStyle = oscuro;   // los agujeritos de la nariz
+  if (lado) dot(ctx, sx + lado * 4.2, sy - 1.4, 0.6);
+  else { dot(ctx, sx - 1.2, sy - 0.8, 0.55); dot(ctx, sx + 1.2, sy - 0.8, 0.55); }
+  // la sonrisa con un colmillito blanco
+  ctx.strokeStyle = line; ctx.lineWidth = 0.7;
+  ctx.beginPath();
+  if (lado) { ctx.moveTo(sx + lado * 4.5, sy + 1.6); ctx.quadraticCurveTo(sx, sy + 3, sx - lado * 3.4, sy + 1); }
+  else { ctx.moveTo(sx - 2.6, sy + 1.4); ctx.quadraticCurveTo(sx, sy + 2.8, sx + 2.6, sy + 1.4); }
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  const fx = lado ? sx - lado * 1.6 : sx + 1.4, fy = lado ? sy + 2.3 : sy + 2;
+  ctx.beginPath(); ctx.moveTo(fx - 0.7, fy - 0.3); ctx.lineTo(fx, fy + 1.6); ctx.lineTo(fx + 0.7, fy - 0.3); ctx.closePath(); ctx.fill();
+  // los ojos cerrados de contento (de Bloodie que persigue, amarillos)
+  ctx.strokeStyle = B && chasing ? '#ffe36b' : line; ctx.lineWidth = 0.9;
+  const ojos = lado ? [hx + lado * 1.5] : [hx - 3.2, hx + 3.2];
+  for (const ex of ojos) { ctx.beginPath(); ctx.arc(ex, hy - 2, 1.9, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); }
 }
 
 // El Drake Sangriento: el que escupe fuego en el pasillo de Drake (pasillo 50), dibujado por Elora
@@ -1762,4 +1890,4 @@ function drawDrakeSangriento(ctx, pal, facing, walk, opts) {
   ctx.beginPath(); ctx.ellipse(0.5, -6 + gota, 0.9, 1.4 + gota * 0.4, 0, 0, Math.PI * 2); ctx.fill();
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, crocodile: drawDraila, reindeer: drawReno, drakeSangriento: drawDrakeSangriento };
+const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, crocodile: drawDraila, reindeer: drawReno, dragon: drawDrake, drakeSangriento: drawDrakeSangriento };

@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS } from './characters.js';
 // de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
@@ -83,6 +83,36 @@ export function facingOf(dx, dy, prev) {
   return prev;
 }
 
+// Reparte los montones de nieve por el suelo del pasillo (Navidad, Elora). No pone nieve encima de la
+// puerta de entrada ni cerca de donde empiezas, ni en las zonas especiales del pasillo de Drake.
+function hacerNieve(L, rand) {
+  const nieve = new Uint8Array(L.w * L.h);
+  const suelo = [];
+  const stx = Math.floor(L.spawn.x / TILE), sty = Math.floor(L.spawn.y / TILE);
+  for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
+    if (tileAt(L, tx, ty) !== T.FLOOR) continue;
+    if ((L.seguro && L.seguro[ty * L.w + tx]) || (L.refugio && L.refugio[ty * L.w + tx])) continue;
+    if (Math.abs(tx - stx) + Math.abs(ty - sty) <= 3) continue;
+    suelo.push([tx, ty]);
+  }
+  const montones = Math.max(1, Math.round(suelo.length / NIEVE.cadaCasillas));
+  for (let m = 0; m < montones && suelo.length; m++) {
+    const [cx, cy] = suelo[Math.floor(rand() * suelo.length)];
+    const rad = NIEVE.radio[0] + rand() * (NIEVE.radio[1] - NIEVE.radio[0]);
+    const R = Math.ceil(rad);
+    for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+      const tx = cx + dx, ty = cy + dy;
+      if (tx < 0 || ty < 0 || tx >= L.w || ty >= L.h) continue;
+      if (Math.hypot(dx * 1.1, dy) > rad + (rand() - 0.5) * 0.6) continue;
+      if (tileAt(L, tx, ty) !== T.FLOOR) continue;
+      if ((L.seguro && L.seguro[ty * L.w + tx]) || (L.refugio && L.refugio[ty * L.w + tx])) continue;
+      if (Math.abs(tx - stx) + Math.abs(ty - sty) <= 3) continue;
+      nieve[ty * L.w + tx] = 1;
+    }
+  }
+  return nieve;
+}
+
 export class Game {
   // levelOrNumber: número de pasillo, o un nivel ya cargado (lo usa el lobby).
   // callbacks: { onDeath(reason), onComplete({tapes, coins}), onPause(), onCoin(n), totalCoins() }
@@ -116,6 +146,9 @@ export class Game {
     this.wave = null;  // onda del mordisco de Draila: {x, y, dir, len, max, golpeados}
     this.freeze = 0; // segundos que quedan de Bloodies parados (habilidad de Oct)
     this.flood = 0;  // segundos que quedan de sala inundada (habilidad de Jely)
+    // Nieve en el suelo (Navidad, Elora): una casilla con 1 tiene nieve. No en el Bonus ni en el lobby.
+    this.nieve = callbacks && callbacks.nieve && !L.noButton && !L.lobby ? hacerNieve(L, this.rand) : null;
+    this.avisoNieve = false;
 
     this.enemies = L.enemies.map((e, i) => ({
       x: e.x, y: e.y, r: ENEMY.radius, dir: DIRS[Math.floor(this.rand() * 4)], turn: 1 + this.rand() * 2,
@@ -185,6 +218,11 @@ export class Game {
     if (p.capa > 0) speed *= ABILITIES.tarda.slow;   // con la capa Tun se va más despacio
     if (turbo) speed = PLAYER.run * ABILITIES.hoppy.speed * statMul(this.ch, 'velocidad');   // Supercarrera de Hoppy
     if (this.flood > 0) speed *= ABILITIES.jely.playerFast;   // Jely nada más rápido en el agua
+    // en la nieve se va más despacio (Elora), salvo volando o en el aire
+    if (p.fly <= 0 && !p.jumping && this.enNieve(p.x, p.y)) {
+      speed *= NIEVE.lento;
+      if (!this.avisoNieve) { this.avisoNieve = true; this.say(t('msg.nieve'), 3); }
+    }
     p.moving = len > 0;
     p.corriendo = corriendo;   // (Gec va en monopatín cuando corre)
     p.facing = facingOf(ax.x, ax.y, p.facing);
@@ -449,7 +487,8 @@ export class Game {
         if (Math.hypot(e.kx, e.ky) < 5) { e.kx = 0; e.ky = 0; }
       }
       if (frozen) continue; // parados por Oct: no se mueven ni hacen daño
-      const edt = this.flood > 0 ? dt * ABILITIES.jely.enemySlow : dt;   // en el agua de Jely van más lentos
+      let edt = this.flood > 0 ? dt * ABILITIES.jely.enemySlow : dt;   // en el agua de Jely van más lentos
+      if (this.enNieve(e.x, e.y)) edt *= NIEVE.lento;   // y en la nieve también (Elora)
 
       // Solo te ven si no hay pared ni trasto alto en medio.
       const sees = e.recoil <= 0 && d < ENEMY.sightTiles * TILE * statMul(this.ch, 'sigilo') && canSee(L, e.x, e.y, p.x, p.y);
@@ -958,6 +997,8 @@ export class Game {
       ctx.beginPath(); ctx.arc(d.x - d.r * 0.8, d.y - d.r * 0.5, d.r * 0.25, 0, Math.PI * 2); ctx.fill();
     }
 
+    if (this.nieve) this.drawNieve(ctx);
+
     // trastos
     for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
       const tile = tileAt(L, tx, ty);
@@ -989,6 +1030,49 @@ export class Game {
       }
     }
     return layer;
+  }
+
+  // ¿Hay nieve en este punto?
+  enNieve(x, y) {
+    if (!this.nieve) return false;
+    const L = this.level, tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
+    return tx >= 0 && ty >= 0 && tx < L.w && ty < L.h && this.nieve[ty * L.w + tx] === 1;
+  }
+
+  // Los montones de nieve (Navidad): una capa blanca plana que tapa el suelo, con el borde redondeado y
+  // ondulado, una rayita de sombra azul por abajo y brillitos. Cada círculo, su propio trazo.
+  drawNieve(ctx) {
+    const L = this.level, r = rng(this.n * 97 + 3);
+    const hay = (tx, ty) => tx >= 0 && ty >= 0 && tx < L.w && ty < L.h && this.nieve[ty * L.w + tx] === 1;
+    const casillas = [];
+    for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) if (hay(tx, ty)) casillas.push([tx, ty]);
+    const borde = (color, dy) => {
+      ctx.fillStyle = color;
+      for (const [tx, ty] of casillas) {
+        const x = tx * TILE, y = ty * TILE + dy, m = TILE * 0.18;
+        // el cuadrado, encogido por los lados que no tienen nieve al lado...
+        const x0 = hay(tx - 1, ty) ? x : x + m, x1 = hay(tx + 1, ty) ? x + TILE : x + TILE - m;
+        const y0 = hay(tx, ty - 1) ? y : y + m, y1 = hay(tx, ty + 1) ? y + TILE : y + TILE - m;
+        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        // ...y bultitos redondos en esos lados, para que el borde quede ondulado
+        const bul = (bx, by, br) => { ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill(); };
+        const k = TILE * 0.2;
+        if (!hay(tx - 1, ty)) { bul(x + m, y + TILE * 0.3, k); bul(x + m, y + TILE * 0.7, k); }
+        if (!hay(tx + 1, ty)) { bul(x + TILE - m, y + TILE * 0.3, k); bul(x + TILE - m, y + TILE * 0.7, k); }
+        if (!hay(tx, ty - 1)) { bul(x + TILE * 0.3, y + m, k); bul(x + TILE * 0.7, y + m, k); }
+        if (!hay(tx, ty + 1)) { bul(x + TILE * 0.3, y + TILE - m, k); bul(x + TILE * 0.7, y + TILE - m, k); }
+      }
+    };
+    borde('#9db1c9', 3);    // sombra
+    borde('#e2eaf3', 0);    // la nieve
+    ctx.fillStyle = '#f7fafd';   // manchitas más blancas, planas
+    for (const [tx, ty] of casillas) {
+      ctx.beginPath(); ctx.ellipse((tx + 0.25 + r() * 0.5) * TILE, (ty + 0.25 + r() * 0.5) * TILE, TILE * 0.22, TILE * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#ffffff';   // brillitos
+    for (const [tx, ty] of casillas) for (let k = 0; k < 2; k++) {
+      ctx.beginPath(); ctx.arc((tx + 0.15 + r() * 0.7) * TILE, (ty + 0.15 + r() * 0.7) * TILE, 1.1, 0, Math.PI * 2); ctx.fill();
+    }
   }
 
   // Cintas, comida, corazones, estamina y monedas (se mueven un poco, se pintan en cada fotograma).
