@@ -10,7 +10,7 @@ import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
 import { poseAndando } from './andares.js';
-import { sortearAdorno, drawAdorno, adorno } from './adornos.js';
+import { sortearAdorno, drawAdorno, adorno, drawArbolCompleto } from './adornos.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
 const ESTAMINA = '#2fe0a6';   // verde-turquesa de la estamina (barra y bolitas)
@@ -120,7 +120,7 @@ export class Game {
   constructor(character, levelOrNumber, callbacks) {
     this.ch = character;
     this.cb = callbacks;
-    this.level = typeof levelOrNumber === 'number' ? generateLevel(levelOrNumber) : levelOrNumber;
+    this.level = typeof levelOrNumber === 'number' ? generateLevel(levelOrNumber, null, !!(callbacks && callbacks.navidad)) : levelOrNumber;
     this.n = typeof levelOrNumber === 'number' ? levelOrNumber : 0;
     this.time = 0;
     this.paused = false;
@@ -1052,6 +1052,8 @@ export class Game {
         ctx.fillStyle = '#e08a3c'; ctx.fillRect(x + 2, y + 2, TILE - 4, 8);
         ctx.strokeStyle = '#6e3a10'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(x + 6, y + 14); ctx.lineTo(x + TILE - 6, y + 14); ctx.moveTo(x + 6, y + 22); ctx.lineTo(x + TILE - 6, y + 22); ctx.stroke();
+      } else if (tile === T.BLOCK && L.arbolG && L.arbolG[ty * L.w + tx]) {
+        continue;   // el gran árbol de Navidad se dibuja entero después
       } else if (tile === T.BLOCK) {
         // rojo: alto, no se puede saltar y tapa la vista
         ctx.fillStyle = '#8e1c24'; ctx.fillRect(x + 1, y + 4, TILE - 2, TILE - 5);
@@ -1060,6 +1062,8 @@ export class Game {
         ctx.beginPath(); ctx.moveTo(x + 5, y + 10); ctx.lineTo(x + TILE - 5, y + TILE - 6); ctx.moveTo(x + TILE - 5, y + 10); ctx.lineTo(x + 5, y + TILE - 6); ctx.stroke();
       }
     }
+    // los grandes árboles de Navidad (G, Elora): cada grupo de G juntas es un árbol, decorado y con su estrella
+    if (L.arbolG) this.drawArbolesG(ctx);
     // las T del pasillo de Drake: un cuadrado morado con la T
     const ts = L.markers.T || [];
     if (ts.length) {
@@ -1115,6 +1119,30 @@ export class Game {
     ctx.fillStyle = '#ffffff';   // brillitos
     for (const [tx, ty] of casillas) for (let k = 0; k < 2; k++) {
       ctx.beginPath(); ctx.arc((tx + 0.15 + r() * 0.7) * TILE, (ty + 0.15 + r() * 0.7) * TILE, 1.1, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // Los grandes árboles de Navidad del taller de Papá Noel (G, Elora): se busca cada grupo de G juntas y se
+  // dibuja un árbol que lo llena (un poco más alto, con la estrella por encima)
+  drawArbolesG(ctx) {
+    const L = this.level, visto = new Uint8Array(L.w * L.h);
+    for (let i = 0; i < L.w * L.h; i++) {
+      if (!L.arbolG[i] || visto[i]) continue;
+      let x0 = L.w, y0 = L.h, x1 = 0, y1 = 0;
+      const pila = [i]; visto[i] = 1;
+      while (pila.length) {
+        const j = pila.pop(), tx = j % L.w, ty = (j / L.w) | 0;
+        x0 = Math.min(x0, tx); x1 = Math.max(x1, tx); y0 = Math.min(y0, ty); y1 = Math.max(y1, ty);
+        for (const k of [j + 1, j - 1, j + L.w, j - L.w]) if (k >= 0 && k < L.w * L.h && L.arbolG[k] && !visto[k] && Math.abs((k % L.w) - tx) <= 1) { visto[k] = 1; pila.push(k); }
+      }
+      const w = (x1 - x0 + 1) * TILE, h = (y1 - y0 + 1) * TILE;
+      const s = Math.min(w / 46, (h + TILE * 1.5) / 68);   // grande: sube un poco por encima de las G
+      const grande = (x1 - x0 + 1) * (y1 - y0 + 1) > 6;
+      const adornos = [[-12, -20, 'bola-roja'], [10, -24, 'bola-dorada'], [0, -36, 'bola-azul'], [-8, -42, 'bola-dorada'],
+        [8, -46, 'bola-roja'], [14, -18, 'regalo-rojo'], [-15, -28, 'baston'], [2, -52, 'bola-verde']]
+        .map(([x, y, id]) => ({ id, x, y }));
+      drawArbolCompleto(ctx, (x0 * TILE + w / 2), y1 * TILE + TILE - 2, s,
+        { adornos: grande ? adornos : adornos.slice(0, 4), luces: { id: grande ? 'luces-arcoiris' : 'luces-amarillas' }, punta: 'estrella', maceta: 'roja' }, 0.4);
     }
   }
 

@@ -9,6 +9,7 @@
 //      De estos solo cuenta CUÁNTOS hay: en cada partida se reparten por sitios al azar,
 //      salvo que el mapa tenga fixedItems: true (entonces se quedan donde están dibujados).
 //   Solo en el lobby:  N  Tarda (tienda)   V  estantería de cintas   D  puerta a los pasillos
+//   G  gran árbol de Navidad decorativo (Elora): no se salta ni se atraviesa; varias G juntas son un árbol
 //
 // Nivel 1 — El Colegio. Hecho a partir del dibujo de Elora (assets/referencias/escenarios/nivel-1-el-colegio.jpeg).
 
@@ -141,6 +142,44 @@ export const MAPS = {
       '########################################',
     ],
   },
+};
+
+// El taller de Papá Noel (Elora, noviembre 2026; foto en assets/referencias/escenarios/taller-papa-noel.webp).
+// Solo sale en Navidad, al azar: más o menos 1 de cada 5 pasillos (Elora; MAPA_NAVIDAD_PROB en config.js).
+//   G  gran árbol de Navidad decorativo (Elora): no se salta ni se atraviesa; varias G juntas son un solo árbol
+// Lo dibujó Elora: las paredes, las salidas, la entrada y el árbol grande del medio con su marco rojo y sus
+// esquinas naranjas. Las cosas (cintas, monedas, comida, corazón, estamina, Bloodies), los bloques naranjas de
+// más y los dos arbolitos pequeños los puso Clad (Elora: «tú le pones las cosas y más bloques que saltar») [PROVISIONAL]
+export const MAPA_NAVIDAD = {
+  name: { es: 'El taller de Papá Noel', en: "Santa's Workshop" },
+  theme: { floor: [228, 168, 164], wall: [38, 104, 58], grout: 'rgba(120,30,30,0.18)' },   // suelo rojo clarito y paredes verdes (Elora)
+  rows: [
+      '########################################',
+      '#############................###########',
+      '#############.c.......c..s............X#',
+      '#############....................c.O..##',
+      '####.........OOOO...OOOO......OO......##',
+      '###EP........O.........O..........######',
+      '####..c...f..O.RRRRRRR.O..O...........##',
+      '####.........O.RGGGGGR.O..O........t..X#',
+      '########.......RGGGGGR........GG......##',
+      '####.......O...RGGGGGR........GG......##',
+      '###X..t..c...O.RGGGGGR.O..........######',
+      '####.........O.RRRRRRR.O....s.........##',
+      '#########....O.........O..e.........c.X#',
+      '####.........OOOO...OOOO........O.....##',
+      '####...c..........h........c....O.....##',
+      '###X.....OO........c..............######',
+      '####.........t..........OO........######',
+      '####.####.....................s...###..#',
+      '###..####.GG....######............###..#',
+      '##X..####.GG....######......OO....###c.#',
+      '###..###e.......######............###..#',
+      '###..####.....O.######..t.......c.....##',
+      '###.c.OO....s...######.............f..##',
+      '###.............######................##',
+      '########################################',
+  ],
 };
 
 // El pasillo de Drake: sale en el pasillo 50 (DRAKE en config.js). Lo dibujó Elora en DOS hojas de

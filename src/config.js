@@ -170,7 +170,10 @@ export function skinsListas(ahora = ahoraJuego()) {
 // siendo secreto hasta que lo ganes en el calendario)
 // desde: Elora lo cambió del 21 al 5 de diciembre (8-11-2026)
 // Las fechas son mes-día: la Navidad se repite igual todos los años (Elora: "que la próxima Navidad pase lo mismo").
-export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-11', destaparChop: false };   // cartel: en 2026, el día después de las skins (Elora)
+export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-11', destaparChop: false };
+// En Navidad, el taller de Papá Noel (MAPA_NAVIDAD en maps.js) sale al azar: 1 de cada 5 pasillos más o menos (Elora)
+// (para probarlo: index.html?taller=1, que lo saca siempre en Navidad)
+export const MAPA_NAVIDAD_PROB = typeof location !== 'undefined' && /[?&]taller=1/.test(location.search) ? 1 : 0.2;   // cartel: en 2026, el día después de las skins (Elora)
 // La fecha de este año (o del año que se diga) de una de esas fechas: fechaNavidad('desde') → Date
 export function fechaNavidad(clave, anio = ahoraJuego().getFullYear()) {
   const [m, d] = NAVIDAD[clave].split('-').map(Number);

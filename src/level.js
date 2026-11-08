@@ -1,8 +1,8 @@
 // Niveles: todos son mapas dibujados por Elora (src/maps.js), que se van repitiendo.
 // La forma es siempre la suya; el botón, la salida y los objetos cambian en cada partida.
 
-import { TILE, LEVEL, MAP_RANDOM, BONUS_EVERY, DRAKE } from './config.js';
-import { MAPS, BONUS, PASILLO_DRAKE } from './maps.js';
+import { TILE, LEVEL, MAP_RANDOM, BONUS_EVERY, DRAKE, MAPA_NAVIDAD_PROB } from './config.js';
+import { MAPS, BONUS, PASILLO_DRAKE, MAPA_NAVIDAD } from './maps.js';
 import { pickCoinKind } from './coins.js';
 
 export const T = {
@@ -38,12 +38,14 @@ function shuffle(rand, arr) {
 
 // Cada partida usa una semilla distinta, así el botón, la puerta y los objetos
 // cambian de sitio y el nivel no se puede aprender de memoria.
-export function generateLevel(n, seed) {
+// navidad: en Navidad, a veces toca el taller de Papá Noel (Elora: al azar, 1 de cada 5 pasillos más o menos)
+export function generateLevel(n, seed, navidad = false) {
   const s = seed == null ? Math.floor(Math.random() * 1e9) : seed;
   // Cada BONUS_EVERY pasillos toca el Bonus: sin Bloodies, sin botón y con premios.
   // El pasillo de Drake (Elora) va antes que el Bonus: el 50 también es múltiplo de 5.
   if (n === DRAKE.level) return loadMap(n, PASILLO_DRAKE, s);
   if (n > 0 && n % BONUS_EVERY === 0) return loadMap(n, BONUS, s);
+  if (navidad && Math.random() < MAPA_NAVIDAD_PROB) return loadMap(n, MAPA_NAVIDAD, s);
   return loadMap(n, mapForLevel(n), s);
 }
 
@@ -96,6 +98,7 @@ export function loadMap(n, map, seed = 0) {
   const H = rows.length, W = Math.max(...rows.map((r) => r.length));
   const tiles = new Uint8Array(W * H).fill(T.WALL);
   const refugio = new Uint8Array(W * H), seguro = new Uint8Array(W * H);
+  const arbolG = new Uint8Array(W * H);   // las casillas del gran árbol de Navidad (G, Elora)
   const enemies = [], exitSpots = [], markers = {}, fixed = [];
   const counts = { tape: 0, food: 0, heart: 0, coin: 0, stamina: 0 };
   let spawn = null, startDoor = null;
@@ -111,6 +114,7 @@ export function loadMap(n, map, seed = 0) {
       continue;
     }
     if (ch === 'X') { exitSpots.push({ tx, ty }); tiles[ty * W + tx] = T.WALL; continue; }
+    if (ch === 'G') { tiles[ty * W + tx] = T.BLOCK; arbolG[ty * W + tx] = 1; continue; }   // no se salta ni se atraviesa
     if (ch === 'B') { tiles[ty * W + tx] = T.FLOOR; continue; } // solo marca una idea; el botón va al azar
     // pasillo de Drake: suelo de un hueco con naranja (,) y zona segura (v)
     if (ch === ',') { tiles[ty * W + tx] = T.FLOOR; refugio[ty * W + tx] = 1; continue; }
@@ -226,7 +230,7 @@ export function loadMap(n, map, seed = 0) {
   }
 
   return { n, w: W, h: H, tiles, spawn, startDoor, exit, exits, button, buttons, items, enemies, decals, markers,
-    free, coinRush: map.coinRush || null, refugio, seguro, fuego: !!map.fuego,
+    free, coinRush: map.coinRush || null, refugio, seguro, arbolG, fuego: !!map.fuego,
     name: map.name, theme: map.theme, lobby: !!map.lobby, noButton: !!map.noButton, seed };
 }
 
