@@ -1,6 +1,6 @@
 // Arranque del juego y paso entre pantallas: menú → lobby → (cinemática) → pasillos.
 
-import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ARBOL } from './config.js';
+import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ropaLista, ARBOL } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
@@ -28,6 +28,9 @@ loadLang();
 // Carot y Froggy son los personajes iniciales: se pueden elegir desde el principio (Elora).
 const unlocked = new Set(['carot', 'froggy']);
 const wallet = { coins: 0, tapes: 0 };
+// tus récords de la guerra de almohadas (Elora): el tiempo que más has aguantado, los Bloodies que más has
+// eliminado en una partida y los jugadores (para cuando haya online)
+const recordAlm = { tiempo: 0, bloodies: 0, jugadores: 0 };
 // La caja de cintas del lobby (Elora): los números de las cintas depositadas en la tienda de Tarda.
 // Las demás cintas que tienes están en el inventario. Se pueden recuperar desde la caja.
 const cajaCintas = new Set();
@@ -45,7 +48,9 @@ const comprada = (id, skin) => !!(skinsCompradas[id] && skinsCompradas[id].inclu
 const esDeNavidad = (skin) => !!(SKINS[skin] && SKINS[skin].navidad);
 // las de Navidad: gratis con el modo Navidad, o compradas (se venden solo en Navidad, Elora). Una que compraste es tuya
 // y te la puedes poner también fuera de Navidad [PROVISIONAL]
-const tieneSkin = (id, skin) => esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) : flags.modoPijama || (skinsListas() && comprada(id, skin));
+// las de pijama: con el modo pijama, o compradas desde el estreno; las demás (la ropa nueva), si las has comprado
+const esDePijama = (skin) => skin === 'pijama';
+const tieneSkin = (id, skin) => esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) : esDePijama(skin) ? flags.modoPijama || (skinsListas() && comprada(id, skin)) : comprada(id, skin);
 const hayNavidadComprada = () => Object.values(skinsCompradas).some((l) => l.some(esDeNavidad));
 // El calendario de Adviento (Elora): qué casillas has abierto y si ya te dieron los regalos finales
 let adviento = advientoVacio();
@@ -92,6 +97,7 @@ try {
   for (const id of JSON.parse(localStorage.getItem('holeway.puntas') || '[]')) if (PUNTAS.includes(id)) puntasTuyas.add(id);
   for (const id of JSON.parse(localStorage.getItem('holeway.macetas') || '[]')) if (MACETAS[id]) macetasTuyas.add(id);
   if (!macetasTuyas.has(arbol.maceta)) arbol.maceta = MACETA_GRATIS;
+  Object.assign(recordAlm, JSON.parse(localStorage.getItem('holeway.recordAlmohadas') || '{}'));
   const chId = localStorage.getItem('holeway.character');
   if (chId && tienes().has(chId)) run.character = aplicarSkin(characterById(chId));
 } catch (e) { /* nada */ }
@@ -115,6 +121,7 @@ function save() {
     localStorage.setItem('holeway.arbol', JSON.stringify(arbol));
     localStorage.setItem('holeway.puntas', JSON.stringify([...puntasTuyas]));
     localStorage.setItem('holeway.macetas', JSON.stringify([...macetasTuyas]));
+    localStorage.setItem('holeway.recordAlmohadas', JSON.stringify(recordAlm));
   } catch (e) { /* nada */ }
 }
 
@@ -176,7 +183,8 @@ function gotoMenu() {
   });
 }
 
-function gotoLobby() {
+// abrir: 'almohadas' para volver a la pantalla de la guerra de almohadas al terminar una partida
+function gotoLobby(abrir) {
   const lobby = new Lobby(run.character, {
     ...common,
     practiceTaken,
@@ -218,12 +226,14 @@ function gotoLobby() {
         onChoose: (ch) => { run.character = aplicarSkin(ch); save(); lobby.setCharacter(run.character); close(); },
         // las skins: en el modo pijama, gratis y de todos; desde que salen (martes 10, 16:00), se compran con
         // monedas, solo de los personajes que tienes. Si es el personaje que llevas, se lo pone ya
-        skins: flags.modoPijama || skinsListas() || esNavidad() || hayNavidadComprada() ? {
-          gratis: (skin) => esDeNavidad(skin) ? flags.modoNavidad : flags.modoPijama,
-          disponible: (skin) => esDeNavidad(skin) || flags.modoPijama || skinsListas(),
+        // las skins salen siempre: la ropa nueva se vende todo el año (Elora)
+        skins: {
+          gratis: (skin) => esDeNavidad(skin) ? flags.modoNavidad : esDePijama(skin) ? flags.modoPijama : false,
+          // la ropa nueva, desde que sale (Elora: el martes 10 por la mañana)
+          disponible: (skin) => esDeNavidad(skin) || (esDePijama(skin) ? flags.modoPijama || skinsListas() : ropaLista()),
           // de qué personajes se enseñan: en el modo pijama o Navidad, de todos (gratis); si no, solo de los tuyos
           // las de Navidad: en Navidad, de tus personajes (se compran); con el modo Navidad, de todos (gratis); y las que ya tienes
-          puede: (id, skin) => esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) || (esNavidad() && tienes().has(id)) : flags.modoPijama || tienes().has(id),
+          puede: (id, skin) => esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) || (esNavidad() && tienes().has(id)) : esDePijama(skin) ? flags.modoPijama || tienes().has(id) : tienes().has(id),
           tiene: (id, skin) => tieneSkin(id, skin),
           monedas: () => wallet.coins,
           comprar: (ch, skin, precio) => {
@@ -243,7 +253,7 @@ function gotoLobby() {
             const kFrase = 'skins.frase.' + skin + '.' + ch.id;
             if (skin) ui.toast(SKINS[skin].emoji + ' ' + (t(kFrase) !== kFrase ? ch.name + ': ' + t(kFrase) : t(SKINS[skin].navidad ? 'skins.toastNav' : 'skins.toast', { name: ch.name })));
           },
-        } : null,
+        },
         onBuy: (ch) => { wallet.coins -= ch.price; unlocked.add(ch.id); save(); open(ch.id); ui.toast('⭐ ' + t('select.bought', { name: ch.name })); },
         onClose: menu,
       });
@@ -264,6 +274,7 @@ function gotoLobby() {
       lobby.paused = true;
       const onClose = () => { lobby.paused = false; input.clear(); };
       if (cual === 'navidad') ui.showCartelNavidad({ onClose, destapaChop: NAVIDAD.destaparChop });
+      else if (cual === 'ropa') ui.showCartelRopa({ onClose });
       else ui.showCartel({ onClose });
     },
     onAdviento: () => {
@@ -297,13 +308,30 @@ function gotoLobby() {
       });
     },
     // la guerra de almohadas contra los Bloodies (Elora): en la fiesta del Día del Niño, en el montón de almohadas
+    // la guerra de almohadas (Elora): primero su pantalla, con JUGAR, ONLINE (más adelante) y tus récords
     onAlmohadas: () => {
-      scene = new GuerraAlmohadas(run.character, {
-        onCoin: (n) => { wallet.coins += n; save(); },
-        onSalir: () => gotoLobby(),
+      lobby.paused = true;
+      ui.showAlmohadas({
+        record: recordAlm,
+        onJugar: () => {
+          ui.clear();
+          scene = new GuerraAlmohadas(run.character, {
+            onCoin: (n) => { wallet.coins += n; save(); },
+            // al acabar: se apuntan los récords y se dice cuáles son nuevos
+            onFin: ({ tiempo, bloodies }) => {
+              const nuevos = [];
+              if (tiempo > recordAlm.tiempo) { recordAlm.tiempo = tiempo; nuevos.push('tiempo'); }
+              if (bloodies > recordAlm.bloodies) { recordAlm.bloodies = bloodies; nuevos.push('bloodies'); }
+              save();
+              return nuevos;
+            },
+            onSalir: () => gotoLobby('almohadas'),
+          });
+          music.play('alegre');
+          input.clear();
+        },
+        onClose: () => { ui.clear(); lobby.paused = false; input.clear(); },
       });
-      music.play('alegre');
-      input.clear();
     },
     // el árbol de Navidad (Elora): cómo está, para dibujarlo, y el minijuego de decorarlo
     arbol: () => arbol,
@@ -335,6 +363,10 @@ function gotoLobby() {
   if (!flags.lobbySeen) {
     lobby.paused = true;
     ui.showDialogue([t('lobby.welcome')], () => { lobby.paused = false; input.clear(); flags.lobbySeen = true; save(); });
+  } else if (abrir === 'almohadas' && lobby.monton) {
+    // al acabar una guerra de almohadas, vuelves a su pantalla, al lado del montón
+    lobby.player.x = lobby.monton.x - 40; lobby.player.y = lobby.monton.y;
+    lobby.cb.onAlmohadas();
   }
 }
 

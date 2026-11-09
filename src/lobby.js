@@ -2,7 +2,7 @@
 // (y la tele en pequeñito al lado; antes era una estantería)
 // y una puerta para entrar a los pasillos.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, skinsListas, horaSkins, ahoraJuego, NAVIDAD, fechaNavidad, DIA_NINO } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, skinsListas, horaSkins, ahoraJuego, NAVIDAD, fechaNavidad, DIA_NINO, horaRopa, ropaLista } from './config.js';
 import { T, loadMap, setTile } from './level.js';
 import { LOBBY } from './maps.js';
 import { Game, dist } from './game.js';
@@ -61,8 +61,11 @@ export class Lobby extends Game {
     // La Tarda de la tienda es amarilla, para distinguirla de la Tarda personaje (verde). Decidido por Elora.
     this.tarda = { ...characterById('tarda'), ...TARDA_GRIS };   // la de la tienda: gris, como la Tarda de verdad del dibujo (Elora)
     this.npc = m.N[0];
-    this.shelf = m.V;
     this.doors = m.D;
+    // la caja de las cintas y la tele: mientras están a la vez el cartel de Navidad y el de los pijamas, se mueven
+    // dos casillas a la izquierda para que quepa el de Navidad; cuando se quita, vuelven a su sitio (Elora)
+    const mover = cartelNavidad() && this.cartelSkinsVisible() ? 2 : 0;
+    this.shelf = m.V.map((v) => ({ ...v, tx: v.tx - mover, x: v.x - mover * TILE }));
     // la estantería es sólida
     for (const v of this.shelf) setTile(this.level, v.tx, v.ty, T.WALL);
     // en Navidad, el árbol (Elora): en la esquina de arriba a la derecha, al lado de la tienda de Tarda.
@@ -115,13 +118,17 @@ export class Lobby extends Game {
     else if (this.calendario && dist(p.x, p.y, this.calendario.x, this.calendario.y + TILE * 1.5) < TILE * 1.4) this.near = 'adviento';
     else if (this.monton && dist(p.x, p.y, this.monton.x, this.monton.y) < TILE * 1.6) this.near = 'almohadas';
     else if (this.arbol && this.cb.onArbol && dist(p.x, p.y, this.arbol.tx * TILE + TILE / 2, this.arbol.ty * TILE + TILE * 1.6) < TILE * 2.4) this.near = 'arbol';
-    else if (this.cb.onCartel && (this.cartelSkinsVisible() || cartelNavidad()) && dist(p.x, p.y, this.cartelSkinsPos().x, this.cartelSkinsPos().y) < TILE * 1.6) this.near = 'cartel';
+    else if (this.cb.onCartel && this.cartelSkinsVisible() && dist(p.x, p.y, this.cartelSkinsPos().x, this.cartelSkinsPos().y) < TILE * 1.6) this.near = 'cartel';
+    else if (this.cb.onCartel && cartelNavidad() && dist(p.x, p.y, this.cartelNavidadPos().x, this.cartelNavidadPos().y) < TILE * 1.6) this.near = 'cartelNav';
+    else if (this.cb.onCartel && this.cartelRopaVisible() && dist(p.x, p.y, this.cartelRopaPos().x, this.cartelRopaPos().y) < TILE * 1.6) this.near = 'cartelRopa';
     if (this.near && input.wasPressed('interact')) {
       if (this.near === 'tarda') this.cb.onShop();
       else if (this.near === 'adviento') this.cb.onAdviento();
       else if (this.near === 'arbol') this.cb.onArbol();
       else if (this.near === 'almohadas') this.cb.onAlmohadas();
-      else if (this.near === 'cartel') this.cb.onCartel(cartelNavidad() ? 'navidad' : 'skins');
+      else if (this.near === 'cartel') this.cb.onCartel('skins');
+      else if (this.near === 'cartelNav') this.cb.onCartel('navidad');
+      else if (this.near === 'cartelRopa') this.cb.onCartel('ropa');
       else this.cb.onTapes();
       return;
     }
@@ -137,9 +144,57 @@ export class Lobby extends Game {
   // El cartel de las skins (Elora): se ve hasta que salen las skins y todo el día del estreno (Elora: ese día
   // sigue y es la fiesta de pijamas), y no cuando está el de Navidad. Se puede mirar de cerca: te pones debajo y pulsas E.
   cartelSkinsVisible() {
-    if (cartelNavidad()) return false;
     const ahora = ahoraJuego(), h = horaSkins();
     return !skinsListas(ahora) || ahora.toDateString() === h.toDateString();
+  }
+  // El cartel de la ropa nueva (Elora: «que haya un cartel»): a la derecha de la puerta, de madera como el de los pijamas.
+  // Cuenta lo que falta para que salga (martes 10 a las 8:00) y ese día dice que ya está en la tienda; al día
+  // siguiente se quita. [PROVISIONAL el sitio y cómo es]
+  // se ve hasta que sale la ropa nueva y todo ese día; se mira de cerca con E (Elora)
+  cartelRopaVisible() {
+    const ahora = ahoraJuego(), h = horaRopa();
+    return ahora <= h || ahora.toDateString() === h.toDateString();
+  }
+  cartelRopaPos() {
+    const d0 = this.doors[0] || { tx: 13, ty: 1 };
+    return { x: (d0.tx + 1) * TILE + 14 + 52, y: d0.ty * TILE - 6 + 40 + TILE * 0.9 };   // justo debajo del cartel
+  }
+  drawCartelRopa(ctx, d0) {
+    const ahora = ahoraJuego(), h = horaRopa();
+    if (!this.cartelRopaVisible()) return;   // ya pasó su día
+    const w = 104, alto = 40, cx = (d0.tx + 1) * TILE + 14 + w / 2, top = d0.ty * TILE - 6;
+    // de madera, con la misma decoración que el de los pijamas (Elora)
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(cx - w / 2 + 3, top + 4, w, alto);
+    ctx.fillStyle = '#a8733f'; ctx.fillRect(cx - w / 2, top, w, alto);
+    ctx.fillStyle = '#8c5d30'; ctx.fillRect(cx - w / 2, top + alto / 2 - 1, w, 2);
+    ctx.strokeStyle = '#5a3d26'; ctx.lineWidth = 2; ctx.strokeRect(cx - w / 2, top, w, alto);
+    ctx.fillStyle = '#3a2618';
+    for (const [px, py] of [[-w / 2 + 5, 5], [w / 2 - 5, 5], [-w / 2 + 5, alto - 5], [w / 2 - 5, alto - 5]]) { ctx.beginPath(); ctx.arc(cx + px, top + py, 1.5, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#fff6dc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 11px "Segoe UI", Arial';
+    let l2;
+    if (ropaLista(ahora)) l2 = t('lobby.ropaYa');
+    else if (ahora.toDateString() !== h.toDateString()) {
+      const hoy = new Date(ahora); hoy.setHours(0, 0, 0, 0); const dia = new Date(h); dia.setHours(0, 0, 0, 0);
+      const faltan = Math.round((dia - hoy) / 86400000);
+      l2 = faltan === 1 ? t('lobby.ropaManana') : t('lobby.skinsDias', { n: faltan });
+    } else {
+      const seg = Math.max(0, Math.ceil((h - ahora) / 1000)), min = Math.ceil(seg / 60), hh = Math.floor(min / 60), mm = min % 60;
+      l2 = seg <= 60 ? t('lobby.skinsS', { s: seg }) : hh > 0 ? t('lobby.skinsHM', { h: hh, m: mm }) : t('lobby.skinsM', { m: mm });
+    }
+    ctx.fillText(t('lobby.ropa'), cx, top + alto * 0.3); ctx.fillText(l2, cx, top + alto * 0.72);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // El de Navidad: si está también el de los pijamas, a su izquierda y un poco más pequeño (Elora: «se pueden 3»);
+  // si no, en su sitio de siempre, a la izquierda de la puerta. Devuelve el centro, arriba y el tamaño.
+  cartelNavidadSitio() {
+    const d0 = this.doors[0] || { tx: 13, ty: 1 };
+    if (this.cartelSkinsVisible()) return { cx: d0.tx * TILE - 12 - 100 - 10 - 63, top: d0.ty * TILE - 6, k: 0.9 };
+    return { cx: d0.tx * TILE - 12 - 70, top: d0.ty * TILE - 8, k: 1 };
+  }
+  cartelNavidadPos() {
+    const c = this.cartelNavidadSitio();
+    return { x: c.cx, y: c.top + 46 * c.k + TILE * 0.9 };
   }
   cartelSkinsPos() {
     const d0 = this.doors[0] || { tx: 13, ty: 1 };
@@ -205,12 +260,16 @@ export class Lobby extends Game {
     const d0 = this.doors[0] || { tx: 13, ty: 1 };
     const cartel = () => {
       const w = 100, h = 40, cx = d0.tx * TILE - 12 - w / 2, top = d0.ty * TILE - 6;
+      // morado con el borde amarillo y estrellitas que brillan en las esquinas (Elora: la decoración que tenía
+      // primero el cartel de la ropa nueva)
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(cx - w / 2 + 3, top + 4, w, h);   // sombra en la pared
-      ctx.fillStyle = '#a8733f'; ctx.fillRect(cx - w / 2, top, w, h);                 // la tabla
-      ctx.fillStyle = '#8c5d30'; ctx.fillRect(cx - w / 2, top + h / 2 - 1, w, 2);       // la raya entre tablas
-      ctx.strokeStyle = '#5a3d26'; ctx.lineWidth = 2; ctx.strokeRect(cx - w / 2, top, w, h);
-      ctx.fillStyle = '#3a2618';                                   // los clavos
-      for (const [px, py] of [[-w / 2 + 5, 5], [w / 2 - 5, 5], [-w / 2 + 5, h - 5], [w / 2 - 5, h - 5]]) { ctx.beginPath(); ctx.arc(cx + px, top + py, 1.5, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#6a3fae'; ctx.fillRect(cx - w / 2, top, w, h);
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.strokeRect(cx - w / 2, top, w, h);
+      ctx.fillStyle = '#ffe36b';
+      for (const [px, py] of [[-w / 2 + 6, 6], [w / 2 - 6, 6], [-w / 2 + 6, h - 6], [w / 2 - 6, h - 6]]) {
+        const tw = 0.6 + 0.4 * Math.sin(this.time * 3 + px);
+        ctx.save(); ctx.globalAlpha *= tw; ctx.beginPath(); ctx.arc(cx + px, top + py, 1.8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
       ctx.fillStyle = '#fff6dc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 11px "Segoe UI", Arial';
       // cuántos días faltan para las skins nuevas (cuenta sola, según la fecha de hoy). El mismo día
@@ -238,8 +297,13 @@ export class Lobby extends Game {
     // el cartel de «¡La Navidad se acerca!» (Elora) va en el mismo sitio que el de las skins, que para
     // entonces ya se habrá quitado (al probarlo con ?cartelnavidad=1, lo tapa)
     if (this.calendario) this.drawCalendario(ctx, this.calendario.x, this.calendario.y);
-    if (cartelNavidad()) this.drawCartelNavidad(ctx, d0.tx * TILE - 12 - 70, d0.ty * TILE - 8);
-    else if (this.cartelSkinsVisible()) cartel();   // el día del estreno sigue; al día siguiente se va (Elora)
+    // los tres carteles a la vez (Elora): el de Navidad, el de los pijamas y el de la ropa nueva
+    if (cartelNavidad()) {
+      const c = this.cartelNavidadSitio();
+      ctx.save(); ctx.translate(c.cx, c.top); ctx.scale(c.k, c.k); this.drawCartelNavidad(ctx, 0, 0); ctx.restore();
+    }
+    if (this.cartelSkinsVisible()) cartel();   // el día del estreno sigue; al día siguiente se va (Elora)
+    this.drawCartelRopa(ctx, d0);
 
     // actores ordenados por altura
     const actors = [
@@ -469,7 +533,7 @@ export class Lobby extends Game {
     // avisos
     ctx.textAlign = 'center';
     let yy = VIEW_H - 40;
-    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento', cartel: 'lobby.cartel', arbol: 'lobby.arbol', almohadas: 'lobby.almohadas' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
+    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento', cartel: 'lobby.cartel', cartelRopa: 'lobby.cartel', cartelNav: 'lobby.cartel', arbol: 'lobby.arbol', almohadas: 'lobby.almohadas' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
     else { ctx.font = `16px ${font}`; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText(t('lobby.door'), VIEW_W / 2, yy); yy -= 30; }
     this.renderMessages(ctx, yy, font);
     ctx.restore();

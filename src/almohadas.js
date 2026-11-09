@@ -7,7 +7,7 @@
 import { VIEW_W, VIEW_H, ALMOHADAS } from './config.js';
 
 // 83 s → «1:23»
-const minSeg = (s) => { const n = Math.floor(s); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
+export const minSeg = (s) => { const n = Math.floor(s); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
 // cuánto espera un Bloodie para tirar: 10 s y, a veces, 5 (Elora)
 const esperaTiro = () => (Math.random() < ALMOHADAS.probRapido ? ALMOHADAS.tiroRapido : ALMOHADAS.tiroBloodie);
 import { CHARACTERS, drawCharacter, rrect } from './characters.js';
@@ -74,7 +74,7 @@ export function drawAlmohada(ctx, x, y, color, sangre, ang = 0, k = 1) {
 }
 
 export class GuerraAlmohadas {
-  // callbacks: { onCoin(n), onSalir() }
+  // callbacks: { onCoin(n), onFin({ tiempo, bloodies }) → récords nuevos, onSalir() }
   constructor(character, callbacks) {
     this.ch = character;
     this.cb = callbacks;
@@ -216,12 +216,19 @@ export class GuerraAlmohadas {
       } else if (p.invuln <= 0 && Math.hypot(a.x - p.x, a.y - (p.y - 14)) < 20) {
         a.fuera = true; this.vidas -= 1; p.invuln = 1;
         try { sfx.hurt(); } catch (e) { /* nada */ }
-        if (this.vidas <= 0) { this.fin = 'pierdes'; this.finEn = this.time; }
+        if (this.vidas <= 0) this.terminar('pierdes');
       }
     }
     this.almohadas = this.almohadas.filter((a) => !a.fuera);
     this.bloodies = this.bloodies.filter((b) => !(b.ido && b.cae <= 0));
-    if (!this.fin && ALMOHADAS.tiempo && this.time >= ALMOHADAS.tiempo) { this.fin = 'ganas'; this.finEn = this.time; try { sfx.levelUp(); } catch (e) { /* nada */ } }
+    if (!this.fin && ALMOHADAS.tiempo && this.time >= ALMOHADAS.tiempo) { this.terminar('ganas'); try { sfx.levelUp(); } catch (e) { /* nada */ } }
+  }
+
+  // se acaba la partida: se apuntan los récords (Elora) y se ve si hay alguno nuevo
+  terminar(fin) {
+    this.fin = fin; this.finEn = this.time;
+    this.nuevos = (this.cb.onFin && this.cb.onFin({ tiempo: Math.floor(this.time), bloodies: this.derrotados })) || [];
+    if (this.nuevos.length) { try { sfx.levelUp(); } catch (e) { /* nada */ } }
   }
 
   render(ctx) {
@@ -330,7 +337,11 @@ export class GuerraAlmohadas {
       ctx.fillStyle = '#fff6dc'; ctx.font = `bold 24px ${font}`;
       ctx.fillText(t('alm.resultado', { n: this.derrotados, m: this.monedas }), VIEW_W / 2, VIEW_H / 2 + 6);
       ctx.fillText(t('alm.aguantado', { t: minSeg(this.finEn) }), VIEW_W / 2, VIEW_H / 2 + 40);
-      ctx.font = `18px ${font}`; ctx.fillText(t('alm.volver'), VIEW_W / 2, VIEW_H / 2 + 84);
+      if (this.nuevos && this.nuevos.length) {   // ¡nuevo récord! (de tiempo, de Bloodies o de los dos)
+        ctx.fillStyle = '#ffd95a'; ctx.font = `bold 26px ${font}`;
+        ctx.fillText(t('alm.nuevoRecord') + ' ' + this.nuevos.map((n) => t('alm.record.' + n)).join(' · '), VIEW_W / 2, VIEW_H / 2 + 82);
+      }
+      ctx.fillStyle = '#fff6dc'; ctx.font = `18px ${font}`; ctx.fillText(t('alm.volver'), VIEW_W / 2, VIEW_H / 2 + 122);
     }
     ctx.textBaseline = 'alphabetic';
   }

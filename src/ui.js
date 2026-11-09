@@ -1,4 +1,4 @@
-import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL } from './config.js';
+import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL, horaRopa, ropaLista } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
@@ -8,6 +8,7 @@ import { TapePlayer, grabacionDeCinta } from './tapes.js';
 import { music } from './music.js';
 import { casillas, estadoCasilla, textoDia, hoyJuego } from './adviento.js';
 import { cancionLobby } from './lobby.js';
+import { minSeg } from './almohadas.js';
 import { ADORNOS, SECCIONES, PUNTAS, adorno, drawAdorno, drawPunta, drawArbolCompleto, puedeIr, esGrande, puntosNuevos, TAM_ADORNO, MACETAS_ORDEN, drawMaceta } from './adornos.js';
 
 // ---- nombres de las cintas (Elora): quien juega puede ponerle nombre a cada cinta; se guarda en
@@ -690,6 +691,32 @@ export class UI {
   // a la izquierda, Tarda contenta detrás de una mesa con manchas de sangre y walkie-talkies y una radio encima;
   // a la derecha, Crear sala, Unirse a una sala y Amigos (que abre Ver amigos e Invitar amigos). Se abre con el
   // código del modo online. Todavía no conecta con nada: el modo online está por hacer [PENDIENTE].
+  // ---------------- la guerra de almohadas (Elora): al tocar el montón sale esta pantalla en vez del juego
+  // directamente. Arriba, tus récords (tiempo, Bloodies eliminados y jugadores eliminados, para el online);
+  // y los botones JUGAR y ONLINE (más adelante).
+  showAlmohadas({ record, onJugar, onClose }) {
+    this.clear();
+    const s = this.el('div', 'screen dim almohadas-menu');
+    s.appendChild(this.el('h2', 'alm-titulo', '🛏️ ' + t('alm.titulo')));
+    const rec = this.el('div', 'alm-records');
+    rec.appendChild(this.el('p', 'alm-rec-titulo', '🏆 ' + t('alm.menu.records')));
+    rec.appendChild(this.el('p', 'alm-rec', t('alm.menu.tiempo', { t: minSeg(record.tiempo || 0) })));
+    rec.appendChild(this.el('p', 'alm-rec', t('alm.menu.bloodies', { n: record.bloodies || 0 })));
+    rec.appendChild(this.el('p', 'alm-rec', t('alm.menu.jugadores', { n: record.jugadores || 0 })));
+    s.appendChild(rec);
+    const jugar = this.button('▶ ' + t('alm.menu.jugar'), onJugar, true);
+    jugar.classList.add('alm-boton');
+    const nota = this.el('p', 'small note-inline online-nota', '');
+    const online = this.button('🌐 ' + t('alm.menu.online'), () => { nota.textContent = '📻 ' + t('alm.menu.pronto'); nota.classList.remove('shake'); void nota.offsetWidth; nota.classList.add('shake'); });
+    online.classList.add('alm-boton', 'alm-online');
+    const botones = this.el('div', 'alm-botones');
+    botones.append(jugar, online);
+    s.append(botones, nota, this.button(t('code.back'), onClose));
+    this.root.appendChild(s);
+    jugar.focus();
+    this.keyHandler = (e) => { if (e.code === 'Escape') onClose(); };
+  }
+
   showOnline(onBack, amigos = false) {
     this.clear();
     const s = this.el('div', 'screen opaque online');
@@ -759,7 +786,7 @@ export class UI {
     this.clear();
     const fiesta = skinsListas();
     const fondo = this.el('div', 'screen dim cartel-fondo');
-    const s = this.el('div', 'cartel-grande' + (fiesta ? ' fiesta' : ''));
+    const s = this.el('div', 'cartel-grande pijamas' + (fiesta ? ' fiesta' : ''));   // morado (Elora)
     // las letras grandes, decoradas con cosas de dormir: estrellas, una luna y zetas (Elora)
     const titulo = this.el('div', 'cartel-titulo-sueno');
     titulo.appendChild(this.el('h2', 'cartel-titulo', t(fiesta ? 'cartel.fiesta' : 'cartel.titulo')));
@@ -794,7 +821,7 @@ export class UI {
       drawCharacter(cx, conSkin(ch, 'pijama'), 0, 0, 'down', 0, 0, false);
       if (!fiesta) {
         cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalCompositeOperation = 'source-in';
-        cx.fillStyle = '#2a1a10'; cx.fillRect(0, 0, 56, 64);   // en sombra: no se ve cómo es el pijama
+        cx.fillStyle = '#2a1640'; cx.fillRect(0, 0, 56, 64);   // en sombra: no se ve cómo es el pijama
         cx.globalCompositeOperation = 'source-over'; cx.fillStyle = '#ffe36b'; cx.font = 'bold 18px "Segoe UI", Arial';
         cx.textAlign = 'center'; cx.fillText('?', 28, 30);
       }
@@ -806,6 +833,60 @@ export class UI {
     for (const k of ['info1', 'info2', 'info3', 'info4']) lista.appendChild(this.el('li', '', t('cartel.' + k)));
     s.appendChild(lista);
     // para cerrar, una ✕ en la esquina (lo pidió el padre de Elora) en vez del botón «Cerrar»
+    const equis = this.button('✕', () => { this.clear(); onClose(); }, true);
+    equis.className = 'cartel-x'; equis.setAttribute('aria-label', t('shop.close')); equis.title = t('shop.close');
+    s.appendChild(equis);
+    fondo.appendChild(s);
+    this.root.appendChild(fondo);
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); this.clear(); onClose(); } };
+  }
+
+  // El cartel de la ropa nueva, de cerca (Elora: «que se interactúe con él y que estén las siluetas de cada skin»):
+  // el reloj hasta que sale (martes 10 a las 8:00), lo que es y los personajes con la ropa nueva en sombra (los
+  // secretos, Drake y Chop, no salen). Cuando sale, las siluetas se destapan.
+  showCartelRopa({ onClose }) {
+    this.clear();
+    const ya = ropaLista();
+    const fondo = this.el('div', 'screen dim cartel-fondo');
+    // de madera, con las letras sin decorar (Elora)
+    const s = this.el('div', 'cartel-grande' + (ya ? ' fiesta' : ''));
+    s.appendChild(this.el('h2', 'cartel-titulo', t(ya ? 'cropa.ya' : 'cropa.titulo')));
+    s.appendChild(this.el('p', 'cartel-cuando', t(ya ? 'cropa.tienda' : 'cropa.cuando')));
+    const reloj = this.el('div', 'cartel-reloj');
+    if (!ya) s.appendChild(reloj);
+    const pintarReloj = () => {
+      if (ya) return;
+      const seg = Math.max(0, Math.ceil((horaRopa() - ahoraJuego()) / 1000));
+      if (seg <= 0) { this.showCartelRopa({ onClose }); return; }   // ¡ya sale! se destapa con la ventana abierta
+      reloj.innerHTML = '';
+      reloj.appendChild(this.el('span', 'cartel-faltan', t('cartel.faltan')));
+      const d = Math.floor(seg / 86400), h = Math.floor(seg % 86400 / 3600), m = Math.floor(seg % 3600 / 60), sg = seg % 60;
+      for (const [k, n] of [['d', d], ['h', h], ['m', m], ['s', sg]]) {
+        if (k === 'd' && !d) continue;
+        reloj.appendChild(this.el('span', 'cartel-num', t('cartel.' + k, { n })));
+      }
+    };
+    pintarReloj();
+    this.reloj = setInterval(pintarReloj, 250);
+    const sombras = this.el('div', 'cartel-sombras');
+    for (const ch of CHARACTERS) {
+      if (ch.secreto || !SKINS.ropa.personajes[ch.id]) continue;
+      const cv = document.createElement('canvas'); cv.width = 56; cv.height = 64;
+      const cx = cv.getContext('2d'); cx.translate(28, 44); cx.scale(1.4, 1.4);
+      drawCharacter(cx, conSkin(ch, 'ropa'), 0, 0, 'down', 0, 0, false);
+      if (!ya) {
+        cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalCompositeOperation = 'source-in';
+        cx.fillStyle = '#2a1a10'; cx.fillRect(0, 0, 56, 64);   // en sombra: no se ve cómo es la ropa
+        cx.globalCompositeOperation = 'source-over'; cx.fillStyle = '#ffe36b'; cx.font = 'bold 18px "Segoe UI", Arial';
+        cx.textAlign = 'center'; cx.fillText('?', 28, 30);
+      }
+      sombras.appendChild(cv);
+    }
+    s.appendChild(sombras);
+    s.appendChild(this.el('p', 'cartel-sorpresa', t(ya ? 'cropa.desvelado' : 'cropa.sorpresa')));
+    const lista = this.el('ul', 'cartel-info');
+    for (const k of ['info1', 'info2', 'info3']) lista.appendChild(this.el('li', '', t('cropa.' + k)));
+    s.appendChild(lista);
     const equis = this.button('✕', () => { this.clear(); onClose(); }, true);
     equis.className = 'cartel-x'; equis.setAttribute('aria-label', t('shop.close')); equis.title = t('shop.close');
     s.appendChild(equis);

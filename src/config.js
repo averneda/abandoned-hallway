@@ -157,6 +157,15 @@ export function horaSkins() {
   return new Date(a, m - 1, d, h, mi);
 }
 // ¿Ya han salido las skins? (con index.html?skins=1, sí, para probarlo)
+// La ropa nueva (skins de Clad para Elora): sale «mañana más o menos antes del cole, por la mañana» (Elora): el
+// martes 10-11-2026 a las 8:00 [PROVISIONAL la hora]. Hasta entonces, un cartel en el lobby cuenta lo que falta.
+// Para probarla ya: index.html?ropa=1
+export const ROPA_SALE = '2026-11-10T08:00:00';
+export function horaRopa() { return new Date(ROPA_SALE); }
+export function ropaLista(ahora = ahoraJuego()) {
+  try { if (new URLSearchParams(location.search).get('ropa') === '1') return true; } catch (e) { /* nada */ }
+  return ahora >= horaRopa();
+}
 export function skinsListas(ahora = ahoraJuego()) {
   if (SKINS_LISTAS) return true;
   try { if (new URLSearchParams(location.search).get('skins') === '1') return true; } catch (e) { /* nada */ }
@@ -171,7 +180,7 @@ export function skinsListas(ahora = ahoraJuego()) {
 // siendo secreto hasta que lo ganes en el calendario)
 // desde: Elora lo cambió del 21 al 5 de diciembre (8-11-2026)
 // Las fechas son mes-día: la Navidad se repite igual todos los años (Elora: "que la próxima Navidad pase lo mismo").
-export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-16', destaparChop: false };   // cartel: el día después del estreno de las skins (Elora: desde el 16)
+export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-09', destaparChop: false };   // cartel: desde el 9 de noviembre (Elora, 9-11-2026: «se pueden 3», con los otros dos carteles; antes desde el 16)
 // La fiesta del Día del Niño (Elora): del 15 al 20 de noviembre, todos los años. El lobby de fiesta de pijamas,
 // Tarda en pijama, los Bloodies con gorro de dormir y el comentario del pijama al empezar un pasillo.
 // Para probarlo: index.html?dianino=1

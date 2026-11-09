@@ -206,6 +206,15 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 .pijama-badge.navidad-badge { background: #1f7a3a; }
 /* la pantalla «JUEGO ONLINE» (dibujo de Elora) */
 .screen.online { gap: 14px; }
+/* la pantalla de la guerra de almohadas (Elora): récords arriba y los botones JUGAR y ONLINE */
+.screen.almohadas-menu { gap: 16px; }
+.screen .alm-titulo { color: #fff6dc; }
+.alm-records { background: rgba(255, 240, 250, 0.1); border: 2px solid rgba(255, 198, 221, 0.55); border-radius: 16px; padding: 12px 26px; display: flex; flex-direction: column; gap: 4px; }
+.screen .alm-rec-titulo { color: #ffd95a; font-weight: 800; font-size: 20px; }
+.screen .alm-rec { color: #fff6dc; font-size: 18px; font-weight: 700; }
+.alm-botones { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.alm-boton { font-size: 26px !important; font-weight: 900; padding: 14px 34px !important; letter-spacing: 2px; }
+.alm-online { opacity: 0.85; }
 .online-titulo { font-size: 40px !important; letter-spacing: 3px; }
 .online-cuerpo { display: flex; gap: 28px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .online-dibujo { width: 360px; height: 300px; }
@@ -228,6 +237,12 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 .cartel-info { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 17px; font-weight: 700; display: grid; gap: 4px; }
 .cartel-grande.fiesta .cartel-sombras { background: rgba(255, 246, 220, 0.35); }
 .screen .cartel-grande.fiesta .cartel-cuando { color: #ffe36b; font-size: 26px; }
+/* el de los pijamas: morado con el borde amarillo (Elora) */
+.cartel-grande.pijamas { background: #6a3fae; border-color: #ffd23f; box-shadow: 0 10px 0 rgba(0,0,0,0.35), inset 0 0 0 3px #8e5cd6; }
+.cartel-grande.pijamas .cartel-titulo { text-shadow: 0 3px 0 #3a1f6a; }
+.cartel-grande.pijamas .cartel-num { background: #3a1f6a; }
+.cartel-grande.pijamas .cartel-sombras { background: rgba(255, 246, 220, 0.22); }
+.cartel-grande.pijamas button.cartel-x { background: #3a1f6a; }
 .cartel-grande.navidad { background: #b8323c; border-color: #1f6a3a; box-shadow: 0 10px 0 rgba(0,0,0,0.35), inset 0 0 0 3px #2e9a4c; }
 .cartel-grande.navidad .cartel-titulo { text-shadow: 0 3px 0 #6a141c; }
 .cartel-grande.navidad .cartel-num { background: #1f4a2c; }
