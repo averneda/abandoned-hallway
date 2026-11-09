@@ -63,6 +63,12 @@ export const CHARACTERS = [
   { id: 'reno', name: 'Chop', species: { es: 'Reno', en: 'Reindeer' }, color: '#c49a70', dark: '#94704c', shape: 'reindeer', price: null, secreto: true, navidad: true, ability: 'chop',
     stats: { velocidad: 75, cordura: 50, sigilo: 51, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/reno.webp',
     fichaCuadro: { left: 65, top: 22, right: 3, bottom: 5 } },
+  // La perrita (Elora, 9-11-2026): la mejor amiga de Carot… o eso parece (es una amistad tóxica; el lirio de su
+  // oreja es venenoso y es la pista). Todavía no tiene nombre, ficha ni habilidad (Elora los pensará). De momento
+  // solo sale con su código secreto (modo perrita, holeway.modoPerrita), gratis. soloCodigo: no sale de Bloodie.
+  // Los números son [PROVISIONAL] (todos 50, normal) hasta que Elora los diga.
+  { id: 'perrita', name: 'La perrita', species: { es: 'Perra', en: 'Dog' }, color: '#e6cba0', dark: '#c9a574', shape: 'perrita', price: null, secreto: true, soloCodigo: true, ability: null,
+    stats: { velocidad: 50, cordura: 50, sigilo: 50, resistencia: 50 }, corazones: 3 },
 ];
 
 // La Tarda de verdad (la de la tienda del lobby y la que habla en las grabaciones) es gris, como la
@@ -96,6 +102,7 @@ export const SKINS = {
       froggy: { price: 40 },   // pijama azul con lunitas amarillas
       tarda: { price: 40 },    // pijama entero gris de osito, con orejitas
       jely: { price: 40 },     // gorro de dormir, luna, estrellas y montañas verdes
+      perrita: { price: 40 },  // camisón largo azul con liritos, sin el lirio y un peluchito de perrito blanco con manchas negras (Elora)
     },
   },
   // Las skins de Navidad (las pensó Elora con Clad, con el quiz). De momento solo salen, gratis, con el modo Navidad
@@ -115,6 +122,7 @@ export const SKINS = {
       oct: { price: 50 },      // abrigo largo negro, gorro con pompón morado, guantes de tentáculo y bufanda
       jely: { price: 50 },     // de estrella fugaz
       reno: { price: 50 },     // Chop: abrigo a rayas rojas y verdes y gorrito con agujero para el cuerno del lazo
+      perrita: { price: 50 },  // abrigo, gorro y bufanda azules; el gorro en lugar del lirio (Elora)
     },
   },
   // Ropa nueva (Elora: "una skin para cada personaje, no un tema concreto, para variar: Carot con la ropa morada…";
@@ -133,6 +141,7 @@ export const SKINS = {
       draila: { price: 30 },   // top morado y gafas de sol de corazón
       reno: { price: 30 },     // jersey azul y gafas redondas doradas
       drake: { price: 30 },    // camiseta negra con «FIRE» amarillo y gafas de sol
+      perrita: { price: 30 },  // vestido morado (como el de Carot…) con el lirio blanco (Elora)
     },
   },
   osito: { emoji: '🧸', navidad: true, personajes: { tarda: { price: 50 } } },               // jersey, gorro de oso y guantes
@@ -2732,4 +2741,158 @@ function drawDrakeSangriento(ctx, pal, facing, walk, opts) {
   ctx.beginPath(); ctx.ellipse(0.5, -6 + gota, 0.9, 1.4 + gota * 0.4, 0, 0, Math.PI * 2); ctx.fill();
 }
 
-const OWN_DRAW = { carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, crocodile: drawDraila, reindeer: drawReno, dragon: drawDrake, drakeSangriento: drawDrakeSangriento };
+// La perrita (Elora, 9-11-2026; la dibujó Clad con lo que contó Elora, hasta que ella haga su ficha): beige,
+// orejas hacia abajo, un lirio rosa con el polen amarillo en la oreja izquierda (la del lazo de Carot; venenoso,
+// porque es una amistad tóxica), collar rosa con un corazón amarillo y vestido azul.
+function drawPerrita(ctx, pal, facing, walk, opts) {
+  const B = !!opts.bloody, back = facing === 'up';
+  // skins (Elora): pijama = camisón largo azul con liritos, sin el lirio y con un peluchito de perrito blanco con
+  // manchas negras (como el de Carot); invierno (Navidad) = abrigo, gorro y bufanda azules, el gorro en lugar del
+  // lirio; ropa = vestido morado (como el de Carot…) con el lirio blanco
+  const pj = pal.skin === 'pijama' && !B, inv = pal.skin === 'invierno' && !B, rp = pal.skin === 'ropa' && !B;
+  const beige = pal.color, beigeOsc = pal.dark, claro = B ? '#c9a0a0' : '#f6e7cc', marron = B ? '#2a0306' : '#4a3226';
+  const vestido = B ? '#5e0810' : rp ? '#a07ad8' : '#6fa8e8', vestidoOsc = B ? '#3a0408' : rp ? '#7048b0' : '#3f78c4';
+  const azulAbrigo = '#3f74cf', azulAbrigoOsc = '#2a55a3', azulClaro = '#8fbaf0', blanco = '#f7f6f0';
+  const abraza = pj && !back && !opts.pose;   // en pijama, sin pose, un brazo abraza el peluchito
+  const lado = facing === 'left' ? -1 : facing === 'right' ? 1 : 0;
+  const step = Math.sin(walk) * 1.5;
+  // la cola, de contenta (se mueve al andar)
+  ctx.strokeStyle = beige; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  const cola = Math.sin(walk * 2) * 1.5;
+  ctx.beginPath(); ctx.moveTo(7, 3); ctx.quadraticCurveTo(14, 0 + cola, 13 + cola, -6); ctx.stroke();
+  // piernas y patitas
+  for (const side of [-1, 1]) {
+    const lift = side * step > 0 ? -side * step * 0.6 : 0;
+    girado(ctx, piernaPose(opts, side), side * 3.5, 3, () => {
+      ctx.fillStyle = beige; ctx.fillRect(side * 3.5 - 1.7, 3, 3.4, 8 + lift);
+      ctx.beginPath(); ctx.ellipse(side * 4, 11 + lift, 3.2, 1.9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(side * 4, 11.3 + lift, 2, 1, 0, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+  ctx.fillStyle = beige; ctx.beginPath(); ctx.ellipse(0, 0, 7, 8, 0, 0, Math.PI * 2); ctx.fill();
+  if (pj) {
+    // el camisón largo azul, recto, con liritos rosas
+    ctx.fillStyle = '#6fa8e8';
+    ctx.beginPath(); ctx.moveTo(-6, -8); ctx.lineTo(6, -8); ctx.lineTo(8, 9); ctx.lineTo(-8, 9); ctx.closePath(); ctx.fill();
+    for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 4.5 : -8, -8, 3.5, 4);
+    ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = '#3f78c4';
+    ctx.beginPath(); ctx.moveTo(3.5, -7); ctx.lineTo(6, -7); ctx.lineTo(7.8, 8.8); ctx.lineTo(5, 8.8); ctx.closePath(); ctx.fill(); ctx.restore();
+    for (const [lx, ly] of [[-4.4, -5], [3, -5.6], [-5, 2], [4.6, 1.2], [-1.6, 6], [3.2, 6.6], [0.4, -1.6]]) {
+      ctx.save(); ctx.translate(lx, ly); ctx.scale(0.22, 0.22); lirio(ctx, 0, 0, '#f6b3cf', '#e0457f'); ctx.restore();
+    }
+  } else if (inv) {
+    // el abrigo azul, largo, con la tira del medio y botones blancos
+    ctx.fillStyle = azulAbrigo;
+    ctx.beginPath(); ctx.moveTo(-6.4, -8); ctx.lineTo(6.4, -8); ctx.lineTo(8.8, 9); ctx.lineTo(-8.8, 9); ctx.closePath(); ctx.fill();
+    for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 4.6 : -8.2, -8, 3.6, 4.4);
+    ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = azulAbrigoOsc;
+    ctx.beginPath(); ctx.moveTo(3.6, -7); ctx.lineTo(6.2, -7); ctx.lineTo(8.6, 8.8); ctx.lineTo(5.4, 8.8); ctx.closePath(); ctx.fill(); ctx.restore();
+    if (!back) {
+      ctx.fillStyle = azulAbrigoOsc; ctx.fillRect(-0.5, -6.5, 1, 15.4);
+      for (const by of [-3.6, 0.4, 4.4]) { ctx.fillStyle = blanco; dot(ctx, -1.9, by, 1.1); }
+    }
+  } else {
+    // el vestido (azul; con la ropa nueva, morado), con la tira más oscura abajo
+    ctx.fillStyle = vestido;
+    ctx.beginPath(); ctx.moveTo(-6, -7); ctx.lineTo(6, -7); ctx.lineTo(11, 7); ctx.lineTo(-11, 7); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = vestidoOsc;
+    ctx.beginPath(); ctx.moveTo(-9.9, 4); ctx.lineTo(9.9, 4); ctx.lineTo(11, 7); ctx.lineTo(-11, 7); ctx.closePath(); ctx.fill();
+  }
+  // en pijama, el peluchito de perrito blanco con las orejas caídas negras y manchas negras
+  if (pj && !back) {
+    peluche(ctx, -0.6, -3.4, '#fbf8f4', '#2a2226', 'caidas');
+    ctx.fillStyle = '#2a2226'; dot(ctx, 0.6, 0.2, 0.7); dot(ctx, -1.6, 1.6, 0.5); dot(ctx, 0.9, 2.6, 0.45); dot(ctx, -1.5, -4.6, 0.45);
+  }
+  // brazos (se mueven desde el hombro; sin pose, se balancean un poco al andar)
+  for (const side of [-1, 1]) {
+    if (abraza && side < 0) {
+      // el brazo que abraza el peluchito
+      ctx.strokeStyle = beige; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-5.5, -4); ctx.quadraticCurveTo(-6.5, 1.5, 1.2, 0.8); ctx.stroke();
+      ctx.fillStyle = beige; dot(ctx, 1.4, 0.8, 1.5);
+      continue;
+    }
+    const balanceo = opts.pose ? 0 : Math.sin(walk + (side > 0 ? Math.PI : 0)) * 0.25;
+    girado(ctx, brazoPose(opts, side) + balanceo, side * 5.5, -4, () => {
+      // con el abrigo, la manga azul con el puño blanco
+      if (inv) {
+        ctx.strokeStyle = azulAbrigo; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(side * 5.5, -4); ctx.quadraticCurveTo(side * 9, 0, side * 8, 3.4); ctx.stroke();
+        ctx.fillStyle = blanco; dot(ctx, side * 8, 3.4, 1.6);
+      }
+      ctx.strokeStyle = beige; ctx.lineWidth = 2.8; ctx.lineCap = 'round';
+      if (inv) { ctx.fillStyle = beige; dot(ctx, side * 8, 4.6, 1.6); return; }
+      ctx.beginPath(); ctx.moveTo(side * 5.5, -4); ctx.quadraticCurveTo(side * 9, 0, side * 8, 4); ctx.stroke();
+      ctx.fillStyle = beige; dot(ctx, side * 8, 4.3, 1.7);
+    });
+  }
+  if (inv) {
+    // la bufanda azul clarito con rayas blancas, y la punta que cuelga
+    ctx.fillStyle = azulClaro; rrect(ctx, -6.4, -9.6, 12.8, 3.4, 1.6); ctx.fill();
+    ctx.fillStyle = blanco; for (const x of [-4.6, -1.4, 1.8, 5]) ctx.fillRect(x, -9.6, 1.1, 3.4);
+    if (!back) {
+      ctx.fillStyle = azulClaro; rrect(ctx, 2.2, -7.4, 2.8, 7, 1.1); ctx.fill();
+      ctx.fillStyle = blanco; ctx.fillRect(2.2, -4.8, 2.8, 1); ctx.fillRect(2.2, -2.4, 2.8, 1);
+    }
+  } else if (!pj) {
+    // collar rosa con la chapita de corazón amarillo (en pijama no lo lleva)
+    ctx.fillStyle = B ? '#7a0b12' : '#e8578f'; ctx.fillRect(-5.5, -8, 11, 2);
+    if (!back && !B) { ctx.fillStyle = '#ffd23f'; corazon(ctx, 0, -5.2, 1.4); }
+  }
+  // cabeza y orejas hacia abajo
+  const hx = 0, hy = -15, mx = hx + lado * 2.5;
+  ctx.fillStyle = beige; ctx.beginPath(); ctx.ellipse(hx, hy, 9, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = beigeOsc;
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(hx + s * 9, hy + 1, 3.2, 7, s * -0.25, 0, Math.PI * 2); ctx.fill(); }
+  if (!back) {
+    // hocico, nariz, boca sonriente con la lengüita, ojos y mofletes
+    ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(mx, hy + 3.5, 4.6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = marron; ctx.beginPath(); ctx.ellipse(mx, hy + 1.8, 1.7, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; dot(ctx, mx - 0.5, hy + 1.4, 0.4);
+    ctx.strokeStyle = marron; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(mx, hy + 3); ctx.lineTo(mx, hy + 4); ctx.stroke();
+    ctx.beginPath(); ctx.arc(mx - 1.3, hy + 4, 1.3, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(mx + 1.3, hy + 4, 1.3, 0, Math.PI); ctx.stroke();
+    ctx.fillStyle = B ? '#7a0b12' : '#f07a9a'; ctx.beginPath(); ctx.ellipse(mx + 0.6, hy + 5.6, 1, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+    const ojos = lado ? [mx + lado * 1.5] : [hx - 3.6, hx + 3.6];
+    for (const ex of ojos) { ctx.fillStyle = B ? '#ff3b3b' : marron; dot(ctx, ex, hy - 2.2, 1.7); ctx.fillStyle = '#fff'; dot(ctx, ex - 0.5, hy - 2.8, 0.6); }
+    if (!B) {
+      ctx.fillStyle = 'rgba(240,120,150,.45)';
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(mx + s * 6, hy + 2, 1.6, 1, 0, 0, Math.PI * 2); ctx.fill(); }
+    }
+  }
+  if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (inv) {
+    // el gorro azul de lana con el borde y el pompón blancos (en lugar del lirio)
+    ctx.fillStyle = azulAbrigo;
+    ctx.beginPath(); ctx.ellipse(hx, hy - 4.6, 8.4, 5.6, 0, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = azulAbrigoOsc; for (const x of [-4.5, -1.5, 1.5, 4.5]) ctx.fillRect(hx + x - 0.4, hy - 9.4, 0.8, 4.4);
+    ctx.fillStyle = blanco; rrect(ctx, hx - 9, hy - 6, 18, 2.8, 1.4); ctx.fill();
+    dot(ctx, hx, hy - 10.6, 2.2);
+  } else if (!pj && !B) {
+    // el lirio de la oreja izquierda, con el polen amarillo: rosa; con la ropa nueva, blanco (Elora)
+    lirio(ctx, hx - 8.6, hy - 5, rp ? '#fffdf7' : '#f48fb8', rp ? '#e4efc0' : '#e0457f', rp ? '#cfc4b0' : null);
+  }
+}
+// Un lirio de seis pétalos en punta (el de la perrita), con los estambres y el polen amarillo
+function lirio(ctx, fx, fy, color, dentro, borde) {
+  ctx.save(); ctx.translate(fx, fy); ctx.scale(1.4, 1.4);
+  for (let i = 0; i < 6; i++) {
+    ctx.save(); ctx.rotate(i * Math.PI / 3 - Math.PI / 2);
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(1.6, 1.8, 4.4, 0); ctx.quadraticCurveTo(1.6, -1.8, 0, 0); ctx.fill();
+    if (borde) { ctx.strokeStyle = borde; ctx.lineWidth = 0.25; ctx.stroke(); }   // el blanco, con un borde para que se vea
+    ctx.fillStyle = dentro;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(1, 0.7, 2.4, 0); ctx.quadraticCurveTo(1, -0.7, 0, 0); ctx.fill();
+    ctx.restore();
+  }
+  ctx.strokeStyle = '#7fb06a'; ctx.lineWidth = 0.25;
+  for (let i = 0; i < 6; i++) {
+    const a = i * Math.PI / 3, ex = Math.cos(a) * 2, ey = Math.sin(a) * 2;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.fillStyle = '#ffc21a'; ctx.beginPath(); ctx.ellipse(ex, ey, 0.55, 0.3, a, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+const OWN_DRAW = { perrita: drawPerrita, carot: drawCarot, frog: drawFroggy, octopus: drawOct, cat: drawCaty, lizard: drawGec, jellyfish: drawJely, tardigrade: drawTarda, hare: drawHoppy, crocodile: drawDraila, reindeer: drawReno, dragon: drawDrake, drakeSangriento: drawDrakeSangriento };

@@ -146,6 +146,24 @@ export const ANDARES = {
       { bi: 15, bd: -16, pi: 49, pd: -43, ai: -19, ad: 20, cuerpo: 0, sube: 0 },
     ] },
   },
+  // La perrita (Elora, 9-11-2026): todavía solo sale con su código secreto
+  perrita: {
+    andar: { velocidad: 4, pasos: [
+      { bi: 12, bd: -7, pi: 35, pd: -32, cuerpo: 0, sube: 0 },
+      { bi: 12, bd: -7, pi: 20, pd: -16, cuerpo: 0, sube: 0 },
+      { bi: 12, bd: -7, pi: 7, pd: -1, cuerpo: 0, sube: 0 },
+      { bi: 40, bd: -39, pi: 3, pd: -1, cuerpo: 0, sube: 0 },
+      { bi: 40, bd: -39, pi: 20, pd: -11, cuerpo: 0, sube: 0 },
+      { bi: 40, bd: -39, pi: 36, pd: -33, cuerpo: 0, sube: 0 },
+    ] },
+    correr: { velocidad: 8, pasos: [
+      { bi: 86, bd: -87, pi: 54, pd: -50, cuerpo: 0, sube: 0 },
+      { bi: 86, bd: -87, pi: 29, pd: -27, cuerpo: 0, sube: 0 },
+      { bi: 86, bd: -87, pi: 10, pd: -7, cuerpo: 0, sube: 0 },
+      { bi: 65, bd: -63, pi: 10, pd: -7, cuerpo: 0, sube: 0 },
+      { bi: 65, bd: -63, pi: 50, pd: -45, cuerpo: 0, sube: 0 },
+    ] },
+  },
 };
 
 const PARTES = ['bi', 'bd', 'pi', 'pd', 'ai', 'ad', 'cuerpo', 'sube'];

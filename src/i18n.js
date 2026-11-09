@@ -13,6 +13,7 @@ const dict = {
     'code.enter': 'Entrar', 'code.back': 'Volver', 'code.ok': '¡Código correcto! Entrando...', 'code.wrong': 'Ese código no es. ¡Prueba otra vez!',
     // el modo pijama secreto (Elora): las skins de pijama, gratis
     'code.p50': '🐉🔥 ¡Al pasillo 50! Cuidado con el fuego...',
+    'code.perritaOn': '🐶 ¡La perrita ha llegado! Búscala en la tienda de Tarda…', 'code.perritaOff': '🐶 Quitar la perrita', 'code.perritaOffDone': 'Perrita quitada',
     'code.bloodiesOn': '🩸 ¡Actualización de los Bloodies! Ya pueden salir los Bloodies especiales…', 'code.bloodiesOff': '🩸 Quitar los Bloodies especiales', 'code.bloodiesOffDone': 'Bloodies especiales quitados', 'menu.bloodies': '🩸 Bloodies especiales',
     'code.pijamaOn': '🛌 ¡Modo pijama! Las skins de pijama ya están en la tienda de Tarda, gratis.',
     'code.pijamaOff': '🛌 Quitar el modo pijama', 'code.pijamaOffDone': 'Modo pijama quitado.',
@@ -468,6 +469,7 @@ const dict = {
     'code.enter': 'Go', 'code.back': 'Back', 'code.ok': 'Correct code! Going in...', 'code.wrong': "That's not the code. Try again!",
     // the secret pyjama mode (Elora): pyjama skins, for free
     'code.p50': '🐉🔥 To hallway 50! Watch out for the fire...',
+    'code.perritaOn': '🐶 The puppy is here! Look for her in Tarda\'s shop…', 'code.perritaOff': '🐶 Remove the puppy', 'code.perritaOffDone': 'Puppy removed',
     'code.bloodiesOn': '🩸 Bloodie update! The special Bloodies can show up now…', 'code.bloodiesOff': '🩸 Remove the special Bloodies', 'code.bloodiesOffDone': 'Special Bloodies removed', 'menu.bloodies': '🩸 Special Bloodies',
     'code.pijamaOn': '🛌 Pyjama mode! The pyjama skins are in Tarda\'s shop now, for free.',
     'code.pijamaOff': '🛌 Turn off pyjama mode', 'code.pijamaOffDone': 'Pyjama mode turned off.',

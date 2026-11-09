@@ -38,7 +38,8 @@ const cajaCintas = new Set();
 // modoPijama: se puso el código del modo pijama (Elora): las skins de pijama salen en la tienda, gratis
 // modoNavidad: se puso el código del modo Navidad (Elora): lobby de Navidad y el reno gratis
 // modoBloodies: se puso el código de la actualización de los Bloodies (Elora): salen ya los Bloodies especiales
-const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false, modoBloodies: false };
+// modoPerrita: se puso el código de la perrita (Elora): la perrita sale en la tienda, gratis
+const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false, modoBloodies: false, modoPerrita: false };
 // La skin que lleva puesta cada personaje (id del personaje → skin). Se ven en el modo pijama o, desde que
 // salen las skins (Elora: martes 10 a las 16:00), si la has comprado.
 const skinsElegidas = {};
@@ -51,7 +52,9 @@ const esDeNavidad = (skin) => !!(SKINS[skin] && SKINS[skin].navidad);
 // y te la puedes poner también fuera de Navidad [PROVISIONAL]
 // las de pijama: con el modo pijama, o compradas desde el estreno; las demás (la ropa nueva), si las has comprado
 const esDePijama = (skin) => skin === 'pijama';
-const tieneSkin = (id, skin) => esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) : esDePijama(skin) ? flags.modoPijama || (skinsListas() && comprada(id, skin)) : comprada(id, skin);
+// las de la perrita, gratis y ya con su código (Elora)
+const perritaGratis = (id) => id === 'perrita' && flags.modoPerrita;
+const tieneSkin = (id, skin) => perritaGratis(id) || (esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) : esDePijama(skin) ? flags.modoPijama || (skinsListas() && comprada(id, skin)) : comprada(id, skin));
 const hayNavidadComprada = () => Object.values(skinsCompradas).some((l) => l.some(esDeNavidad));
 // El calendario de Adviento (Elora): qué casillas has abierto y si ya te dieron los regalos finales
 let adviento = advientoVacio();
@@ -67,6 +70,7 @@ function tienes() {
   const extra = [];
   if (flags.modoNavidad) extra.push('reno');
   if (flags.modoPijama) extra.push('drake');
+  if (flags.modoPerrita) extra.push('perrita');
   return extra.length ? new Set([...unlocked, ...extra]) : unlocked;
 }
 function aplicarSkin(ch) { const s = skinsElegidas[ch.id]; return conSkin(ch, s && tieneSkin(ch.id, s) ? s : null); }
@@ -87,6 +91,7 @@ try {
   flags.modoPijama = localStorage.getItem('holeway.modoPijama') === '1';
   flags.modoNavidad = localStorage.getItem('holeway.modoNavidad') === '1';
   flags.modoBloodies = localStorage.getItem('holeway.modoBloodies') === '1';
+  flags.modoPerrita = localStorage.getItem('holeway.modoPerrita') === '1';
   Object.assign(skinsElegidas, JSON.parse(localStorage.getItem('holeway.skins') || '{}'));
   Object.assign(skinsCompradas, JSON.parse(localStorage.getItem('holeway.skinsCompradas') || '{}'));
   // el calendario de este año (los de antes de 2027 no guardaban el año: eran de 2026)
@@ -117,6 +122,7 @@ function save() {
     localStorage.setItem('holeway.modoPijama', flags.modoPijama ? '1' : '0');
     localStorage.setItem('holeway.modoNavidad', flags.modoNavidad ? '1' : '0');
     localStorage.setItem('holeway.modoBloodies', flags.modoBloodies ? '1' : '0');
+    localStorage.setItem('holeway.modoPerrita', flags.modoPerrita ? '1' : '0');
     localStorage.setItem('holeway.skins', JSON.stringify(skinsElegidas));
     localStorage.setItem('holeway.skinsCompradas', JSON.stringify(skinsCompradas));
     localStorage.setItem('holeway.adviento', JSON.stringify(adviento));
@@ -165,6 +171,15 @@ function gotoMenu() {
     onPad: () => ui.showPadSetup({ input, onClose: gotoMenu }),
     // la actualización de los Bloodies (Elora): con su código salen ya los Bloodies especiales
     bloodies: { activo: () => flags.modoBloodies, cambiar: (on) => { flags.modoBloodies = on; save(); } },
+    // la perrita (Elora): con su código sale en la tienda, gratis; al quitarlo, si la llevabas, vuelves a Carot
+    perrita: {
+      activo: () => flags.modoPerrita,
+      cambiar: (on) => {
+        flags.modoPerrita = on;
+        if (!tienes().has(run.character.id)) run.character = aplicarSkin(characterById('carot'));
+        save();
+      },
+    },
     // el modo pijama secreto (Elora): se pone y se quita con el código
     pijama: {
       activo: () => flags.modoPijama,
@@ -227,18 +242,19 @@ function gotoLobby(abrir) {
       const open = (focusId) => ui.showShop({
         unlocked: tienes(), coins: wallet.coins, current: run.character, focusId,
         // los secretos no salen hasta que los tienes (el reno: ganándolo en el calendario o en el modo Navidad)
-        secretos: flags.drakeEnTienda ? new Set(['reno']) : new Set(['drake', 'reno']),
+        // la perrita, solo con su código (Elora)
+        secretos: new Set([...(flags.drakeEnTienda ? [] : ['drake']), 'reno', ...(flags.modoPerrita ? [] : ['perrita'])]),
         onChoose: (ch) => { run.character = aplicarSkin(ch); save(); lobby.setCharacter(run.character); close(); },
         // las skins: en el modo pijama, gratis y de todos; desde que salen (martes 10, 16:00), se compran con
         // monedas, solo de los personajes que tienes. Si es el personaje que llevas, se lo pone ya
         // las skins salen siempre: la ropa nueva se vende todo el año (Elora)
         skins: {
-          gratis: (skin) => esDeNavidad(skin) ? flags.modoNavidad : esDePijama(skin) ? flags.modoPijama : false,
+          gratis: (skin, id) => perritaGratis(id) || (esDeNavidad(skin) ? flags.modoNavidad : esDePijama(skin) ? flags.modoPijama : false),
           // la ropa nueva, desde que sale (Elora: el martes 10 por la mañana)
-          disponible: (skin) => esDeNavidad(skin) || (esDePijama(skin) ? flags.modoPijama || skinsListas() : ropaLista()),
+          disponible: (skin, id) => perritaGratis(id) || esDeNavidad(skin) || (esDePijama(skin) ? flags.modoPijama || skinsListas() : ropaLista()),
           // de qué personajes se enseñan: en el modo pijama o Navidad, de todos (gratis); si no, solo de los tuyos
           // las de Navidad: en Navidad, de tus personajes (se compran); con el modo Navidad, de todos (gratis); y las que ya tienes
-          puede: (id, skin) => esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) || (esNavidad() && tienes().has(id)) : esDePijama(skin) ? flags.modoPijama || tienes().has(id) : tienes().has(id),
+          puede: (id, skin) => perritaGratis(id) || (esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) || (esNavidad() && tienes().has(id)) : esDePijama(skin) ? flags.modoPijama || tienes().has(id) : tienes().has(id)),
           tiene: (id, skin) => tieneSkin(id, skin),
           monedas: () => wallet.coins,
           comprar: (ch, skin, precio) => {

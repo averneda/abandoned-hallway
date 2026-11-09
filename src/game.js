@@ -5,7 +5,7 @@ import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from '.
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS, rrect } from './characters.js';
 // de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
 // para no descubrir la sorpresa
-const BLOODY_LOOKS = CHARACTERS.filter((c) => !c.navidad);
+const BLOODY_LOOKS = CHARACTERS.filter((c) => !c.navidad && !c.soloCodigo);   // la perrita (solo con su código) no sale de Bloodie
 import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';

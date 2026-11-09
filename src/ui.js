@@ -43,6 +43,9 @@ const CODIGO_PIJAMA = new Set(['a9e7a80e', 'f4ae3cc7', 'a35c150d', 'a7f5d55a', '
 // llegarán al juego con una actualización. Las mayúsculas dan igual; vale también con holeway/hallway,
 // actualozacion y bloodys/bloodies.
 const CODIGO_BLOODIES = new Set(["d79e5401", "e03eef76", "484794fd", "f216695c", "cb0d3d07", "19d7bd9c", "bdca8f9f", "27af3136", "b011cf6", "d7bfe55f", "f96cab5e", "c598b999", "55102586", "dd6bc0af", "32409fae", "eb92e629", "60c07718", "b9fbfd71", "9f0a442c", "ac22f6d7", "1739ee51", "b231df86", "59576b4d", "a45a6bec", "36671c47", "d85165dc", "59c80bdf", "e62a6c76", "ae605341", "b3a2f7b6", "d13bc43d", "c57c049c", "bf4a75bc", "f13774dd", "929907a8", "db1042cb"]);
+// La huella del código de la perrita (Elora): con él sale la perrita en la tienda, gratis, para jugar con ella.
+// Las mayúsculas dan igual; vale también con holeway/hallway/holway, con «abandonned» y con o sin «the».
+const CODIGO_PERRITA = new Set(["806e4c8c", "a1af03f9", "ff50ebb", "7cacf996", "468e33aa", "ebdbce3f", "c9dcca40", "19fd005d", "430093fa", "9bc2de2f", "df2a46f1", "30981934", "a7fa9ddc", "1e84c8e9", "c19c3522", "174be807"]);
 function huellaCodigo(texto, mayusculas = false) {
   let n = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   n = (mayusculas ? n : n.toLowerCase()).replace(/[^A-Za-z0-9]+/g, ' ').trim();
@@ -125,9 +128,9 @@ export class UI {
   // El título lo dibuja la escena Title en el canvas (el cartel de Elora);
   // aquí solo van los botones, abajo del todo.
   // pijama: el modo pijama secreto (Elora) = { activo(), cambiar(on) }
-  showMenu({ onPlay, onPad, pijama, navidad, bloodies }) {
+  showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita }) {
     this.clear();
-    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad, bloodies });
+    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita });
     const s = this.el('div', 'screen titlemenu');
     s.appendChild(this.el('p', 'subtitle', t('menu.subtitle')));
     if (pijama && pijama.activo()) s.appendChild(this.el('p', 'pijama-badge', t('menu.pijama')));
@@ -135,7 +138,7 @@ export class UI {
     if (bloodies && bloodies.activo()) s.appendChild(this.el('p', 'pijama-badge bloodies-badge', t('menu.bloodies')));
     const row = this.el('div', 'row');
     const play = this.button(t('menu.play'), onPlay, true);
-    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies)));
+    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies, perrita)));
     s.appendChild(row);
     s.appendChild(this.langRow(otraVez));
     this.root.appendChild(s);
@@ -150,7 +153,7 @@ export class UI {
   // Con el del pasillo 50 (Elora), vas directo al pasillo de Drake. Con el del modo pijama (Elora), las skins de pijama salen en la tienda de Tarda, gratis; se queda puesto
   // en este navegador hasta que se quita con el botón de aquí.
   // Los códigos no están escritos aquí (para que sigan siendo secretos): se compara su "huella".
-  showCode(onBack, pijama, navidad, bloodies) {
+  showCode(onBack, pijama, navidad, bloodies, perrita) {
     this.clear();
     const s = this.el('div', 'screen');
     s.appendChild(this.el('h2', '', '🔑 ' + t('code.title')));
@@ -175,6 +178,10 @@ export class UI {
         navidad.cambiar(true);
         nota.textContent = t('code.navidadOn');
         setTimeout(onBack, 1800);
+      } else if (perrita && CODIGO_PERRITA.has(huella)) {
+        perrita.cambiar(true);
+        nota.textContent = t('code.perritaOn');
+        setTimeout(onBack, 1800);
       } else if (bloodies && CODIGO_BLOODIES.has(huella)) {
         bloodies.cambiar(true);
         nota.textContent = t('code.bloodiesOn');
@@ -194,6 +201,9 @@ export class UI {
     s.append(campo, row);
     if (pijama && pijama.activo()) {
       s.appendChild(this.button(t('code.pijamaOff'), () => { pijama.cambiar(false); this.toast(t('code.pijamaOffDone')); onBack(); }));
+    }
+    if (perrita && perrita.activo()) {
+      s.appendChild(this.button(t('code.perritaOff'), () => { perrita.cambiar(false); this.toast(t('code.perritaOffDone')); onBack(); }));
     }
     if (bloodies && bloodies.activo()) {
       s.appendChild(this.button(t('code.bloodiesOff'), () => { bloodies.cambiar(false); this.toast(t('code.bloodiesOffDone')); onBack(); }));
@@ -367,7 +377,7 @@ export class UI {
   // vestido así; la que lleva puesta, marcada. En el modo pijama son gratis, y las de Navidad, con el modo Navidad.
   fillSkins(box, ch, skins, onChange) {
     box.innerHTML = '';
-    const lista = skins ? skinsDe(ch.id).filter((k) => skins.disponible(k) && skins.puede(ch.id, k)) : [];
+    const lista = skins ? skinsDe(ch.id).filter((k) => skins.disponible(k, ch.id) && skins.puede(ch.id, k)) : [];
     box.classList.toggle('hidden', !lista.length);
     box.classList.toggle('muchas', lista.length >= 2);   // con tres cartitas o más, más pequeñitas para que quepan
     if (!lista.length) return;
@@ -388,7 +398,7 @@ export class UI {
       const kFrase = skin ? 'skins.frase.' + skin + '.' + ch.id : null, frase = kFrase ? t(kFrase) : '';
       if (frase && frase !== kFrase) c.appendChild(this.el('div', 'skin-frase', '💬 ' + frase));
       const precio = skin ? SKINS[skin].personajes[ch.id].price : 0;
-      const etiqueta = skin === puesta ? t('skins.puesta') : !skin ? '' : skins.gratis(skin) ? t('skins.free') : tiene(skin) ? '' : t('skins.precio', { n: precio });
+      const etiqueta = skin === puesta ? t('skins.puesta') : !skin ? '' : skins.gratis(skin, ch.id) ? t('skins.free') : tiene(skin) ? '' : t('skins.precio', { n: precio });
       const pie = this.el('div', 'skin-precio', etiqueta);
       c.appendChild(pie);
       if (skin && SKINS[skin].personajes[ch.id].provisional) c.title = t('skins.prueba');
