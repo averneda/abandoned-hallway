@@ -832,6 +832,13 @@ export class UI {
     const lista = this.el('ul', 'cartel-info');
     for (const k of ['info1', 'info2', 'info3', 'info4']) lista.appendChild(this.el('li', '', t('cartel.' + k)));
     s.appendChild(lista);
+    // todo lo que habrá en la fiesta del Día del Niño (Elora: «que en el cartel también ponga todo lo que habrá en el evento»)
+    const evento = this.el('div', 'cartel-evento');
+    evento.appendChild(this.el('p', 'cartel-evento-titulo', t('cartel.evento')));
+    const cosas = this.el('ul', 'cartel-evento-lista');
+    for (let k = 1; k <= 7; k++) cosas.appendChild(this.el('li', '', t('cartel.ev' + k)));
+    evento.appendChild(cosas);
+    s.appendChild(evento);
     // para cerrar, una ✕ en la esquina (lo pidió el padre de Elora) en vez del botón «Cerrar»
     const equis = this.button('✕', () => { this.clear(); onClose(); }, true);
     equis.className = 'cartel-x'; equis.setAttribute('aria-label', t('shop.close')); equis.title = t('shop.close');

@@ -166,6 +166,11 @@ const dict = {
     'cartel.info1': '🛌 Cada personaje tiene su pijama.', 'cartel.info2': '🪙 Cada pijama cuesta 40 monedas.',
     'cartel.info3': '🏪 Se compran en la tienda de Tarda, en «Cambiar personaje».', 'cartel.info4': '⭐ Solo puedes comprar los pijamas de los personajes que tienes.',
     'cartel.sorpresa': '¿Quién lleva cada pijama? ¡Es una sorpresa!',
+    'cartel.evento': '🎉 En la fiesta de pijamas del Día del Niño y la Niña (del 15 al 20 de noviembre) habrá:',
+    'cartel.ev1': '🛌 El lobby de fiesta de pijamas: guirnaldas, lucecitas, almohadas y peluches.', 'cartel.ev2': '🎶 Música de fiesta de pijamas.',
+    'cartel.ev3': '🐻 Tarda, en pijama.', 'cartel.ev4': '💤 Los Bloodies, con gorro de dormir.',
+    'cartel.ev5': '🛏️ ¡Guerra de almohadas contra los Bloodies! Con 3 escenarios y tus récords.',
+    'cartel.ev6': '💬 Con el pijama puesto, tu personaje dice algo al empezar cada pasillo.', 'cartel.ev7': '🎁 Las skins de pijama, desde el domingo 15 a las 16:00.',
     'cartel.d': '{n} d', 'cartel.h': '{n} h', 'cartel.m': '{n} min', 'cartel.s': '{n} s',
     'lobby.adviento': 'E: abrir el calendario de Adviento',
     // la guerra de almohadas (Elora)
@@ -597,6 +602,11 @@ const dict = {
     'cartel.info1': '🛌 Every character has their pyjamas.', 'cartel.info2': '🪙 Each pair costs 40 coins.',
     'cartel.info3': '🏪 Buy them in Tarda\'s shop, in «Change character».', 'cartel.info4': '⭐ You can only buy pyjamas for characters you have.',
     'cartel.sorpresa': 'Who wears which pyjamas? It\'s a surprise!',
+    'cartel.evento': '🎉 At the Children\'s Day pyjama party (15 to 20 November) there will be:',
+    'cartel.ev1': '🛌 A pyjama party lobby: garlands, fairy lights, pillows and plushies.', 'cartel.ev2': '🎶 Pyjama party music.',
+    'cartel.ev3': '🐻 Tarda in pyjamas.', 'cartel.ev4': '💤 Bloodies in sleeping caps.',
+    'cartel.ev5': '🛏️ Pillow fight against the Bloodies! With 3 arenas and your records.',
+    'cartel.ev6': '💬 Wearing pyjamas, your character says something at the start of each hallway.', 'cartel.ev7': '🎁 The pyjama skins, from Sunday the 15th at 4 pm.',
     'cartel.d': '{n} d', 'cartel.h': '{n} h', 'cartel.m': '{n} min', 'cartel.s': '{n} s',
     'lobby.adviento': 'E: open the Advent calendar',
     // the pillow fight

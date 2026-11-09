@@ -225,7 +225,7 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 .screen .online-seguro { color: #b9f5c4; }
 /* el cartel de las skins, de cerca (Elora): una tabla de madera grande con el reloj y la información */
 .cartel-grande { position: relative; background: #a8733f; border: 5px solid #5a3d26; border-radius: 10px; box-shadow: 0 10px 0 rgba(0,0,0,0.35), inset 0 0 0 3px #8c5d30;
-  padding: 18px 26px; max-width: min(680px, 94%); display: flex; flex-direction: column; align-items: center; gap: 10px; color: #fff6dc; }
+  padding: 18px 26px; max-width: min(680px, 94%); max-height: 94vh; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 10px; color: #fff6dc; }
 .cartel-grande .cartel-titulo { margin: 0; font-size: 34px; color: #fff6dc; text-shadow: 0 3px 0 #5a3d26; }
 .screen .cartel-grande .cartel-cuando { margin: 0; font-size: 19px; font-weight: 800; color: #fff6dc; }
 .cartel-reloj { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
@@ -235,6 +235,18 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 .cartel-sombras { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; background: rgba(58,38,24,0.35); border-radius: 10px; padding: 6px; }
 .cartel-grande .cartel-sorpresa { margin: 0; font-weight: 800; color: #ffe36b; }
 .cartel-info { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 17px; font-weight: 700; display: grid; gap: 4px; }
+/* lo que habrá en la fiesta del Día del Niño (Elora), en el cartel de los pijamas */
+.cartel-evento { background: rgba(0, 0, 0, 0.18); border-radius: 10px; padding: 8px 14px; width: 100%; box-sizing: border-box; }
+.screen .cartel-evento .cartel-evento-titulo { margin: 0 0 4px; font-weight: 900; font-size: 16px; color: #ffe36b; max-width: none; }
+.cartel-evento-lista { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 14px; font-weight: 700; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; }
+@media (max-width: 640px) { .cartel-evento-lista { grid-template-columns: 1fr; } }
+/* el de los pijamas lleva más cosas (lo que habrá en la fiesta): un poco más apretado para que quepa entero */
+.cartel-grande.pijamas { gap: 6px; padding: 12px 22px; max-width: min(760px, 96%); }
+.cartel-grande.pijamas .cartel-titulo { font-size: 28px; }
+.screen .cartel-grande.pijamas .cartel-cuando { font-size: 17px; }
+.cartel-grande.pijamas .cartel-num { font-size: 20px; padding: 3px 10px; min-width: 60px; }
+.cartel-grande.pijamas .cartel-info { font-size: 14px; gap: 1px; }
+.screen .cartel-grande.pijamas .cartel-semueve { font-size: 15px; padding: 4px 10px; }
 .cartel-grande.fiesta .cartel-sombras { background: rgba(255, 246, 220, 0.35); }
 .screen .cartel-grande.fiesta .cartel-cuando { color: #ffe36b; font-size: 26px; }
 /* el de los pijamas: morado con el borde amarillo (Elora) */
