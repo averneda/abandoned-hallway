@@ -151,13 +151,9 @@ export class Game {
     // Nieve en el suelo (Navidad, Elora): una casilla con 1 tiene nieve. No en el Bonus ni en el lobby.
     this.nieve = callbacks && callbacks.nieve && !L.noButton && !L.lobby ? hacerNieve(L, this.rand) : null;
     this.navidad = !!(callbacks && callbacks.navidad);   // en Navidad, los Bloodies con gorrito y el Drake Sangriento de Papá Noel (Elora)
-    // en la fiesta del Día del Niño (Elora): los Bloodies con gorro de dormir y, si llevas el pijama, tu personaje dice
-    // su comentario en un bocadillo al empezar el pasillo
+    // en la fiesta del Día del Niño (Elora): los Bloodies con gorro de dormir. (El comentario del pijama ya no sale en
+    // un bocadillo al empezar el pasillo: Elora, 9-11-2026, «mejor solo para la tienda». drawBocadillo se queda por si acaso.)
     this.diaNino = !!(callbacks && callbacks.diaNino);
-    if (this.diaNino && character.skin === 'pijama') {
-      const k = 'skins.frase.pijama.' + character.id, txt = t(k);
-      if (txt !== k) this.bocadillo = { texto: txt, hasta: 4.5 };
-    }
     // y adornos para el árbol del lobby (Elora): de 5 a 10 por pasillo; no en el Bonus ni en el pasillo de Drake
     if (callbacks && callbacks.adornos && !L.noButton && !L.lobby && !L.fuego) this.ponerAdornos(L);
     this.avisoNieve = false;

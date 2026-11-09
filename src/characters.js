@@ -1867,7 +1867,7 @@ function drawTarda(ctx, pal, facing, walk, opts) {
     ctx.strokeStyle = '#f7f6f0'; ctx.lineWidth = 0.55;
     ctx.beginPath(); ctx.moveTo(ax + 3, ay - 8 - sube); ctx.bezierCurveTo(ax + 9, ay - 12 - sube, ax + 9, ay + 2, ax - 0.6, ay); ctx.stroke();
     ctx.restore();
-  } else if (alta && !B && !back) {
+  } else if (alta && !B && !back && !opts.peluche) {   // (con el osito en la mano, sin la cinta: Elora)
     // la cinta que lleva en una pata de arriba (la de la derecha)
     ctx.save();
     ctx.translate(13.5, -15 + fy * 0.5); ctx.rotate(-0.25);

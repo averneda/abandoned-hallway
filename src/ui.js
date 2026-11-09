@@ -836,7 +836,7 @@ export class UI {
     const evento = this.el('div', 'cartel-evento');
     evento.appendChild(this.el('p', 'cartel-evento-titulo', t('cartel.evento')));
     const cosas = this.el('ul', 'cartel-evento-lista');
-    for (let k = 1; k <= 7; k++) cosas.appendChild(this.el('li', '', t('cartel.ev' + k)));
+    for (const k of [1, 2, 3, 4, 5, 7]) cosas.appendChild(this.el('li', '', t('cartel.ev' + k)));   // (la 6 era el comentario en los pasillos: ya no, Elora)
     evento.appendChild(cosas);
     s.appendChild(evento);
     // para cerrar, una ✕ en la esquina (lo pidió el padre de Elora) en vez del botón «Cerrar»

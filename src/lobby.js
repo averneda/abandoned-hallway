@@ -236,7 +236,11 @@ export class Lobby extends Game {
       // en Navidad lleva su skin de osito, toda marrón, y está cosiendo (Elora)
       // y en la fiesta del Día del Niño, en pijama (Elora)
       const tarda = this.diaNino && !this.arbol ? { ...this.tarda, skin: 'pijama', pijamaMarron: true } : this.tarda;
-      drawCharacter(ctx, tarda, nx, ny - 6, 'down', this.time * 2, 0, false, this.arbol ? { alta: true, osito: true, cosiendo: true } : { alta: true });
+      const fiesta = this.diaNino && !this.arbol;
+      drawCharacter(ctx, tarda, nx, ny - 6, 'down', this.time * 2, 0, false, this.arbol ? { alta: true, osito: true, cosiendo: true } : { alta: true, peluche: fiesta });
+      // y en la fiesta, un peluchito de oso como el del lobby, en la mano de arriba (donde lleva la cinta), para que se
+      // vea bien al lado del pijama (Elora: «que lo tenga en la mano»)
+      if (fiesta) drawAdorno(ctx, 'osito-gigante', nx + 16, ny - 23, 16, this.time);
       // el mostrador, delante de Tarda: le tapa las patas de abajo
       ctx.fillStyle = '#6b4a2b'; ctx.fillRect(nx - 32, ny + 1, 64, 5);     // la tabla de arriba
       ctx.fillStyle = '#4a3220'; ctx.fillRect(nx - 30, ny + 6, 60, 18);    // el frente
