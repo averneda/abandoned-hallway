@@ -1598,7 +1598,8 @@ function drawTarda(ctx, pal, facing, walk, opts) {
   const os = (pal.skin === 'osito' || opts.osito) && !B;
   const osCol = opts.osito ? '#9a6a44' : '#a3a2aa', osOsc = opts.osito ? '#6e4a2c' : '#7b7a83', osClaro = opts.osito ? '#b88a62' : '#c2c1c8';
   const skin = pal.color, dark = pal.dark;
-  const gris = '#b6b5bb', grisOsc = '#86858c';
+  // el pijama de la Tarda jugable es gris; el de la Tarda de la tienda, marrón (Elora): pal.pijamaMarron
+  const gris = pal.pijamaMarron ? '#9a6a44' : '#b6b5bb', grisOsc = pal.pijamaMarron ? '#6e4a2c' : '#86858c';
   const line = B ? '#2a0306' : '#3a2a1e';
   const claw = B ? '#2a0306' : '#5a5a5e';
   const ex = facing === 'left' ? -2 : facing === 'right' ? 2 : 0;

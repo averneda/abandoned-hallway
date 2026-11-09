@@ -180,7 +180,7 @@ export class Lobby extends Game {
     const tienda = () => {
       // en Navidad lleva su skin de osito, toda marrón, y está cosiendo (Elora)
       // y en la fiesta del Día del Niño, en pijama (Elora)
-      const tarda = this.diaNino && !this.arbol ? { ...this.tarda, skin: 'pijama' } : this.tarda;
+      const tarda = this.diaNino && !this.arbol ? { ...this.tarda, skin: 'pijama', pijamaMarron: true } : this.tarda;
       drawCharacter(ctx, tarda, nx, ny - 6, 'down', this.time * 2, 0, false, this.arbol ? { alta: true, osito: true, cosiendo: true } : { alta: true });
       // el mostrador, delante de Tarda: le tapa las patas de abajo
       ctx.fillStyle = '#6b4a2b'; ctx.fillRect(nx - 32, ny + 1, 64, 5);     // la tabla de arriba
