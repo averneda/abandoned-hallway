@@ -10,7 +10,7 @@ import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
 import { poseAndando } from './andares.js';
-import { decidirEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, nuevaPecera, updatePecera, drawPecera, entre } from './especiales.js';
+import { decidirEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, nuevaPecera, updatePecera, drawPecera, entre, enteroEntre } from './especiales.js';
 import { sortearAdorno, drawAdorno, adorno, drawArbolCompleto } from './adornos.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
@@ -179,7 +179,7 @@ export class Game {
         x: lejos.x, y: lejos.y, r: ENEMY.radius, dir: DIRS[Math.floor(this.rand() * 4)], turn: 1, chasing: false, lostFor: 0, stuck: 0,
         recoil: 0, phase: 0, facing: 'down', walk: 0, pintado: 0, lastSeen: null, trail: [], trailDist: 0,
         look: characterById(tipo === 'gecdraila' ? 'gek' : tipo === 'caty' ? 'katy' : tipo), especial: tipo,
-        modo: 'gec', cambio: entre(BE.cambio),
+        modo: 'gec', cambio: enteroEntre(BE.cambio),
       });
       if (tipo === 'caty') this.bocas = hacerBocas(L, this.player, T, TILE);
       if (tipo === 'oct') this.proximaPecera = entre(BE.minijuego);
@@ -572,11 +572,11 @@ export class Game {
       if (frozen) continue; // parados por Oct: no se mueven ni hacen daño
       let edt = this.flood > 0 ? dt * ABILITIES.jely.enemySlow : dt;   // en el agua de Jely van más lentos
       if (this.enNieve(e.x, e.y)) edt *= NIEVE.lento;   // y en la nieve también (Elora)
-      // Gec y Draila se turnan cada ~20 s (Elora): con Gec, más rápido; con Draila, más lento pero ve más lejos
+      // Gec y Draila se turnan cada 5 a 10 s (Elora): con Gec, más rápido; con Draila, más lento pero ve más lejos
       let ve = 1;
       if (e.especial === 'gecdraila') {
         e.cambio -= dt;
-        if (e.cambio <= 0) { e.modo = e.modo === 'gec' ? 'draila' : 'gec'; e.cambio = entre(BE.cambio); }
+        if (e.cambio <= 0) { e.modo = e.modo === 'gec' ? 'draila' : 'gec'; e.cambio = enteroEntre(BE.cambio); }
         edt *= e.modo === 'gec' ? BE.gecRapido : BE.drailaLento;
         if (e.modo === 'draila') ve = BE.drailaVe;
       }

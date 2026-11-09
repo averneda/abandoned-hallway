@@ -50,14 +50,14 @@ export const STAMINA = {
 
 // Los Bloodies especiales de Elora (src/especiales.js): salen en 1 de cada 10 pasillos (prob), nunca en los 5
 // primeros (desdePasillo: a partir del 6). Lo de Elora: prob, desdePasillo, los 2 corazones de la boca del gato y
-// de Oct, cada 20 s (minijuego de Oct y cambio de Gec y Draila). Lo demás [PROVISIONAL]: cuántas bocas, cuánto
+// de Oct, el minijuego de Oct cada ~10 s y el cambio de Gec y Draila cada 5 a 10 s. Lo demás [PROVISIONAL]: cuántas bocas, cuánto
 // más rápido va Gec y cuánto más lejos ve Draila, el tamaño del laberinto y lo que tarda Oct en encontrarte.
 export const BLOODIES_ESPECIALES = {
   prob: 0.1, desdePasillo: 6,
   bocas: 34, bocaRadio: 15, bocaDano: 2, bocaEspera: 4,          // Caty: la boca del gato muerde y espera 4 s
   cogeDano: 0.6, cogeDura: 1.4,   // media Caty sale de la boca y te coge con los brazos (Elora): a los 0,6 s, −2 ❤; a los 1,4 s te suelta [PROVISIONAL]
   minijuego: [9, 11], pecera: [9, 6], octTarda: 12, octDano: 2,  // Oct: cada ~10 s (Elora; antes 20); laberinto de 9 × 6; te encuentra en 12 s
-  cambio: [18, 22], gecRapido: 1.35, drailaLento: 0.75, drailaVe: 1.6,   // Gec y Draila: se cambian cada ~20 s
+  cambio: [5, 10], gecRapido: 1.35, drailaLento: 0.75, drailaVe: 1.6,   // Gec y Draila: se cambian a los 5, 6, 7, 8, 9 o 10 s, al azar (Elora)
 };
 
 export const ENEMY = {

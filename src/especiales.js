@@ -6,7 +6,7 @@
 //                 laberinto de algas que creó Oct) y no te puedes mover hasta acabarlo; si no lo acabas, Oct te
 //                 encuentra y te quita 2 corazones.
 //   'tarda'     → gusano gris enroscado: camina también por las paredes, así que escala los trastos que se saltan.
-//   'gecdraila' → Gec y Draila en un solo cuerpo: se turnan cada 20 s; con Gec va más rápido, con Draila más
+//   'gecdraila' → Gec y Draila en un solo cuerpo: se turnan cada 5 a 10 s; con Gec va más rápido, con Draila más
 //                 lento pero te ve desde más lejos.
 // Los números, en BLOODIES_ESPECIALES de config.js. Cómo están dibujados, a partir de los dibujos de Elora (Clad).
 
@@ -37,6 +37,8 @@ export function decidirEspecial(n, L) {
   return ESPECIALES[Math.floor(Math.random() * ESPECIALES.length)];
 }
 export const entre = ([a, b]) => a + Math.random() * (b - a);
+// un número entero al azar de a a b, los dos incluidos (Gec y Draila: 5, 6, 7, 8, 9 o 10 segundos, Elora)
+export const enteroEntre = ([a, b]) => a + Math.floor(Math.random() * (b - a + 1));
 
 // ------------------------------------------------------------------ dibujo de los cuatro
 
