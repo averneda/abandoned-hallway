@@ -5,7 +5,7 @@ import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
 import { Game } from './game.js';
-import { Lobby, cancionLobby, cancionPasillo, esNavidad } from './lobby.js';
+import { Lobby, cancionLobby, cancionPasillo, esNavidad, esDiaNino } from './lobby.js';
 import { Intro } from './intro.js';
 import { Title } from './title.js';
 import { TouchControls } from './touch.js';
@@ -349,6 +349,7 @@ function startLevel(n, reintento = false) {
     nieve: esNavidad(),   // en Navidad, montones de nieve en los pasillos (Elora)
     navidad: esNavidad(), // y los Bloodies con gorrito de Papá Noel (Elora)
     adornos: esNavidad(), // y adornos para el árbol del lobby (Elora)
+    diaNino: esDiaNino(), // la fiesta del Día del Niño (Elora): Bloodies con gorro de dormir y el comentario del pijama
     // Tarda explicando el pasillo de Drake (Elora)
     onDialogue: (lines) => {
       game.paused = true;

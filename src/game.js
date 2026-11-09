@@ -2,7 +2,7 @@
 
 import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
-import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS } from './characters.js';
+import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS, rrect } from './characters.js';
 // de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
 // para no descubrir la sorpresa
 const BLOODY_LOOKS = CHARACTERS.filter((c) => !c.navidad);
@@ -151,6 +151,13 @@ export class Game {
     // Nieve en el suelo (Navidad, Elora): una casilla con 1 tiene nieve. No en el Bonus ni en el lobby.
     this.nieve = callbacks && callbacks.nieve && !L.noButton && !L.lobby ? hacerNieve(L, this.rand) : null;
     this.navidad = !!(callbacks && callbacks.navidad);   // en Navidad, los Bloodies con gorrito y el Drake Sangriento de Papá Noel (Elora)
+    // en la fiesta del Día del Niño (Elora): los Bloodies con gorro de dormir y, si llevas el pijama, tu personaje dice
+    // su comentario en un bocadillo al empezar el pasillo
+    this.diaNino = !!(callbacks && callbacks.diaNino);
+    if (this.diaNino && character.skin === 'pijama') {
+      const k = 'skins.frase.pijama.' + character.id, txt = t(k);
+      if (txt !== k) this.bocadillo = { texto: txt, hasta: 4.5 };
+    }
     // y adornos para el árbol del lobby (Elora): de 5 a 10 por pasillo; no en el Bonus ni en el pasillo de Drake
     if (callbacks && callbacks.adornos && !L.noButton && !L.lobby && !L.fuego) this.ponerAdornos(L);
     this.avisoNieve = false;
@@ -683,7 +690,7 @@ export class Game {
 
     // Bloodies y jugador (ordenados por altura para que se tapen bien)
     const frozen = this.freeze > 0;
-    const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null, navidad: this.navidad }) }));
+    const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null, navidad: this.navidad, dormir: this.diaNino && !this.navidad }) }));
     // Tarda, en el pasillo de Drake (Elora: está ahí para explicarte cómo funciona)
     if (this.npc) actors.push({ y: this.npc.y, draw: () => drawCharacter(ctx, this.npc.look, this.npc.x, this.npc.y - 6, 'down', this.time * 2, 0, false, { alta: true }) });
     actors.push({ y: p.y, draw: () => this.drawPlayer(ctx) });
@@ -694,6 +701,8 @@ export class Game {
 
     // oscuridad
     this.renderDarkness(ctx);
+    // el bocadillo con el comentario del pijama (fiesta del Día del Niño, Elora), por encima de la oscuridad
+    if (this.bocadillo && this.time < this.bocadillo.hasta) this.drawBocadillo(ctx, p.x - Math.round(this.cam.x), p.y - Math.round(this.cam.y) - 52, this.bocadillo.texto);
     ctx.restore();
 
     // estrés: la pantalla se oscurece con los bordes en rojo, latiendo (Elora)
@@ -1120,6 +1129,19 @@ export class Game {
     for (const [tx, ty] of casillas) for (let k = 0; k < 2; k++) {
       ctx.beginPath(); ctx.arc((tx + 0.15 + r() * 0.7) * TILE, (ty + 0.15 + r() * 0.7) * TILE, 1.1, 0, Math.PI * 2); ctx.fill();
     }
+  }
+
+  // Un bocadillo de cómic con un texto, con el pico abajo apuntando a (x, y + 10)
+  drawBocadillo(ctx, x, y, texto) {
+    ctx.save();
+    ctx.font = 'bold 15px "Segoe UI", Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = Math.min(320, ctx.measureText(texto).width + 24), h = 30;
+    const bx = Math.max(6, Math.min(VIEW_W - w - 6, x - w / 2)), by = Math.max(6, y - h);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; rrect(ctx, bx + 2, by + 3, w, h, 12); ctx.fill();
+    ctx.fillStyle = '#fffdf6'; rrect(ctx, bx, by, w, h, 12); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - 7, by + h - 1); ctx.lineTo(x + 7, by + h - 1); ctx.lineTo(x, by + h + 10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2a2124'; ctx.fillText(texto, bx + w / 2, by + h / 2 + 1, w - 16);
+    ctx.restore();
   }
 
   // Los grandes árboles de Navidad del taller de Papá Noel (G, Elora): se busca cada grupo de G juntas y se

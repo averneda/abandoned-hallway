@@ -7,7 +7,7 @@ import { TILE } from './config.js';
 import { T } from './level.js';
 
 // el día de las skins nuevas (el mismo que SKINS_DIA del juego 2D)
-const SKINS_DIA = [2026, 11, 10];
+const SKINS_DIA = [2026, 11, 15];
 const BORDES = false;   // la raya negra alrededor de personajes y cosas (Elora: mejor sin ella)
 
 // Los colores de cada personaje, de sus fichas (Elora).

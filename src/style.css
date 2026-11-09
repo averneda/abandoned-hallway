@@ -282,3 +282,6 @@ button.cartel-x:hover, button.cartel-x:focus-visible { background: #fff6dc; colo
 .card.mini canvas { width: 56px; height: 56px; }
 .card.mini .name { font-size: 14px; }
 .arbolj-nota { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* el aviso de que la fiesta de pijamas se mueve (Elora) */
+.cartel-semueve { font-weight: 800; color: #ffd95a !important; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 6px 12px; }

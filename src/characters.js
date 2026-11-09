@@ -334,6 +334,11 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
     const [gx, gy] = CABEZA_ARRIBA[ch.shape] || [0, -23];
     gorritoNavidad(ctx, gx, gy, true);
   }
+  // y en la fiesta del Día del Niño, gorro de dormir (Elora: como si ellos también fueran a la fiesta de pijamas)
+  else if (opts.bloody && opts.dormir && ch.shape !== 'drakeSangriento') {
+    const [gx, gy] = CABEZA_ARRIBA[ch.shape] || [0, -23];
+    gorroDormir(ctx, gx, gy);
+  }
   // pintura fosforita de Caty: el Bloodie brilla del color que ha salido esta vez
   // (opts.pintado es uno de PINTURAS_FOSFORITO)
   if (opts.pintado) {
@@ -385,6 +390,27 @@ function gorritoNavidad(ctx, x, y, sucio) {
   ctx.beginPath(); ctx.moveTo(x - 6.6, y + 0.9); ctx.quadraticCurveTo(x, y - 1.6, x + 6.6, y + 0.9); ctx.stroke();
   ctx.fillStyle = blanco; dot(ctx, x + 9.2, y - 1.4, 1.9);
   if (sucio) { ctx.fillStyle = '#a3141c'; dot(ctx, x - 2.4, y + 0.6, 0.7); dot(ctx, x + 9.6, y - 0.8, 0.6); }
+}
+
+// El gorro de dormir de los Bloodies en la fiesta del Día del Niño (Elora): largo, caído hacia un lado, a rayas
+// azul oscuro y azul clarito (un poco manchado de sangre) y con un pompón amarillo
+function gorroDormir(ctx, x, y) {
+  const forma = () => {
+    ctx.beginPath(); ctx.moveTo(x - 6.6, y + 0.8);
+    ctx.quadraticCurveTo(x - 5, y - 9, x + 3, y - 9);
+    ctx.quadraticCurveTo(x + 10, y - 9, x + 12.6, y + 4.4);
+    ctx.lineTo(x + 10.4, y + 4.6); ctx.quadraticCurveTo(x + 8.6, y - 2.6, x + 5.6, y - 1.6); ctx.lineTo(x + 6.6, y + 0.8);
+    ctx.closePath();
+  };
+  ctx.fillStyle = '#2c3f8f'; forma(); ctx.fill();
+  ctx.save(); forma(); ctx.clip();
+  ctx.strokeStyle = '#8fb8ff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); for (let k = -8; k < 16; k += 3.4) { ctx.moveTo(x + k, y - 10); ctx.lineTo(x + k + 6, y + 6); } ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = '#dfe9ff'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - 6.6, y + 0.9); ctx.quadraticCurveTo(x, y - 1.4, x + 6.6, y + 0.9); ctx.stroke();
+  ctx.fillStyle = '#f7d75a'; dot(ctx, x + 11.6, y + 5.6, 2);
+  ctx.fillStyle = '#a3141c'; dot(ctx, x - 2.6, y + 0.4, 0.7); dot(ctx, x + 4, y - 6, 0.6);
 }
 
 // Un círculo relleno (cada uno con su propio trazo: así no hay líneas fantasma entre ellos).
@@ -503,7 +529,7 @@ function peluche(ctx, x, y, color, oscuro, orejas) {
 }
 
 // Rectángulo con las esquinas redondeadas (la función del navegador para esto no existe en los algo viejos).
-function rrect(ctx, x, y, w, h, r) {
+export function rrect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);

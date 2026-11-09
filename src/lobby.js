@@ -2,7 +2,7 @@
 // (y la tele en pequeñito al lado; antes era una estantería)
 // y una puerta para entrar a los pasillos.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, skinsListas, horaSkins, ahoraJuego, NAVIDAD, fechaNavidad } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ABILITIES, SKINS_DIA, skinsListas, horaSkins, ahoraJuego, NAVIDAD, fechaNavidad, DIA_NINO } from './config.js';
 import { T, loadMap, setTile } from './level.js';
 import { LOBBY } from './maps.js';
 import { Game, dist } from './game.js';
@@ -11,7 +11,7 @@ import { t } from './i18n.js';
 import { sfx } from './sound.js';
 import { coinValue } from './coins.js';
 import { hoyJuego, casillas } from './adviento.js';
-import { drawArbolCompleto } from './adornos.js';
+import { drawArbolCompleto, drawAdorno } from './adornos.js';
 
 // ¿Es Navidad? (NAVIDAD en src/config.js). Sale siempre en el modo Navidad secreto (el código de Elora)
 // y con index.html?navidad=1, para probarlo.
@@ -21,6 +21,14 @@ export function esNavidad(hoy = hoyJuego()) {
   const h = new Date(hoy); h.setHours(0, 0, 0, 0);
   const anio = h.getFullYear();   // la Navidad se repite cada año (Elora)
   return h >= fechaNavidad('desde', anio) && h <= fechaNavidad('hasta', anio);
+}
+
+// ¿Es la fiesta del Día del Niño? (DIA_NINO en config.js: del 15 al 20 de noviembre, todos los años, Elora)
+export function esDiaNino(hoy = hoyJuego()) {
+  try { if (new URLSearchParams(location.search).get('dianino') === '1') return true; } catch (e) { /* nada */ }
+  const h = new Date(hoy); h.setHours(0, 0, 0, 0);
+  const dia = (clave) => { const [m, d] = DIA_NINO[clave].split('-').map(Number); return new Date(h.getFullYear(), m - 1, d); };
+  return h >= dia('desde') && h <= dia('hasta');
 }
 
 // La música del lobby: la de Navidad cuando es Navidad (o con el modo Navidad), si no la de siempre (Elora)
@@ -57,6 +65,7 @@ export class Lobby extends Game {
     // Es grande (Elora: "es muy pequeño"): ocupa 4 casillas de ancho, de la 22 a la 25, y no se atraviesa
     // (una fila más abajo que la pared, para que la estrella no tape los números de arriba)
     this.arbol = esNavidad() ? { tx: 23.5, ty: 4 } : null;
+    this.diaNino = esDiaNino();   // la fiesta del Día del Niño (Elora): lobby de fiesta de pijamas y Tarda en pijama
     // y el calendario de Adviento (Elora), colgado en la pared de arriba, entre Tarda y el árbol [PROVISIONAL el sitio]
     this.calendario = esNavidad() && callbacks.onAdviento ? { x: 21 * TILE + TILE / 2, y: TILE * 0.5 } : null;
     if (this.arbol) {
@@ -137,6 +146,9 @@ export class Lobby extends Game {
     ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
     this.renderWorld(ctx);
 
+    // la fiesta del Día del Niño (Elora): guirnalda de estrellitas, lucecitas, almohadas y peluches
+    if (this.diaNino) this.drawFiestaPijamas(ctx);
+
     // puerta a los pasillos: bordes rojos (Elora) y luz ámbar
     for (const d of this.doors) this.drawDoor(ctx, d.tx * TILE, d.ty * TILE, true, '#b3202a', '#ffd35a');
 
@@ -154,7 +166,9 @@ export class Lobby extends Game {
     const nx = this.npc.x, ny = this.npc.y;
     const tienda = () => {
       // en Navidad lleva su skin de osito, toda marrón, y está cosiendo (Elora)
-      drawCharacter(ctx, this.tarda, nx, ny - 6, 'down', this.time * 2, 0, false, this.arbol ? { alta: true, osito: true, cosiendo: true } : { alta: true });
+      // y en la fiesta del Día del Niño, en pijama (Elora)
+      const tarda = this.diaNino && !this.arbol ? { ...this.tarda, skin: 'pijama' } : this.tarda;
+      drawCharacter(ctx, tarda, nx, ny - 6, 'down', this.time * 2, 0, false, this.arbol ? { alta: true, osito: true, cosiendo: true } : { alta: true });
       // el mostrador, delante de Tarda: le tapa las patas de abajo
       ctx.fillStyle = '#6b4a2b'; ctx.fillRect(nx - 32, ny + 1, 64, 5);     // la tabla de arriba
       ctx.fillStyle = '#4a3220'; ctx.fillRect(nx - 30, ny + 6, 60, 18);    // el frente
@@ -191,7 +205,8 @@ export class Lobby extends Game {
       const ahora = ahoraJuego(), hoy = new Date(ahora); hoy.setHours(0, 0, 0, 0);
       const [a, m, d] = SKINS_DIA.split('-').map(Number);
       const faltan = Math.round((new Date(a, m - 1, d) - hoy) / 86400000);
-      const l1 = t('lobby.skins');
+      // hasta el estreno, el cartel avisa a ratos de que la fiesta se mueve (Elora)
+      const l1 = !skinsListas(ahora) && Math.floor(this.time / 2.5) % 2 ? t('lobby.skinsMueve') : t('lobby.skins');
       let l2;
       if (skinsListas(ahora)) l2 = t('lobby.skinsFiesta');   // el día del estreno: ¡la fiesta de pijamas!
       else if (faltan > 1) l2 = t('lobby.skinsDias', { n: faltan });
@@ -315,6 +330,43 @@ export class Lobby extends Game {
   // El árbol de Navidad del lobby (Elora pidió el árbol; lo dibuja Clad): tres pisos verdes, la estrella
   // amarilla arriba, bolas de colores y lucecitas que se encienden y apagan, en una maceta roja.
   // (x, y): el centro de abajo.
+  // La fiesta de pijamas del Día del Niño (Elora): por la pared de arriba, una guirnalda con estrellitas y lucecitas
+  // que se encienden y se apagan (menos encima de la puerta); por el suelo, almohadas y peluchitos de los personajes
+  // con ojos de botón. Son de adorno: se pueden pisar [PROVISIONAL dónde va cada cosa]
+  drawFiestaPijamas(ctx) {
+    const tt = this.time, y0 = 2 * TILE - 4, puerta = this.doors.map((d) => d.tx);
+    const colores = ['#ffd95a', '#ff8fc4', '#8fd0ff', '#b48cf0'];
+    for (let tx = 1; tx < this.level.w - 2; tx += 2) {
+      if (puerta.some((d) => tx + 2 >= d && tx <= d + 1)) continue;
+      const xa = tx * TILE, xb = (tx + 2) * TILE;
+      ctx.strokeStyle = '#d9c6f2'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(xa, y0); ctx.quadraticCurveTo((xa + xb) / 2, y0 + 12, xb, y0); ctx.stroke();
+      // una estrellita colgando en medio y dos lucecitas
+      const k = tx / 2 | 0, cx = (xa + xb) / 2, cy = y0 + 8;
+      ctx.fillStyle = colores[k % colores.length];
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 2.4 : 5.4; ctx.lineTo(cx + Math.cos(a) * r, cy + 6 + Math.sin(a) * r); }
+      ctx.closePath(); ctx.fill();
+      for (const [u, j] of [[0.25, 0], [0.75, 1]]) {
+        const lx = xa + (xb - xa) * u, ly = y0 + 12 * 2 * u * (1 - u) * 1.5;
+        const on = Math.sin(tt * 3 + k * 1.7 + j * 2) > -0.2;
+        ctx.fillStyle = on ? colores[(k + j + 1) % colores.length] : 'rgba(255,255,255,0.25)';
+        ctx.beginPath(); ctx.arc(lx, ly + 2, on ? 2.6 : 1.8, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    // almohadas y peluchitos por el suelo
+    const almohada = (tx, ty, c, c2) => {
+      const x = tx * TILE + TILE / 2, y = ty * TILE + TILE / 2 + 4;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(x + 2, y + 9, 15, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x, y, 15, 9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = c2; ctx.beginPath(); ctx.ellipse(x - 4, y - 3, 7, 3, -0.2, 0, Math.PI * 2); ctx.fill();
+      for (const s of [-1, 1]) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + s * 14, y + s * 6, 3, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(x - s * 14, y + s * 6, 3, 0, Math.PI * 2); ctx.fill(); }
+    };
+    almohada(1.6, 6, '#ffb3d1', '#ffe0ee'); almohada(8, 10, '#9fd0ff', '#d9efff'); almohada(14, 10, '#c9b3ff', '#ece3ff'); almohada(25, 6.5, '#fff0a0', '#fffbe0');
+    const peluches = [['peluche-carot', 2, 7], ['osito-gigante', 10, 10], ['peluche-froggy', 15.4, 10], ['peluche-jely', 25, 7.6], ['peluche-reno', 6.6, 10]];
+    for (const [id, tx, ty] of peluches) drawAdorno(ctx, id, tx * TILE + TILE / 2, ty * TILE + TILE / 2 - 2, id === 'osito-gigante' ? 26 : 30, tt);
+  }
+
   // El árbol de Navidad (Elora). Es el del minijuego (idea de su padre): empieza vacío y lleva lo que tú le pongas
   // (los adornos, las luces y la punta). Grande, mucho más alto que los personajes (Elora).
   drawArbol(ctx, x, y) {

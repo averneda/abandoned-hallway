@@ -137,8 +137,9 @@ export const MAP_RANDOM = {
 };
 
 // El día que salen las skins nuevas (Elora, el 7-11-2026: "faltan 3 días"): el cartel del lobby cuenta los días que faltan
-export const SKINS_DIA = '2026-11-10';
-// ...y la hora (Elora: "después de comer"; eligió el martes 10 a las 16:00). A esa hora (la del aparato de quien
+// (Elora, 9-11-2026: el estreno se mueve al primer día de la fiesta del Día del Niño; antes era el martes 10)
+export const SKINS_DIA = '2026-11-15';
+// ...y la hora (Elora: "después de comer"; las 16:00; el día es el domingo 15). A esa hora (la del aparato de quien
 // juega) las skins de pijama salen solas en la tienda de Tarda, para comprarlas con monedas, y el cartel se quita.
 export const SKINS_HORA = '16:00';
 // Para que salgan ya sin esperar a la hora, poner true. Para probarlo: index.html?skins=1
@@ -170,7 +171,11 @@ export function skinsListas(ahora = ahoraJuego()) {
 // siendo secreto hasta que lo ganes en el calendario)
 // desde: Elora lo cambió del 21 al 5 de diciembre (8-11-2026)
 // Las fechas son mes-día: la Navidad se repite igual todos los años (Elora: "que la próxima Navidad pase lo mismo").
-export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-11', destaparChop: false };
+export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-16', destaparChop: false };   // cartel: el día después del estreno de las skins (Elora: desde el 16)
+// La fiesta del Día del Niño (Elora): del 15 al 20 de noviembre, todos los años. El lobby de fiesta de pijamas,
+// Tarda en pijama, los Bloodies con gorro de dormir y el comentario del pijama al empezar un pasillo.
+// Para probarlo: index.html?dianino=1
+export const DIA_NINO = { desde: '11-15', hasta: '11-20' };
 // En Navidad, el taller de Papá Noel (MAPA_NAVIDAD en maps.js) sale al azar: 1 de cada 5 pasillos más o menos (Elora)
 // (para probarlo: index.html?taller=1, que lo saca siempre en Navidad)
 export const MAPA_NAVIDAD_PROB = typeof location !== 'undefined' && /[?&]taller=1/.test(location.search) ? 1 : 0.2;   // cartel: en 2026, el día después de las skins (Elora)

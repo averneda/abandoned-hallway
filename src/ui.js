@@ -360,7 +360,7 @@ export class UI {
     if (!lista.length) return;
     box.appendChild(this.el('div', 'skins-titulo', t('skins.title')));
     const puesta = skins.elegida(ch.id) || null;
-    // desde que salen las skins (Elora: martes 10, 16:00) se compran con monedas; en el modo pijama, gratis.
+    // desde que salen las skins (Elora: domingo 15 de noviembre, 16:00) se compran con monedas; en el modo pijama, gratis.
     // Para no comprar sin querer: el primer toque pregunta «¿Comprar?» y el segundo compra.
     const tiene = (skin) => !skin || skins.tiene(ch.id, skin);
     for (const skin of [null, ...lista]) {
@@ -768,6 +768,8 @@ export class UI {
     }
     s.appendChild(titulo);
     s.appendChild(this.el('p', 'cartel-cuando', t(fiesta ? 'cartel.pasarlo' : 'cartel.cuando')));
+    // hasta el estreno, el aviso de que la fiesta se mueve (Elora, 9-11-2026)
+    if (!fiesta) s.appendChild(this.el('p', 'cartel-semueve', t('cartel.semueve')));
     const reloj = this.el('div', 'cartel-reloj');
     if (!fiesta) s.appendChild(reloj);
     const pintarReloj = () => {
