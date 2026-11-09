@@ -23,10 +23,12 @@ function rr(ctx, x, y, w, h, r) {
 const SANGRE = '#7a0b12', ROJO = '#d42a36';
 
 // ¿Sale un Bloodie especial en este pasillo? (con index.html?bloodie=caty|oct|tarda|gecdraila sale siempre ese)
+// ?bloodie=… se lee al cargar: con ?pasillo=N la dirección se limpia antes de que empiece el pasillo
+const PEDIDO = (() => { try { return new URLSearchParams(location.search).get('bloodie'); } catch (e) { return null; } })();
 // Hasta la actualización de los Bloodies (Elora), solo salen con su código secreto (holeway.modoBloodies).
 export function decidirEspecial(n, L) {
-  let pedido = null, codigo = false;
-  try { pedido = new URLSearchParams(location.search).get('bloodie'); } catch (e) { /* nada */ }
+  const pedido = PEDIDO;
+  let codigo = false;
   try { codigo = localStorage.getItem('holeway.modoBloodies') === '1'; } catch (e) { /* nada */ }
   if (ESPECIALES.includes(pedido)) return pedido;
   if (!codigo) return null;
