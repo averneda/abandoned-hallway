@@ -164,6 +164,16 @@ const dict = {
     'cartel.sorpresa': '¿Quién lleva cada pijama? ¡Es una sorpresa!',
     'cartel.d': '{n} d', 'cartel.h': '{n} h', 'cartel.m': '{n} min', 'cartel.s': '{n} s',
     'lobby.adviento': 'E: abrir el calendario de Adviento',
+    // la guerra de almohadas (Elora)
+    'lobby.almohadas': "E: ¡guerra de almohadas!",
+    'alm.titulo': "Guerra de almohadas",
+    'alm.marcador': "Bloodies: {n} · 🪙 {m}",
+    'alm.ayuda': "Cruceta: moverte · Start o Select: tirar la almohada (en el teclado, E o Espacio)",
+    'alm.derrotado': "¡Bloodie derrotado! +{n} 🪙",
+    'alm.ganas': "¡Has ganado!",
+    'alm.pierdes': "¡Te han dado demasiadas veces!",
+    'alm.resultado': "Bloodies derrotados: {n} · Monedas: {m}",
+    'alm.volver': "Pulsa Start para volver al lobby",
     // el minijuego del árbol de Navidad (idea del padre de Elora)
     'arbol.sec.grandes': "Cosas grandes · para debajo del árbol",
     'arbol.sec.maceta': "🎨 Color de la maceta (+3 puntos la primera vez)",
@@ -566,6 +576,16 @@ const dict = {
     'cartel.sorpresa': 'Who wears which pyjamas? It\'s a surprise!',
     'cartel.d': '{n} d', 'cartel.h': '{n} h', 'cartel.m': '{n} min', 'cartel.s': '{n} s',
     'lobby.adviento': 'E: open the Advent calendar',
+    // the pillow fight
+    'lobby.almohadas': "E: pillow fight!",
+    'alm.titulo': "Pillow fight",
+    'alm.marcador': "Bloodies: {n} · 🪙 {m}",
+    'alm.ayuda': "D-pad: move · Start or Select: throw the pillow (keyboard: E or Space)",
+    'alm.derrotado': "Bloodie defeated! +{n} 🪙",
+    'alm.ganas': "You win!",
+    'alm.pierdes': "You got hit too many times!",
+    'alm.resultado': "Bloodies defeated: {n} · Coins: {m}",
+    'alm.volver': "Press Start to go back to the lobby",
     // the Christmas tree minigame
     'arbol.sec.grandes': "Big things · for under the tree",
     'arbol.sec.maceta': "🎨 Pot colour (+3 points the first time)",

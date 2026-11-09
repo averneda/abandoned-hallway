@@ -6,6 +6,7 @@ import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
 import { Game } from './game.js';
 import { Lobby, cancionLobby, cancionPasillo, esNavidad, esDiaNino } from './lobby.js';
+import { GuerraAlmohadas } from './almohadas.js';
 import { Intro } from './intro.js';
 import { Title } from './title.js';
 import { TouchControls } from './touch.js';
@@ -294,6 +295,15 @@ function gotoLobby() {
         },
         onClose: () => { ui.clear(); lobby.paused = false; input.clear(); },
       });
+    },
+    // la guerra de almohadas contra los Bloodies (Elora): en la fiesta del Día del Niño, en el montón de almohadas
+    onAlmohadas: () => {
+      scene = new GuerraAlmohadas(run.character, {
+        onCoin: (n) => { wallet.coins += n; save(); },
+        onSalir: () => gotoLobby(),
+      });
+      music.play('alegre');
+      input.clear();
     },
     // el árbol de Navidad (Elora): cómo está, para dibujarlo, y el minijuego de decorarlo
     arbol: () => arbol,

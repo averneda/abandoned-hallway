@@ -12,6 +12,7 @@ import { sfx } from './sound.js';
 import { coinValue } from './coins.js';
 import { hoyJuego, casillas } from './adviento.js';
 import { drawArbolCompleto, drawAdorno } from './adornos.js';
+import { drawAlmohada } from './almohadas.js';
 
 // ¿Es Navidad? (NAVIDAD en src/config.js). Sale siempre en el modo Navidad secreto (el código de Elora)
 // y con index.html?navidad=1, para probarlo.
@@ -26,6 +27,8 @@ export function esNavidad(hoy = hoyJuego()) {
 // ¿Es la fiesta del Día del Niño? (DIA_NINO en config.js: del 15 al 20 de noviembre, todos los años, Elora)
 export function esDiaNino(hoy = hoyJuego()) {
   try { if (new URLSearchParams(location.search).get('dianino') === '1') return true; } catch (e) { /* nada */ }
+  // con el modo pijama (el código de Elora) también hay fiesta: lobby de pijamas y guerra de almohadas (Elora)
+  try { if (localStorage.getItem('holeway.modoPijama') === '1') return true; } catch (e) { /* nada */ }
   const h = new Date(hoy); h.setHours(0, 0, 0, 0);
   const dia = (clave) => { const [m, d] = DIA_NINO[clave].split('-').map(Number); return new Date(h.getFullYear(), m - 1, d); };
   return h >= dia('desde') && h <= dia('hasta');
@@ -66,6 +69,8 @@ export class Lobby extends Game {
     // (una fila más abajo que la pared, para que la estrella no tape los números de arriba)
     this.arbol = esNavidad() ? { tx: 23.5, ty: 4 } : null;
     this.diaNino = esDiaNino();   // la fiesta del Día del Niño (Elora): lobby de fiesta de pijamas y Tarda en pijama
+    // y el montón de almohadas de la guerra de almohadas (Elora): unas con sangre (las de los Bloodies) y otras pastel
+    this.monton = this.diaNino && callbacks.onAlmohadas ? { x: 21 * TILE + TILE / 2, y: 7 * TILE + TILE / 2 } : null;
     // y el calendario de Adviento (Elora), colgado en la pared de arriba, entre Tarda y el árbol [PROVISIONAL el sitio]
     this.calendario = esNavidad() && callbacks.onAdviento ? { x: 21 * TILE + TILE / 2, y: TILE * 0.5 } : null;
     if (this.arbol) {
@@ -107,12 +112,14 @@ export class Lobby extends Game {
     if (dist(p.x, p.y, this.npc.x, this.npc.y) < TILE * 1.9) this.near = 'tarda';
     else if (this.shelf.some((v) => dist(p.x, p.y, v.x, v.y + TILE) < TILE * 1.3)) this.near = 'tapes';
     else if (this.calendario && dist(p.x, p.y, this.calendario.x, this.calendario.y + TILE * 1.5) < TILE * 1.4) this.near = 'adviento';
+    else if (this.monton && dist(p.x, p.y, this.monton.x, this.monton.y) < TILE * 1.6) this.near = 'almohadas';
     else if (this.arbol && this.cb.onArbol && dist(p.x, p.y, this.arbol.tx * TILE + TILE / 2, this.arbol.ty * TILE + TILE * 1.6) < TILE * 2.4) this.near = 'arbol';
     else if (this.cb.onCartel && (this.cartelSkinsVisible() || cartelNavidad()) && dist(p.x, p.y, this.cartelSkinsPos().x, this.cartelSkinsPos().y) < TILE * 1.6) this.near = 'cartel';
     if (this.near && input.wasPressed('interact')) {
       if (this.near === 'tarda') this.cb.onShop();
       else if (this.near === 'adviento') this.cb.onAdviento();
       else if (this.near === 'arbol') this.cb.onArbol();
+      else if (this.near === 'almohadas') this.cb.onAlmohadas();
       else if (this.near === 'cartel') this.cb.onCartel(cartelNavidad() ? 'navidad' : 'skins');
       else this.cb.onTapes();
       return;
@@ -148,6 +155,11 @@ export class Lobby extends Game {
 
     // la fiesta del Día del Niño (Elora): guirnalda de estrellitas, lucecitas, almohadas y peluches
     if (this.diaNino) this.drawFiestaPijamas(ctx);
+    if (this.monton) {
+      const { x, y } = this.monton;
+      [[-14, 6, '#c7e3ff', 0, 0.2], [12, 7, '#f4e3dc', 1, -0.2], [0, 0, '#ffc6dd', 0, 0.1], [-8, -8, '#f4e3dc', 1, -0.3], [9, -7, '#d9ccff', 0, 0.3], [0, -15, '#fff1a8', 0, 0]]
+        .forEach(([dx, dy, c, s, a]) => drawAlmohada(ctx, x + dx * 1.3, y + dy * 1.3, c, !!s, a, 1.2));
+    }
 
     // puerta a los pasillos: bordes rojos (Elora) y luz ámbar
     for (const d of this.doors) this.drawDoor(ctx, d.tx * TILE, d.ty * TILE, true, '#b3202a', '#ffd35a');
@@ -363,7 +375,7 @@ export class Lobby extends Game {
       for (const s of [-1, 1]) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + s * 14, y + s * 6, 3, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(x - s * 14, y + s * 6, 3, 0, Math.PI * 2); ctx.fill(); }
     };
     almohada(1.6, 6, '#ffb3d1', '#ffe0ee'); almohada(8, 10, '#9fd0ff', '#d9efff'); almohada(14, 10, '#c9b3ff', '#ece3ff'); almohada(25, 6.5, '#fff0a0', '#fffbe0');
-    const peluches = [['peluche-carot', 2, 7], ['osito-gigante', 10, 10], ['peluche-froggy', 15.4, 10], ['peluche-jely', 25, 7.6], ['peluche-reno', 6.6, 10]];
+    const peluches = [['peluche-carot', 2, 7], ['osito-gigante', 10, 10], ['peluche-froggy', 15.4, 10], ['peluche-jely', 25, 7.6]];   // sin el de Chop: sería un spoiler (Elora)
     for (const [id, tx, ty] of peluches) drawAdorno(ctx, id, tx * TILE + TILE / 2, ty * TILE + TILE / 2 - 2, id === 'osito-gigante' ? 26 : 30, tt);
   }
 
@@ -456,7 +468,7 @@ export class Lobby extends Game {
     // avisos
     ctx.textAlign = 'center';
     let yy = VIEW_H - 40;
-    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento', cartel: 'lobby.cartel', arbol: 'lobby.arbol' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
+    if (this.near) { ctx.font = `bold 20px ${font}`; ctx.fillStyle = '#ffe36b'; ctx.fillText(t({ tarda: 'lobby.talk', tapes: 'lobby.tapes', adviento: 'lobby.adviento', cartel: 'lobby.cartel', arbol: 'lobby.arbol', almohadas: 'lobby.almohadas' }[this.near]), VIEW_W / 2, yy); yy -= 30; }
     else { ctx.font = `16px ${font}`; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText(t('lobby.door'), VIEW_W / 2, yy); yy -= 30; }
     this.renderMessages(ctx, yy, font);
     ctx.restore();

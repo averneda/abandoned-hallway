@@ -141,7 +141,11 @@ button:disabled { opacity: 0.75; cursor: default; }
 #touch { position: fixed; inset: 0; pointer-events: none; z-index: 5; user-select: none; -webkit-user-select: none; }
 #touch.hidden { display: none; }
 #touch > * { pointer-events: auto; touch-action: none; }
-.tpad { position: absolute; left: 18px; bottom: 18px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.22); }
+/* la zona de la izquierda donde se toca para moverse (el círculo aparece debajo del dedo, Elora) */
+.tzona { position: absolute; left: 0; top: 0; width: 50%; height: 100%; pointer-events: auto; touch-action: none; }
+.tpad { position: absolute; left: 18px; bottom: 18px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.22); pointer-events: none; }
+.tpad.activo { background: rgba(255, 255, 255, 0.12); }
+#touch > .tpad { pointer-events: none; }
 .tstick { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: rgba(255, 255, 255, 0.28); pointer-events: none; }
 .tbtn { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(214, 32, 43, 0.55); border: 2px solid rgba(255, 255, 255, 0.35); color: #fff; font-weight: 800; font-size: 22px; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5); }
 .tbtn.on { background: rgba(238, 42, 54, 0.95); }

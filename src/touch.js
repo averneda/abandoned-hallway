@@ -22,13 +22,27 @@ export class TouchControls {
     root.id = 'touch';
     this.root = root;
 
-    // ---- cruceta virtual: se apoya el dedo y se arrastra hacia donde quieras ir
+    // ---- cruceta virtual: se apoya el dedo y se arrastra hacia donde quieras ir.
+    // Elora: era incómodo tener que estar con el dedo dentro del círculo. Ahora se puede tocar en cualquier
+    // sitio de la mitad izquierda de la pantalla (el círculo aparece debajo del dedo), la bolita se puede salir
+    // del círculo y, si el dedo se va lejos, el círculo le sigue.
+    const zona = document.createElement('div');
+    zona.className = 'tzona';
+    root.appendChild(zona);
     const pad = document.createElement('div');
     pad.className = 'tpad';
     const stick = document.createElement('div');
     stick.className = 'tstick';
     pad.appendChild(stick);
     root.appendChild(pad);
+    const LEJOS = 95;   // a partir de aquí el círculo sigue al dedo
+    const ponerCirculo = (x, y) => {
+      const r = root.getBoundingClientRect();
+      pad.style.left = (x - r.left - pad.offsetWidth / 2) + 'px';
+      pad.style.top = (y - r.top - pad.offsetHeight / 2) + 'px';
+      pad.style.bottom = 'auto';
+    };
+    const circuloASuSitio = () => { pad.style.left = ''; pad.style.top = ''; pad.style.bottom = ''; };
 
     let padPointer = null;
     let padCenter = null;
@@ -41,26 +55,36 @@ export class TouchControls {
         if (Math.abs(dy) > Math.abs(dx) * DIAG) y = Math.sign(dy);
       }
       this.input.touchDir = { x, y };
-      const k = Math.min(1, d / 55);
-      stick.style.transform = d > 2 ? `translate(${dx / d * 34 * k}px, ${dy / d * 34 * k}px)` : '';
+      // si el dedo se va muy lejos, el círculo le sigue (así no hace falta volver al círculo)
+      if (d > LEJOS) {
+        padCenter = { x: e.clientX - dx / d * LEJOS, y: e.clientY - dy / d * LEJOS };
+        ponerCirculo(padCenter.x, padCenter.y);
+      }
+      // la bolita va con el dedo y se puede salir del círculo (Elora)
+      const lim = Math.min(d, LEJOS);
+      stick.style.transform = d > 2 ? `translate(${dx / d * lim}px, ${dy / d * lim}px)` : '';
     };
-    pad.addEventListener('pointerdown', (e) => {
+    zona.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      if (padPointer != null) return;
       padPointer = e.pointerId;
-      const r = pad.getBoundingClientRect();
-      padCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      padCenter = { x: e.clientX, y: e.clientY };   // el círculo aparece debajo del dedo
+      ponerCirculo(e.clientX, e.clientY);
+      pad.classList.add('activo');
       movePad(e);
-      try { pad.setPointerCapture(e.pointerId); } catch (err) { /* algunos navegadores no dejan */ }
+      try { zona.setPointerCapture(e.pointerId); } catch (err) { /* algunos navegadores no dejan */ }
     });
-    pad.addEventListener('pointermove', (e) => { if (e.pointerId === padPointer) movePad(e); });
+    zona.addEventListener('pointermove', (e) => { if (e.pointerId === padPointer) movePad(e); });
     const endPad = (e) => {
       if (e.pointerId !== padPointer) return;
       padPointer = null;
       this.input.touchDir = { x: 0, y: 0 };
       stick.style.transform = '';
+      pad.classList.remove('activo');
+      circuloASuSitio();
     };
-    pad.addEventListener('pointerup', endPad);
-    pad.addEventListener('pointercancel', endPad);
+    zona.addEventListener('pointerup', endPad);
+    zona.addEventListener('pointercancel', endPad);
 
     // ---- botones: mismos nombres que el mando de NES
     const button = (cls, label, action) => {

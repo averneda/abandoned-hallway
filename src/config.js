@@ -176,6 +176,14 @@ export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-16', d
 // Tarda en pijama, los Bloodies con gorro de dormir y el comentario del pijama al empezar un pasillo.
 // Para probarlo: index.html?dianino=1
 export const DIA_NINO = { desde: '11-15', hasta: '11-20' };
+// La guerra de almohadas contra los Bloodies (Elora), solo en la fiesta del Día del Niño. tiempo: los segundos que hay
+// que aguantar para ganar (Elora: 1 minuto, se puede cambiar); vidasBloodie: las almohadas que aguanta cada Bloodie
+// (Elora: 3); monedasBloodie: lo que da cada uno que derrotas (Elora: 5). Lo demás [PROVISIONAL]
+export const ALMOHADAS = {
+  tiempo: 60, vidasBloodie: 3, monedasBloodie: 5, aLaVez: 2,
+  velocidadJugador: 190, velocidadBloodies: 85, velocidadTuya: 430, velocidadBloodie: 240,
+  recargaTuya: 0.35, tiroBloodie: [1.4, 2.6],
+};
 // En Navidad, el taller de Papá Noel (MAPA_NAVIDAD en maps.js) sale al azar: 1 de cada 5 pasillos más o menos (Elora)
 // (para probarlo: index.html?taller=1, que lo saca siempre en Navidad)
 export const MAPA_NAVIDAD_PROB = typeof location !== 'undefined' && /[?&]taller=1/.test(location.search) ? 1 : 0.2;   // cartel: en 2026, el día después de las skins (Elora)
