@@ -177,13 +177,13 @@ export const NAVIDAD = { desde: '12-05', hasta: '12-30', cartelDesde: '11-16', d
 // Para probarlo: index.html?dianino=1
 export const DIA_NINO = { desde: '11-15', hasta: '11-20' };
 // La guerra de almohadas contra los Bloodies (Elora), solo en la fiesta del Día del Niño. tiempo: los segundos que hay
-// que aguantar para ganar (Elora: 1 minuto, se puede cambiar); vidasTuyas: tus vidas, con cualquier personaje
+// que aguantar para ganar; 0 = sin tiempo, dura hasta que te eliminan (Elora; antes 1 minuto); vidasTuyas: tus vidas, con cualquier personaje
 // (Elora: 5; antes eran las de tu personaje); vidasBloodie: las almohadas que aguanta cada Bloodie (Elora: 1; antes 3);
 // monedasBloodie: lo que da cada uno que derrotas (Elora: 5); tiroBloodie: cada cuántos segundos tira una almohada
 // cada Bloodie (Elora: cada 10 s y a veces 5: tiroRapido; antes entre 1,4 y 2,6); probRapido: cuántas veces es a los
 // 5 s [PROVISIONAL: 3 de cada 10]. Lo demás [PROVISIONAL]
 export const ALMOHADAS = {
-  tiempo: 60, vidasTuyas: 5, vidasBloodie: 1, monedasBloodie: 5, aLaVez: 2,
+  tiempo: 0, vidasTuyas: 5, vidasBloodie: 1, monedasBloodie: 5, aLaVez: 2,
   velocidadJugador: 190, velocidadBloodies: 85, velocidadTuya: 430, velocidadBloodie: 240,
   recargaTuya: 0.35, tiroBloodie: 10, tiroRapido: 5, probRapido: 0.3,
 };
