@@ -86,7 +86,11 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 .card.mini:hover, .card.mini.focus { transform: translateY(-2px); }
 /* la ficha y, a su derecha, las skins (modo pijama, Elora) */
 .shop-medio { display: flex; gap: 10px; align-items: center; justify-content: center; }
-.skins-panel { display: flex; flex-direction: column; gap: 6px; align-items: center; width: 116px; }
+.skins-panel { display: flex; flex-direction: column; gap: 6px; align-items: center; width: 128px; max-height: 430px; overflow-y: auto; overflow-x: hidden; padding: 2px 6px 2px 2px; }   /* se baja para ver todos los comentarios (Elora) */
+.skins-panel::-webkit-scrollbar { width: 8px; }
+.skins-panel::-webkit-scrollbar-thumb { background: #6b5a78; border-radius: 4px; }
+.skins-panel .skins-titulo { flex: none; }
+.skins-panel .card.skin { flex: none; }
 .skins-titulo { font-size: 16px; font-weight: 700; color: #ffd95a; }
 .card.skin { width: 110px; padding: 4px 4px 5px; gap: 0; border-width: 2px; border-radius: 10px; }
 .card.skin canvas { width: 72px; height: 72px; }

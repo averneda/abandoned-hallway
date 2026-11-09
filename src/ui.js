@@ -69,6 +69,8 @@ export class UI {
       this.navIndex = (this.navIndex + step + items.length) % items.length;
     }
     for (let i = 0; i < items.length; i++) items[i].classList.toggle('padfocus', i === this.navIndex);
+    // con el mando, lo elegido se enseña aunque esté más abajo (por ejemplo, en la columna de skins)
+    if ((d.x || d.y) && items[this.navIndex] && items[this.navIndex].scrollIntoView) items[this.navIndex].scrollIntoView({ block: 'nearest' });
     if (input.padPressed.has('jump') || input.padPressed.has('interact')) {
       const el = items[this.navIndex];
       if (el) {
