@@ -204,6 +204,7 @@ button.adv-casilla.perdida { cursor: pointer; } button.adv-casilla.perdida:hover
 @media (prefers-reduced-motion: reduce) { .adv-casilla.hoy { animation: none; } }
 .screen .adv-nota { color: #b9f5c4; font-size: 17px; font-weight: 800; min-height: 22px; }
 .pijama-badge.navidad-badge { background: #1f7a3a; }
+.pijama-badge.bloodies-badge { background: #9c1220; }
 /* la pantalla «JUEGO ONLINE» (dibujo de Elora) */
 .screen.online { gap: 14px; }
 /* la pantalla de la guerra de almohadas (Elora): récords arriba y los botones JUGAR y ONLINE */

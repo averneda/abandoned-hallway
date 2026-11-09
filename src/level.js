@@ -249,13 +249,14 @@ export function setTile(level, tx, ty, v) {
   level.tiles[ty * level.w + tx] = v;
 }
 
-// ¿Esta casilla bloquea el paso?  who: 'player' | 'flyer' (Drake volando) | 'enemy'
+// ¿Esta casilla bloquea el paso?  who: 'player' | 'flyer' (Drake volando) | 'enemy' | 'trepa' (la Bloodie Tarda de
+// Elora: escala los trastos que se saltan)
 export function solidFor(t, who, jumping = false) {
   switch (t) {
     case T.FLOOR: return false;
-    case T.OBSTACLE: return who === 'flyer' ? false : who === 'player' ? !jumping : true;
+    case T.OBSTACLE: return who === 'flyer' || who === 'trepa' ? false : who === 'player' ? !jumping : true;
     case T.BLOCK: return who !== 'flyer';
-    case T.EXIT_OPEN: return who === 'enemy';
+    case T.EXIT_OPEN: return who === 'enemy' || who === 'trepa';
     default: return true;
   }
 }

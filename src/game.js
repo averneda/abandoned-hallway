@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL, BLOODIES_ESPECIALES as BE } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS, rrect } from './characters.js';
 // de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
@@ -10,6 +10,7 @@ import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
 import { poseAndando } from './andares.js';
+import { decidirEspecial, drawBloodieEspecial, hacerBocas, drawBoca, nuevaPecera, updatePecera, drawPecera, entre } from './especiales.js';
 import { sortearAdorno, drawAdorno, adorno, drawArbolCompleto } from './adornos.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
@@ -45,6 +46,9 @@ export function collides(level, x, y, r, who, jumping) {
 }
 
 // Mueve una entidad eje por eje, parándola contra las paredes. Devuelve true si chocó.
+// Una entrada que no pulsa nada: mientras dura el minijuego de la pecera no te puedes mover (Elora)
+const QUIETO = { axis: () => ({ x: 0, y: 0 }), isDown: () => false, wasPressed: () => false };
+
 export function move(level, e, dx, dy, who, jumping = false) {
   let hit = false;
   const r = e.r;
@@ -165,6 +169,21 @@ export class Game {
       lastSeen: null, trail: [], trailDist: 0,
       look: BLOODY_LOOKS[(i + Math.floor(this.rand() * BLOODY_LOOKS.length)) % BLOODY_LOOKS.length],
     }));
+    // Los Bloodies especiales de Elora: en 1 de cada 10 pasillos, nunca en los 5 primeros (src/especiales.js)
+    this.especial = decidirEspecial(this.n, L);
+    if (this.especial) {
+      // sale donde salía uno de los Bloodies, el más lejos de ti
+      const lejos = [...L.enemies].sort((a, b) => dist(b.x, b.y, this.player.x, this.player.y) - dist(a.x, a.y, this.player.x, this.player.y))[0];
+      const tipo = this.especial;
+      this.enemies.push({
+        x: lejos.x, y: lejos.y, r: ENEMY.radius, dir: DIRS[Math.floor(this.rand() * 4)], turn: 1, chasing: false, lostFor: 0, stuck: 0,
+        recoil: 0, phase: 0, facing: 'down', walk: 0, pintado: 0, lastSeen: null, trail: [], trailDist: 0,
+        look: characterById(tipo === 'gecdraila' ? 'gek' : tipo === 'caty' ? 'katy' : tipo), especial: tipo,
+        modo: 'gec', cambio: entre(BE.cambio),
+      });
+      if (tipo === 'caty') this.bocas = hacerBocas(L, this.player, T, TILE);
+      if (tipo === 'oct') this.proximaPecera = entre(BE.minijuego);
+    }
     // El pasillo de Drake (Elora): el fuego del Drake Sangriento, las T y Tarda explicándolo
     this.fuego = L.fuego ? { fase: 'espera', t: 0 } : null;
     this.enT = false;   // estás encima de una T (para no rebotar de una hoja a otra)
@@ -186,6 +205,7 @@ export class Game {
       this.say(name ? t('msg.levelStartNamed', { n: this.n, name }) : t('msg.levelStart', { n: this.n }), 3);
       if (L.noButton) this.say(t('msg.bonus'), 6);
       if (L.fuego) this.say(t('msg.drakeLevel'), 8);
+      if (this.especial) this.say(t('esp.msg.' + this.especial), 5);   // aviso del Bloodie especial (Clad) [PROVISIONAL]
     }
 
     // La oscuridad es un degradado suave: se calcula a media resolución (4 veces menos trabajo)
@@ -407,6 +427,18 @@ export class Game {
       sfx.door();
     }
 
+    // --- el minijuego de la pecera del Bloodie Oct (Elora): mientras dura, no te puedes mover ---
+    if (this.especial === 'oct') {
+      if (this.pecera) {
+        if (updatePecera(this.pecera, dt, input.axis())) { this.pecera = null; this.proximaPecera = entre(BE.minijuego); this.say(t('esp.pecera.bien'), 2); sfx.stamina(); }
+        else if (this.pecera.t > BE.octTarda) this.pillaOct();   // aunque se atasque, al final te encuentra
+      } else if (!L.noButton) {
+        this.proximaPecera -= dt;
+        if (this.proximaPecera <= 0) { this.pecera = nuevaPecera(); sfx.tapeIn(); }
+      }
+    }
+    if (this.pecera) input = QUIETO;
+
     // --- habilidades con la tecla Q ---
     if (this.freeze > 0) this.freeze -= dt;
     if (this.wave) this.updateWave(dt);
@@ -425,6 +457,19 @@ export class Game {
     }
 
     this.updatePlayer(dt, input);
+
+    // --- las bocas de la Bloodie Caty (Elora): la del gato te coge si pasas por delante y te quita 2 corazones ---
+    if (this.bocas) for (const b of this.bocas) {
+      if (!b.gato) continue;
+      if (b.muerde > 0) b.muerde -= dt;
+      if (b.espera > 0) { b.espera -= dt; continue; }
+      if (dist(b.x, b.y, p.x, p.y) < BE.bocaRadio + p.r * 0.5 && p.tun <= 0 && p.fly <= 0 && !p.seguro) {
+        p.hearts -= BE.bocaDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * 2 * statMul(this.ch, 'cordura');
+        b.muerde = 0.6; b.espera = BE.bocaEspera; this.flash = 0.7;
+        this.say(t('esp.boca'), 2.5);
+        sfx.bite();
+      }
+    }
 
     // --- lluvia de monedas del Bonus: salen varias a la vez, duran unos segundos y se van ---
     if (L.coinRush) this.updateCoinRush(dt);
@@ -516,9 +561,20 @@ export class Game {
       if (frozen) continue; // parados por Oct: no se mueven ni hacen daño
       let edt = this.flood > 0 ? dt * ABILITIES.jely.enemySlow : dt;   // en el agua de Jely van más lentos
       if (this.enNieve(e.x, e.y)) edt *= NIEVE.lento;   // y en la nieve también (Elora)
+      // Gec y Draila se turnan cada ~20 s (Elora): con Gec, más rápido; con Draila, más lento pero ve más lejos
+      let ve = 1;
+      if (e.especial === 'gecdraila') {
+        e.cambio -= dt;
+        if (e.cambio <= 0) { e.modo = e.modo === 'gec' ? 'draila' : 'gec'; e.cambio = entre(BE.cambio); }
+        edt *= e.modo === 'gec' ? BE.gecRapido : BE.drailaLento;
+        if (e.modo === 'draila') ve = BE.drailaVe;
+      }
+      const quien = e.especial === 'tarda' ? 'trepa' : 'enemy';   // la Bloodie Tarda escala los trastos (Elora)
+      // con el minijuego de la pecera, Oct sabe dónde estás (estás quieta) y va a por ti
+      if (e.especial === 'oct' && this.pecera) { e.chasing = true; e.lostFor = 0; e.lastSeen = { x: p.x, y: p.y }; e.stuck = 0; }
 
       // Solo te ven si no hay pared ni trasto alto en medio.
-      const sees = p.tun <= 0 && e.recoil <= 0 && d < ENEMY.sightTiles * TILE * statMul(this.ch, 'sigilo') && canSee(L, e.x, e.y, p.x, p.y);
+      const sees = p.tun <= 0 && e.recoil <= 0 && d < ENEMY.sightTiles * ve * TILE * statMul(this.ch, 'sigilo') && canSee(L, e.x, e.y, p.x, p.y);
       if (sees) { e.chasing = true; e.lostFor = 0; e.lastSeen = { x: p.x, y: p.y }; }
       else if (e.chasing) {
         e.lostFor += dt;
@@ -530,16 +586,16 @@ export class Game {
         // acaba de tocarte: se aparta un momento
         e.recoil -= dt;
         const dx = e.x - p.x, dy = e.y - p.y, l = Math.hypot(dx, dy) || 1;
-        move(L, e, dx / l * ENEMY.walk * edt, dy / l * ENEMY.walk * edt, 'enemy');
+        move(L, e, dx / l * ENEMY.walk * edt, dy / l * ENEMY.walk * edt, quien);
       } else if (e.chasing && e.stuck < 0.6) {
         // va hacia donde te vio por última vez (si te escondes, va allí y luego se rinde)
         const tgt = e.lastSeen || p;
         const dx = tgt.x - e.x, dy = tgt.y - e.y, l = Math.hypot(dx, dy) || 1;
-        if (l > 4) move(L, e, dx / l * ENEMY.chase * edt, dy / l * ENEMY.chase * edt, 'enemy');
+        if (l > 4) move(L, e, dx / l * ENEMY.chase * edt, dy / l * ENEMY.chase * edt, quien);
       } else {
         // paseo por los pasillos
         e.turn -= dt;
-        const hit = move(L, e, e.dir[0] * ENEMY.walk * edt, e.dir[1] * ENEMY.walk * edt, 'enemy');
+        const hit = move(L, e, e.dir[0] * ENEMY.walk * edt, e.dir[1] * ENEMY.walk * edt, quien);
         if (hit || e.turn <= 0) this.pickDirection(e);
         if (e.stuck >= 0.6) { e.stuck = e.stuck > 1.4 ? 0 : e.stuck + dt; }
       }
@@ -559,6 +615,7 @@ export class Game {
       // te toca (Carot pasa por encima si está saltando)
       const overJump = this.ch.ability === 'carot' && p.jumping;
       const inmortal = p.tun > 0 || p.fly > 0;   // Tarda hecha una bolita Tun o Drake volando
+      if (e.especial === 'oct' && this.pecera && d < e.r + p.r) { this.pillaOct(); continue; }
       if (d < e.r + p.r && p.invuln <= 0 && e.recoil <= 0 && !overJump && !inmortal && !p.seguro) {
         p.hearts -= 1;
         p.invuln = PLAYER.invuln;
@@ -650,11 +707,21 @@ export class Game {
     this.say(t('msg.coinRush'), 2);
   }
 
+  // Oct te encuentra mientras estás con el minijuego de la pecera: te quita 2 corazones (Elora)
+  pillaOct() {
+    const p = this.player;
+    this.pecera = null; this.proximaPecera = entre(BE.minijuego);
+    p.hearts -= BE.octDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * 2 * statMul(this.ch, 'cordura');
+    this.flash = 0.7; this.say(t('esp.pecera.mal'), 2.5); sfx.hurt();
+    const oct = this.enemies.find((e) => e.especial === 'oct');
+    if (oct) { oct.recoil = ENEMY.recoil; oct.chasing = false; }
+  }
+
   pickDirection(e) {
     const L = this.level;
     const open = DIRS.filter(([dx, dy]) => {
       const tx = Math.floor((e.x + dx * TILE * 1.2) / TILE), ty = Math.floor((e.y + dy * TILE * 1.2) / TILE);
-      return !solidFor(tileAt(L, tx, ty), 'enemy');
+      return !solidFor(tileAt(L, tx, ty), e.especial === 'tarda' ? 'trepa' : 'enemy');
     });
     const notBack = open.filter(([dx, dy]) => !(dx === -e.dir[0] && dy === -e.dir[1]));
     const pool = notBack.length ? notBack : (open.length ? open : DIRS);
@@ -677,6 +744,9 @@ export class Game {
     ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
     this.renderWorld(ctx);
 
+    // las bocas que se ríen de la Bloodie Caty (Elora)
+    if (this.bocas) for (const b of this.bocas) drawBoca(ctx, b, this.time);
+
     // rastros de sangre de los Bloodies
     for (const e of this.enemies) for (const tr of e.trail) {
       ctx.fillStyle = `rgba(143,17,25,${Math.max(0.25, 1 - tr.age / 12)})`;
@@ -686,7 +756,9 @@ export class Game {
 
     // Bloodies y jugador (ordenados por altura para que se tapen bien)
     const frozen = this.freeze > 0;
-    const actors = this.enemies.map((e) => ({ y: e.y, draw: () => drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null, navidad: this.navidad, dormir: this.diaNino && !this.navidad }) }));
+    const actors = this.enemies.map((e) => ({ y: e.y, draw: () => (e.especial
+      ? drawBloodieEspecial(ctx, e.especial, e.x, e.y, e.facing, frozen ? 0 : e.walk, { chasing: e.chasing && !frozen, frozen, modo: e.modo })
+      : drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null, navidad: this.navidad, dormir: this.diaNino && !this.navidad })) }));
     // Tarda, en el pasillo de Drake (Elora: está ahí para explicarte cómo funciona)
     if (this.npc) actors.push({ y: this.npc.y, draw: () => drawCharacter(ctx, this.npc.look, this.npc.x, this.npc.y - 6, 'down', this.time * 2, 0, false, { alta: true }) });
     actors.push({ y: p.y, draw: () => this.drawPlayer(ctx) });
@@ -717,6 +789,8 @@ export class Game {
     if (this.fuego) this.renderFuego(ctx);
 
     this.renderHUD(ctx);
+    // el minijuego de la pecera del Bloodie Oct, encima de todo
+    if (this.pecera) drawPecera(ctx, this.pecera, VIEW_W, VIEW_H, this.time, { titulo: t('esp.pecera.titulo'), mar: t('esp.pecera.mar'), oct: t('esp.pecera.oct') }, 1 - this.pecera.t / BE.octTarda);
   }
 
   // Las T del pasillo de Drake: al entrar en el cuadrado de una T pasas a la T de la otra hoja (y se

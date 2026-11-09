@@ -37,7 +37,8 @@ const cajaCintas = new Set();
 // drakeEnTienda: ya escapaste del pasillo de Drake y Drake está en la tienda (Elora)
 // modoPijama: se puso el código del modo pijama (Elora): las skins de pijama salen en la tienda, gratis
 // modoNavidad: se puso el código del modo Navidad (Elora): lobby de Navidad y el reno gratis
-const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false };
+// modoBloodies: se puso el código de la actualización de los Bloodies (Elora): salen ya los Bloodies especiales
+const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false, modoBloodies: false };
 // La skin que lleva puesta cada personaje (id del personaje → skin). Se ven en el modo pijama o, desde que
 // salen las skins (Elora: martes 10 a las 16:00), si la has comprado.
 const skinsElegidas = {};
@@ -85,6 +86,7 @@ try {
   flags.drakeEnTienda = localStorage.getItem('holeway.drakeEnTienda') === '1';
   flags.modoPijama = localStorage.getItem('holeway.modoPijama') === '1';
   flags.modoNavidad = localStorage.getItem('holeway.modoNavidad') === '1';
+  flags.modoBloodies = localStorage.getItem('holeway.modoBloodies') === '1';
   Object.assign(skinsElegidas, JSON.parse(localStorage.getItem('holeway.skins') || '{}'));
   Object.assign(skinsCompradas, JSON.parse(localStorage.getItem('holeway.skinsCompradas') || '{}'));
   // el calendario de este año (los de antes de 2027 no guardaban el año: eran de 2026)
@@ -114,6 +116,7 @@ function save() {
     localStorage.setItem('holeway.drakeEnTienda', flags.drakeEnTienda ? '1' : '0');
     localStorage.setItem('holeway.modoPijama', flags.modoPijama ? '1' : '0');
     localStorage.setItem('holeway.modoNavidad', flags.modoNavidad ? '1' : '0');
+    localStorage.setItem('holeway.modoBloodies', flags.modoBloodies ? '1' : '0');
     localStorage.setItem('holeway.skins', JSON.stringify(skinsElegidas));
     localStorage.setItem('holeway.skinsCompradas', JSON.stringify(skinsCompradas));
     localStorage.setItem('holeway.adviento', JSON.stringify(adviento));
@@ -160,6 +163,8 @@ function gotoMenu() {
     // La cinemática sale al principio, la primera vez, y lleva al lobby.
     onPlay: () => { if (flags.introSeen) gotoLobby(); else gotoIntro(); },
     onPad: () => ui.showPadSetup({ input, onClose: gotoMenu }),
+    // la actualización de los Bloodies (Elora): con su código salen ya los Bloodies especiales
+    bloodies: { activo: () => flags.modoBloodies, cambiar: (on) => { flags.modoBloodies = on; save(); } },
     // el modo pijama secreto (Elora): se pone y se quita con el código
     pijama: {
       activo: () => flags.modoPijama,

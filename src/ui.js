@@ -39,6 +39,10 @@ const CODIGO_NAVIDAD = 'e3b0eab2';
 const CODIGO_ONLINE = '2dcf3ed7';
 // La huella del código del modo pijama (Elora; también vale escrito con holeway/hallway y pijama/pijamas).
 const CODIGO_PIJAMA = new Set(['a9e7a80e', 'f4ae3cc7', 'a35c150d', 'a7f5d55a', 'a64e4d24', '2443bff5', '2a22be4a', '8db173bb', 'db61d337', '9eff940c']);
+// La huella del código de la actualización de los Bloodies (Elora): con él salen ya los Bloodies especiales, que
+// llegarán al juego con una actualización. Las mayúsculas dan igual; vale también con holeway/hallway,
+// actualozacion y bloodys/bloodies.
+const CODIGO_BLOODIES = new Set(["d79e5401", "e03eef76", "484794fd", "f216695c", "cb0d3d07", "19d7bd9c", "bdca8f9f", "27af3136", "b011cf6", "d7bfe55f", "f96cab5e", "c598b999", "55102586", "dd6bc0af", "32409fae", "eb92e629", "60c07718", "b9fbfd71", "9f0a442c", "ac22f6d7", "1739ee51", "b231df86", "59576b4d", "a45a6bec", "36671c47", "d85165dc", "59c80bdf", "e62a6c76", "ae605341", "b3a2f7b6", "d13bc43d", "c57c049c", "bf4a75bc", "f13774dd", "929907a8", "db1042cb"]);
 function huellaCodigo(texto, mayusculas = false) {
   let n = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   n = (mayusculas ? n : n.toLowerCase()).replace(/[^A-Za-z0-9]+/g, ' ').trim();
@@ -121,16 +125,17 @@ export class UI {
   // El título lo dibuja la escena Title en el canvas (el cartel de Elora);
   // aquí solo van los botones, abajo del todo.
   // pijama: el modo pijama secreto (Elora) = { activo(), cambiar(on) }
-  showMenu({ onPlay, onPad, pijama, navidad }) {
+  showMenu({ onPlay, onPad, pijama, navidad, bloodies }) {
     this.clear();
-    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad });
+    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad, bloodies });
     const s = this.el('div', 'screen titlemenu');
     s.appendChild(this.el('p', 'subtitle', t('menu.subtitle')));
     if (pijama && pijama.activo()) s.appendChild(this.el('p', 'pijama-badge', t('menu.pijama')));
     if (navidad && navidad.activo()) s.appendChild(this.el('p', 'pijama-badge navidad-badge', t('menu.navidad')));
+    if (bloodies && bloodies.activo()) s.appendChild(this.el('p', 'pijama-badge bloodies-badge', t('menu.bloodies')));
     const row = this.el('div', 'row');
     const play = this.button(t('menu.play'), onPlay, true);
-    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad)));
+    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies)));
     s.appendChild(row);
     s.appendChild(this.langRow(otraVez));
     this.root.appendChild(s);
@@ -145,7 +150,7 @@ export class UI {
   // Con el del pasillo 50 (Elora), vas directo al pasillo de Drake. Con el del modo pijama (Elora), las skins de pijama salen en la tienda de Tarda, gratis; se queda puesto
   // en este navegador hasta que se quita con el botón de aquí.
   // Los códigos no están escritos aquí (para que sigan siendo secretos): se compara su "huella".
-  showCode(onBack, pijama, navidad) {
+  showCode(onBack, pijama, navidad, bloodies) {
     this.clear();
     const s = this.el('div', 'screen');
     s.appendChild(this.el('h2', '', '🔑 ' + t('code.title')));
@@ -170,6 +175,10 @@ export class UI {
         navidad.cambiar(true);
         nota.textContent = t('code.navidadOn');
         setTimeout(onBack, 1800);
+      } else if (bloodies && CODIGO_BLOODIES.has(huella)) {
+        bloodies.cambiar(true);
+        nota.textContent = t('code.bloodiesOn');
+        setTimeout(onBack, 1800);
       } else if (pijama && CODIGO_PIJAMA.has(huella)) {
         pijama.cambiar(true);
         nota.textContent = t('code.pijamaOn');
@@ -185,6 +194,9 @@ export class UI {
     s.append(campo, row);
     if (pijama && pijama.activo()) {
       s.appendChild(this.button(t('code.pijamaOff'), () => { pijama.cambiar(false); this.toast(t('code.pijamaOffDone')); onBack(); }));
+    }
+    if (bloodies && bloodies.activo()) {
+      s.appendChild(this.button(t('code.bloodiesOff'), () => { bloodies.cambiar(false); this.toast(t('code.bloodiesOffDone')); onBack(); }));
     }
     if (navidad && navidad.activo()) {
       s.appendChild(this.button(t('code.navidadOff'), () => { navidad.cambiar(false); this.toast(t('code.navidadOffDone')); onBack(); }));

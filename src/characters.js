@@ -123,7 +123,7 @@ export const SKINS = {
     emoji: '✨',
     personajes: {
       carot: { price: 30 },    // vestido morado con estrellitas, lazo amarillo y bolsito turquesa
-      froggy: { price: 30 },   // camiseta naranja con rayas blancas y pañuelo rojo de lunares
+      froggy: { price: 30 },   // camiseta naranja con rayas blancas, pañuelo rojo de lunares y sombrero de vaquero (Elora)
       oct: { price: 30 },      // camiseta GAMER verde y cascos de música
       katy: { price: 30 },     // camiseta azul clarito y diadema con una flor rosa
       gek: { price: 30 },      // camiseta negra con «ROK!», gorra roja y monopatín azul
@@ -148,6 +148,51 @@ export function conSkin(ch, skin) {
 }
 
 const BLOODY = { color: '#a3141c', dark: '#5e0810' };
+// Los Bloodies de colores normales, llenos de sangre (Elora). Llegarán con la actualización de los Bloodies (Elora):
+// hasta entonces solo con su código secreto (holeway.modoBloodies). true = para todos ya.
+export const BLOODIES_COLOR_NORMAL = false;
+let coloresVisto = 0, coloresSi = false;
+function bloodiesDeColores() {
+  if (BLOODIES_COLOR_NORMAL) return true;
+  const ahora = Date.now();
+  if (ahora - coloresVisto > 1000) {   // se mira una vez por segundo, no en cada dibujo
+    coloresVisto = ahora;
+    try { coloresSi = localStorage.getItem('holeway.modoBloodies') === '1'; } catch (e) { coloresSi = false; }
+  }
+  return coloresSi;
+}
+// La sangre por encima del personaje (Bloodie de color normal): chorretones que caen de la cabeza, manchas por el
+// cuerpo con gotitas alrededor y, al perseguir, una venita de enfado roja. Siempre igual para cada personaje
+// (depende de su id), para que no baile. [PROVISIONAL cómo es la sangre]
+function sangreEncima(ctx, ch, facing, walk, chasing) {
+  let h = 7; for (const c of ch.id) h = (h * 31 + c.charCodeAt(0)) % 9973;
+  const r = () => { h = (h * 73 + 41) % 9973; return h / 9973; };
+  const [gx, gy] = CABEZA_ARRIBA[ch.shape] || [0, -23];
+  const oscura = '#7a0b12', roja = '#b3131f', viva = '#d8232f';
+  // chorretones desde lo alto de la cabeza
+  for (let k = 0; k < 3; k++) {
+    const x = gx - 5 + k * 5 + (r() - 0.5) * 2, y0 = gy + 1.5 + r() * 2, largo = 4 + r() * 6 + Math.sin(walk * 0.4 + k) * 0.8;
+    ctx.fillStyle = k % 2 ? roja : viva;
+    ctx.beginPath(); ctx.ellipse(x, y0, 2.3, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(x - 0.8, y0, 1.6, largo);
+    ctx.beginPath(); ctx.arc(x, y0 + largo, 1.15, 0, Math.PI * 2); ctx.fill();
+  }
+  // manchas por el cuerpo y la cara, con gotitas alrededor
+  for (let k = 0; k < 6; k++) {
+    const x = (r() - 0.5) * 14, y = gy + 8 + r() * (18 - gy * 0.2), rad = 1.4 + r() * 2.2;
+    ctx.fillStyle = k % 3 === 0 ? oscura : k % 3 === 1 ? roja : viva;
+    ctx.beginPath(); ctx.ellipse(x, y, rad * 1.2, rad, r() * 3, 0, Math.PI * 2); ctx.fill();
+    for (let g = 0; g < 3; g++) { const a = r() * Math.PI * 2, d = rad + 1 + r() * 1.8; ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 0.5 + r() * 0.5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // al perseguir, una venita de enfado en la cabeza
+  if (chasing && facing !== 'up') {
+    const vx = gx + 6, vy = gy + 4;
+    ctx.strokeStyle = viva; ctx.lineWidth = 1; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.moveTo(vx + a * 0.6, vy + b * 0.6); ctx.lineTo(vx + a * 2, vy + b * 2); }
+    ctx.stroke();
+  }
+}
 
 // Poses (el editor de andar y correr de Elora): opts.pose = { bi, bd, pi, pd, cuerpo, sube }, en grados
 // (sube en píxeles). bi/bd: brazo izquierdo/derecho (el de la izquierda de la pantalla mirando de frente);
@@ -180,7 +225,9 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
   const bob = conPose ? -(opts.pose.sube || 0) : Math.sin(walk) * (chasing ? 2.5 : 1.5);
   if (conPose) walk = 0;
   const s = 1 - Math.min(jumpH, 40) / 110;
-  const pal = opts.bloody ? BLOODY : ch;
+  // Elora (9-11-2026): los Bloodies con sus colores normales, pero con mucha sangre (antes eran todos rojos)
+  const colorNormal = !!opts.bloody && ch.shape !== 'drakeSangriento' && bloodiesDeColores();
+  const pal = opts.bloody && !colorNormal ? BLOODY : ch;
   const body = pal.color, dark = pal.dark;
   ctx.save();
   // sombra
@@ -208,7 +255,8 @@ export function drawCharacter(ctx, ch, x, y, facing = 'down', walk = 0, jumpH = 
 
   if (OWN_DRAW[ch.shape]) {
     // personajes con dibujo propio, hecho a partir de la ficha de Elora
-    OWN_DRAW[ch.shape](ctx, pal, facing, walk, opts);
+    OWN_DRAW[ch.shape](ctx, pal, facing, walk, colorNormal ? { ...opts, bloody: false } : opts);
+    if (colorNormal) sangreEncima(ctx, ch, facing, walk, chasing);
   } else {
     // cola / detalles traseros según el animal
     if (ch.shape === 'dragon' && opts.flap != null && !opts.bloody) {
@@ -866,6 +914,18 @@ function drawFroggy(ctx, pal, facing, walk, opts) {
     }
   }
   if (B) bloodyMarks(ctx, hx, hy, facing);
+  if (rp) {
+    // el sombrero de vaquero (Elora: «le pega con la ropa que lleva»), entre los dos ojos
+    const sx = hx, sy = hy - 11.4;   // encima de la cabeza, sin tapar los ojos
+    ctx.fillStyle = '#7a4a24'; ctx.beginPath(); ctx.ellipse(sx, sy + 0.6, 11.5, 2.6, 0, 0, Math.PI * 2); ctx.fill();   // el ala
+    ctx.fillStyle = '#a0683a';
+    ctx.beginPath(); ctx.moveTo(sx - 9.5, sy - 0.2); ctx.quadraticCurveTo(sx - 12.5, sy - 3.4, sx - 11.5, sy - 3.6);
+    ctx.quadraticCurveTo(sx, sy + 3.2, sx + 11.5, sy - 3.6); ctx.quadraticCurveTo(sx + 12.5, sy - 3.4, sx + 9.5, sy - 0.2); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(sx - 5.6, sy - 0.4); ctx.lineTo(sx - 4.8, sy - 8); ctx.quadraticCurveTo(sx - 2.4, sy - 9.4, sx, sy - 7.4);
+    ctx.quadraticCurveTo(sx + 2.4, sy - 9.4, sx + 4.8, sy - 8); ctx.lineTo(sx + 5.6, sy - 0.4); ctx.closePath(); ctx.fill();   // la copa con su hundido
+    ctx.fillStyle = '#d8343c'; ctx.fillRect(sx - 5.4, sy - 2.6, 10.8, 1.8);   // la cinta roja, como el pañuelo
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(sx - 3.8, sy - 7, 1.2, 4);
+  }
   if (back) return;
   // la sonrisa enorme llena de dientes
   ctx.fillStyle = teeth;
