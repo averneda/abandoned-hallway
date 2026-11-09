@@ -2,7 +2,7 @@
 // 1 de cada 10 pasillos y nunca en los 5 primeros (Elora). Cada uno tiene su habilidad (Elora):
 //   'caty'      → en su pasillo salen un montón de bocas riéndose por las paredes y el suelo; una es la boca de un
 //                 gato (con colmillos y la ω): si pasas por delante te coge y te quita 2 corazones.
-//   'oct'       → robot con cabeza de tele: más o menos cada 20 s te sale un minijuego (el pulpito en la pecera, un
+//   'oct'       → robot con cabeza de tele: más o menos cada 10 s (Elora; antes 20) te sale un minijuego (el pulpito en la pecera, un
 //                 laberinto de algas que creó Oct) y no te puedes mover hasta acabarlo; si no lo acabas, Oct te
 //                 encuentra y te quita 2 corazones.
 //   'tarda'     → gusano gris enroscado: camina también por las paredes, así que escala los trastos que se saltan.

@@ -55,7 +55,7 @@ export const STAMINA = {
 export const BLOODIES_ESPECIALES = {
   prob: 0.1, desdePasillo: 6,
   bocas: 34, bocaRadio: 15, bocaDano: 2, bocaEspera: 4,          // Caty: la boca del gato muerde y espera 4 s
-  minijuego: [18, 22], pecera: [9, 6], octTarda: 12, octDano: 2, // Oct: cada ~20 s; laberinto de 9 × 6; te encuentra en 12 s
+  minijuego: [9, 11], pecera: [9, 6], octTarda: 12, octDano: 2,  // Oct: cada ~10 s (Elora; antes 20); laberinto de 9 × 6; te encuentra en 12 s
   cambio: [18, 22], gecRapido: 1.35, drailaLento: 0.75, drailaVe: 1.6,   // Gec y Draila: se cambian cada ~20 s
 };
 
