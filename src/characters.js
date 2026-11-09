@@ -38,7 +38,7 @@ export const CHARACTERS = [
     stats: { velocidad: 84, cordura: 60, sigilo: 60, resistencia: 30 }, corazones: 3, ficha: 'assets/sprites/fichas/tarda.webp',
     fichaCuadro: { left: 69.5, top: 25, right: 2.5, bottom: 4 } },
   { id: 'gek', name: 'Gec', species: { es: 'Lagarto', en: 'Lizard' }, color: '#98cc84', dark: '#5e9a4c', shape: 'lizard', price: 80, ability: 'gek',   // hermano adoptivo de Draila (Elora)
-    stats: { velocidad: 80, cordura: 60, sigilo: 40, resistencia: 40 }, corazones: 3, ficha: 'assets/sprites/fichas/gek.webp',
+    stats: { velocidad: 80, cordura: 60, sigilo: 40, resistencia: 50 }, corazones: 3, ficha: 'assets/sprites/fichas/gek.webp',
     fichaCuadro: { left: 65.5, top: 33, right: 3, bottom: 5 } },
   { id: 'drake', name: 'Drake', species: { es: 'Dragón', en: 'Dragon' }, color: '#df5f7a', dark: '#ad3a55', shape: 'dragon', price: 200, secreto: true, ability: 'drake',   // sale en la tienda al escapar del pasillo 50 (Elora)
     stats: { velocidad: 100, cordura: 100, sigilo: 100, resistencia: 100 }, corazones: 5,
@@ -66,9 +66,9 @@ export const CHARACTERS = [
   // La perrita (Elora, 9-11-2026): la mejor amiga de Carot… o eso parece (es una amistad tóxica; el lirio de su
   // oreja es venenoso y es la pista). Todavía no tiene nombre, ficha ni habilidad (Elora los pensará). De momento
   // solo sale con su código secreto (modo perrita, holeway.modoPerrita), gratis. soloCodigo: no sale de Bloodie.
-  // Los números son [PROVISIONAL] (todos 50, normal) hasta que Elora los diga.
+  // Sus números los eligió Elora en su menú de números (9-11-2026).
   { id: 'perrita', name: 'La perrita', species: { es: 'Perra', en: 'Dog' }, color: '#e6cba0', dark: '#c9a574', shape: 'perrita', price: null, secreto: true, soloCodigo: true, ability: null,
-    stats: { velocidad: 50, cordura: 50, sigilo: 50, resistencia: 50 }, corazones: 3 },
+    stats: { velocidad: 60, cordura: 40, sigilo: 40, resistencia: 85 }, corazones: 3 },
 ];
 
 // La Tarda de verdad (la de la tienda del lobby y la que habla en las grabaciones) es gris, como la
