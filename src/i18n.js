@@ -442,6 +442,7 @@ const dict = {
     'pause.resume': 'Seguir',
     'pause.menu': 'Volver al lobby',
     'pause.mainMenu': 'Menú principal',
+    'seguro.titulo': '¿Seguro que quieres salir?', 'seguro.pasillo': 'Si vuelves al lobby, perderás el pasillo {n} y tendrás que empezar otra vez desde el principio.', 'seguro.si': 'Sí, volver al lobby', 'seguro.no': 'No, seguir jugando',
 
     'over.title': 'Se acabó',
     'over.hearts': 'Los Sangrientos te han atrapado.',
@@ -896,6 +897,7 @@ const dict = {
     'pause.resume': 'Resume',
     'pause.menu': 'Back to the lobby',
     'pause.mainMenu': 'Main menu',
+    'seguro.titulo': 'Are you sure you want to leave?', 'seguro.pasillo': 'If you go back to the lobby, you will lose hallway {n} and have to start again from the beginning.', 'seguro.si': 'Yes, back to the lobby', 'seguro.no': 'No, keep playing',
 
     'over.title': "It's over",
     'over.hearts': 'The Bloodies caught you.',

@@ -657,16 +657,32 @@ export class UI {
   }
 
   // ---------------- pausa
-  showPause({ onResume, onMenu, menuLabel }) {
+  // confirmar: un texto que se pregunta antes de salir (Elora: en un pasillo, «¿Seguro…?», para no perderlo sin querer)
+  showPause({ onResume, onMenu, menuLabel, confirmar }) {
     this.clear();
     const s = this.el('div', 'screen dim');
     s.appendChild(this.el('h2', '', t('pause.title')));
     const r = this.button(t('pause.resume'), onResume, true);
     s.appendChild(r);
-    s.appendChild(this.button(t(menuLabel || 'pause.menu'), onMenu));
+    s.appendChild(this.button(t(menuLabel || 'pause.menu'), confirmar ? () => this.showSeguro({ texto: confirmar, onSi: onMenu, onNo: () => this.showPause({ onResume, onMenu, menuLabel, confirmar }) }) : onMenu));
     this.root.appendChild(s);
     r.focus();
     this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyP') onResume(); };
+  }
+
+  // ¿Seguro? Sí / No. Lo elegido primero es «No», para que no se salga sin querer (Elora)
+  showSeguro({ texto, onSi, onNo }) {
+    this.clear();
+    const s = this.el('div', 'screen dim');
+    s.appendChild(this.el('h2', '', '⚠️ ' + t('seguro.titulo')));
+    s.appendChild(this.el('p', '', texto));
+    const fila = this.el('div', 'row');
+    const no = this.button('❌ ' + t('seguro.no'), onNo, true);
+    fila.append(no, this.button('✅ ' + t('seguro.si'), onSi));
+    s.appendChild(fila);
+    this.root.appendChild(s);
+    no.focus();
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyP') onNo(); };
   }
 
   // ---------------- fin de partida

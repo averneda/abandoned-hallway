@@ -404,7 +404,7 @@ function startLevel(n, reintento = false) {
     },
     onPause: () => {
       game.paused = true;
-      ui.showPause({ onResume: () => { ui.clear(); game.paused = false; input.clear(); }, onMenu: () => gotoLobby() });
+      ui.showPause({ onResume: () => { ui.clear(); game.paused = false; input.clear(); }, onMenu: () => gotoLobby(), confirmar: t('seguro.pasillo', { n }) });
     },
     onDeath: (reason) => {
       music.stop();
