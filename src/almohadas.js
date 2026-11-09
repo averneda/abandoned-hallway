@@ -1,10 +1,13 @@
 // La guerra de almohadas contra los Bloodies (Elora, noviembre 2026). Solo en la fiesta del Día del Niño.
-// Se empieza en el montón de almohadas del lobby. Tienes las vidas de tu personaje (3; con Drake, 5): cada
-// almohada de un Bloodie que te da te quita una. Los Bloodies también tienen 3 vidas: dales 3 veces y se van,
+// Se empieza en el montón de almohadas del lobby. Tienes 5 vidas (Elora): cada
+// almohada de un Bloodie que te da te quita una. Los Bloodies tienen 1 vida (Elora): dales una vez y se van,
 // y viene otro; cada uno que derrotas te da 5 monedas. Si aguantas el tiempo (1 minuto), ganas; si te quedas
 // sin vidas antes, pierdes. Los números, en ALMOHADAS de config.js.
 
-import { VIEW_W, VIEW_H, ALMOHADAS, maxHearts } from './config.js';
+import { VIEW_W, VIEW_H, ALMOHADAS } from './config.js';
+
+// cuánto espera un Bloodie para tirar: 10 s y, a veces, 5 (Elora)
+const esperaTiro = () => (Math.random() < ALMOHADAS.probRapido ? ALMOHADAS.tiroRapido : ALMOHADAS.tiroBloodie);
 import { CHARACTERS, drawCharacter, rrect } from './characters.js';
 import { t } from './i18n.js';
 import { sfx } from './sound.js';
@@ -39,7 +42,7 @@ export class GuerraAlmohadas {
     this.time = 0;
     this.paused = false;
     this.fin = null;            // 'ganas' | 'pierdes'
-    this.vidas = maxHearts(character);
+    this.vidas = ALMOHADAS.vidasTuyas;   // 5 con cualquier personaje (Elora)
     this.maxVidas = this.vidas;
     this.p = { x: VIEW_W / 2, y: VIEW_H / 2 + 60, facing: 'up', walk: 0, invuln: 0, cooldown: 0 };
     this.almohadas = [];        // las que vuelan: { x, y, vx, vy, mia, color, ang }
@@ -62,7 +65,8 @@ export class GuerraAlmohadas {
     const y = lado === 2 ? MURO + 30 : lado === 3 ? VIEW_H - MURO - 20 : MURO + 40 + Math.random() * (VIEW_H - 2 * MURO - 80);
     this.bloodies.push({
       x, y, vidas: ALMOHADAS.vidasBloodie, look: LOOKS[Math.floor(Math.random() * LOOKS.length)],
-      tiro: 1 + Math.random() * 1.2, golpe: 0, walk: 0, facing: 'down', dx: 0, dy: 0, cambia: 0, cae: 0,
+      tiro: esperaTiro(),   // la primera, igual que las demás (Elora: cada 10 s y a veces 5)
+      golpe: 0, walk: 0, facing: 'down', dx: 0, dy: 0, cambia: 0, cae: 0,
     });
   }
 
@@ -129,7 +133,7 @@ export class GuerraAlmohadas {
         // apunta a donde estás, con un poco de error
         const err = (Math.random() - 0.5) * 70;
         this.tirar(b, p.x + err, p.y + err * 0.5, false, '#f4e3dc');
-        b.tiro = ALMOHADAS.tiroBloodie[0] + Math.random() * (ALMOHADAS.tiroBloodie[1] - ALMOHADAS.tiroBloodie[0]);
+        b.tiro = esperaTiro();   // una almohada cada 10 s, y a veces cada 5 (Elora)
       }
     }
     // las almohadas que vuelan

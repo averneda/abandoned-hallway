@@ -34,8 +34,9 @@ export function esDiaNino(hoy = hoyJuego()) {
   return h >= dia('desde') && h <= dia('hasta');
 }
 
-// La música del lobby: la de Navidad cuando es Navidad (o con el modo Navidad), si no la de siempre (Elora)
-export function cancionLobby() { return esNavidad() ? 'navidad' : 'lobby'; }
+// La música del lobby: la de Navidad cuando es Navidad (o con el modo Navidad), la de la fiesta de pijamas en
+// el Día del Niño (o con el modo pijama), y si no la de siempre (Elora)
+export function cancionLobby() { return esNavidad() ? 'navidad' : esDiaNino() ? 'pijamas' : 'lobby'; }
 // Y la de los pasillos: en Navidad, la de los pasillos de Navidad (Elora)
 export function cancionPasillo() { return esNavidad() ? 'pasilloNavidad' : 'pasillo'; }
 

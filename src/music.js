@@ -9,6 +9,8 @@
 //   'navidad' → vals alegre con campanitas y cascabeles, para el lobby en Navidad (Elora).
 //   'pasilloNavidad' → lenta y mecida como un villancico de cuna, un poco misteriosa: los pasillos
 //              en Navidad (Elora).
+//   'pijamas' → alegre y blandita, como una fiesta de pijamas con estrellitas: el lobby en la fiesta
+//              del Día del Niño y con el modo pijama (Elora; cómo suena, Clad [PROVISIONAL]).
 
 import { audioContext } from './audio.js';
 
@@ -102,6 +104,37 @@ const CANCIONES = {
       ['D2', 1], ['D3', 1], ['D2', 1], ['D3', 1], ['D2', 1], ['D3', 1], ['D2', 1], ['D#3', 1],
       ['C2', 1], ['C3', 1], ['C2', 1], ['C3', 1], ['A#1', 1], ['A#2', 1], ['A1', 1], ['A2', 1],
     ],
+  },
+  // Sol mayor, alegre pero blandita, como una fiesta de pijamas: saltitos de almohada, un bostezo en
+  // medio, estrellitas que brillan (campanitas) y una pandereta suave. La pidió Elora para el lobby en
+  // la fiesta de pijamas (melodía inventada, no es una copia de nada) [PROVISIONAL cómo suena].
+  pijamas: {
+    tiempo: 0.19,
+    voz: 'triangle', volVoz: 0.14,
+    bajoTipo: 'sine', volBajo: 0.13,
+    melodia: [
+      ['G4', 1], ['B4', 1], ['D5', 1], ['G5', 1], ['F#5', 1], ['D5', 1], ['E5', 2],
+      ['C5', 1], ['E5', 1], ['G5', 1], ['E5', 1], ['D5', 1], ['B4', 1], ['A4', 2],
+      ['G4', 1], ['B4', 1], ['D5', 1], ['G5', 1], ['A5', 1], ['G5', 1], ['F#5', 1], ['E5', 1],
+      ['D5', 1], ['C5', 1], ['B4', 1], ['A4', 1], ['G4', 2], [null, 2],
+      ['E5', 2], ['D5', 1], ['B4', 1], ['C5', 2], ['A4', 2],          // el bostezo
+      ['B4', 1], ['D5', 1], ['G5', 1], ['D5', 1], ['E5', 2], [null, 1], ['D5', 1],
+      ['C5', 1], ['B4', 1], ['A4', 1], ['B4', 1], ['C5', 1], ['D5', 1], ['E5', 1], ['F#5', 1],
+      ['G5', 3], ['D5', 1], ['G4', 2], [null, 2],
+    ],
+    bajo: [
+      ['G2', 2], ['D3', 2], ['E2', 2], ['B2', 2],
+      ['C3', 2], ['G2', 2], ['D2', 2], ['A2', 2],
+      ['G2', 2], ['D3', 2], ['D2', 2], ['A2', 2],
+      ['D2', 2], ['A2', 2], ['G2', 2], ['D3', 2],
+      ['C3', 2], ['G2', 2], ['A2', 2], ['E2', 2],
+      ['G2', 2], ['D3', 2], ['C3', 2], ['G2', 2],
+      ['A2', 2], ['E3', 2], ['D2', 2], ['A2', 2],
+      ['G2', 4], ['D2', 2], ['G2', 2],
+    ],
+    campanas: [['D6', 0.5], [null, 3.5], ['B5', 0.5], ['G6', 0.5], [null, 3]],
+    tipoCampana: 'sine', volCampana: 0.05,
+    cascabeles: [0, 0, 0.6, 0],
   },
   // Fa mayor, en vals (de tres en tres), como una cajita de música de Navidad, con campanitas y
   // cascabeles. La pidió Elora para el lobby en Navidad (melodía inventada, no es ningún villancico).
@@ -234,7 +267,7 @@ export class Music {
     o.stop(t0 + dur + 0.05);
   }
 
-  // play('miedo'), play('alegre'), play('lobby'), play('fuego'), play('navidad'), play('pasillo') o play('pasilloNavidad'). Si ya suena esa, no hace nada.
+  // play('miedo'), play('alegre'), play('lobby'), play('fuego'), play('navidad'), play('pasillo'), play('pasilloNavidad') o play('pijamas'). Si ya suena esa, no hace nada.
   play(nombre) {
     if (this.playing && this.cancion === nombre) return;
     if (!CANCIONES[nombre]) return;
