@@ -4,7 +4,7 @@
 //              pasillos (Elora la eligió: "está tan guay que quiero que sea la de los pasillos").
 //   'miedo'  → notas largas y raras en tono menor: la de los pasillos de antes (ya no suena).
 //   'alegre' → saltarina y rápida en tono mayor, para la sala Bonus.
-//   'lobby'  → tranquila y un poco misteriosa, como de sala de espera, para el lobby.
+//   'lobby'  → calentita, con emoción y un poco misteriosa: se nota que el lobby es una zona segura (Elora).
 //   'fuego'  → rápida y nerviosa, mientras el Drake Sangriento viene a escupir fuego (Elora).
 //   'navidad' → vals alegre con campanitas y cascabeles, para el lobby en Navidad (Elora).
 //   'pasilloNavidad' → lenta y mecida como un villancico de cuna, un poco misteriosa: los pasillos
@@ -67,26 +67,33 @@ const CANCIONES = {
       ['F3', 2], ['C4', 2], ['G3', 2], ['G3', 2],
     ],
   },
-  // Mi menor, suave como una cajita de música: chill pero con una nota rarita
-  // de vez en cuando. La pidió Elora para el lobby, con el rollo del lobby de
-  // Color o Die (melodía inventada, no es una copia).
+  // Fa mayor, calentita y con emoción, que se note que el lobby es una zona segura donde no te va a pasar
+  // nada raro (Elora, 9-11-2026), pero un poco misteriosa (Elora): unos acordes raritos que vienen de Fa menor
+  // (Si bemol menor y Re bemol) y una campanita con un Si natural, y siempre vuelve tranquila a casa (a Fa mayor).
+  // Va subiendo poco a poco hasta la nota más alta (la emoción). Melodía inventada (no es una copia de nada).
+  // Antes era en Mi menor, misteriosa del todo, como de sala de espera.
   lobby: {
-    tiempo: 0.3,
+    tiempo: 0.29,
     voz: 'triangle', volVoz: 0.13,
     bajoTipo: 'sine', volBajo: 0.14,
     melodia: [
-      ['E5', 2], ['G5', 1], ['F#5', 1], ['E5', 2], ['B4', 2],
-      ['C5', 2], ['D5', 1], ['E5', 1], ['D5', 2], ['B4', 2],
-      ['A4', 2], ['C5', 2], ['B4', 1], ['G4', 1], ['E4', 2],
-      ['F#4', 2], ['D#5', 2], ['E5', 3], [null, 1],
-      ['G5', 2], ['E5', 1], ['B4', 1], ['C5', 2], ['A4', 2],
-      ['B4', 2], ['D5', 1], ['C5', 1], ['B4', 2], [null, 2],
-      ['E5', 1], ['F#5', 1], ['G5', 2], ['F#5', 1], ['D#5', 1], ['E5', 2],
-      ['B4', 4], [null, 4],
+      ['A4', 1], ['C5', 1], ['F5', 2],               ['E5', 1], ['D5', 1], ['C5', 2],
+      ['D5', 1], ['F5', 1], ['A5', 2],               ['F5', 2], ['C#5', 2],                   // misterio (Si bemol menor)
+      ['A4', 1], ['C5', 1], ['F5', 1], ['G5', 1],    ['A5', 2], ['G5', 1], ['E5', 1],
+      ['F5', 1], ['E5', 1], ['D5', 1], ['C5', 1],    ['C5', 3], [null, 1],                    // flotando (Re bemol)
+      ['D5', 1], ['F5', 1], ['A#5', 2],              ['A5', 1], ['G5', 1], ['E5', 2],
+      ['C5', 1], ['E5', 1], ['A5', 2],               ['F5', 3], [null, 1],
+      ['D5', 1], ['F5', 1], ['A#5', 1], ['A5', 1],   ['G5', 2], ['C6', 2],                    // la emoción
+      ['A#5', 1], ['G#5', 1], ['G5', 1], ['E5', 1],  ['F5', 3], [null, 1],                    // un poco rarito… y a casa
     ],
     bajo: [
-      ['E2', 4], ['C3', 4], ['A2', 4], ['B2', 4],
+      ['F2', 2], ['C3', 2], ['C2', 2], ['G2', 2], ['D2', 2], ['A2', 2], ['A#1', 2], ['F2', 2],
+      ['F2', 2], ['C3', 2], ['C2', 2], ['G2', 2], ['D2', 2], ['A2', 2], ['C#2', 2], ['G#2', 2],
+      ['A#1', 2], ['F2', 2], ['C2', 2], ['G2', 2], ['A1', 2], ['E2', 2], ['D2', 2], ['A2', 2],
+      ['A#1', 2], ['F2', 2], ['C2', 2], ['G2', 2], ['A#1', 2], ['C2', 2], ['F2', 4],
     ],
+    campanas: [['C6', 0.5], [null, 3.5], ['B5', 0.5], ['F6', 0.5], [null, 3], ['E6', 0.5], [null, 3.5], ['C#6', 0.5], ['A5', 0.5], [null, 3]],
+    tipoCampana: 'sine', volCampana: 0.04,
   },
   // Re menor, muy rápida y repetitiva, como un corazón que late deprisa: para cuando el Drake
   // Sangriento viene a escupir fuego en el pasillo 50 (Elora: "más rápida, que dé un poco de ansiedad").

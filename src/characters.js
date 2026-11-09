@@ -2844,6 +2844,9 @@ function drawPerrita(ctx, pal, facing, walk, opts) {
   ctx.fillStyle = beige; ctx.beginPath(); ctx.ellipse(hx, hy, 9, 8, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = beigeOsc;
   for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(hx + s * 9, hy + 1, 3.2, 7, s * -0.25, 0, Math.PI * 2); ctx.fill(); }
+  // el lirio de la oreja izquierda, con el polen amarillo: rosa; con la ropa nueva, blanco (Elora). Va antes de la
+  // cara, para que nunca le tape un ojo (Elora)
+  if (!inv && !pj && !B) lirio(ctx, hx - 9.4, hy - 6.2, rp ? '#fffdf7' : '#f48fb8', rp ? '#e4efc0' : '#e0457f', rp ? '#cfc4b0' : null);
   if (!back) {
     // hocico, nariz, boca sonriente con la lengüita, ojos y mofletes
     ctx.fillStyle = claro; ctx.beginPath(); ctx.ellipse(mx, hy + 3.5, 4.6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
@@ -2854,7 +2857,9 @@ function drawPerrita(ctx, pal, facing, walk, opts) {
     ctx.beginPath(); ctx.arc(mx - 1.3, hy + 4, 1.3, 0, Math.PI); ctx.stroke();
     ctx.beginPath(); ctx.arc(mx + 1.3, hy + 4, 1.3, 0, Math.PI); ctx.stroke();
     ctx.fillStyle = B ? '#7a0b12' : '#f07a9a'; ctx.beginPath(); ctx.ellipse(mx + 0.6, hy + 5.6, 1, 1.2, 0, 0, Math.PI * 2); ctx.fill();
-    const ojos = lado ? [mx + lado * 1.5] : [hx - 3.6, hx + 3.6];
+    // de lado se le siguen viendo los dos ojos, un poco girados hacia donde mira (Elora: solo se quitaría uno si
+    // la oreja lo tapara del todo, y su oreja no lo tapa)
+    const ojos = [hx - 3.6 + lado * 1.6, hx + 3.6 + lado * 1.6];
     for (const ex of ojos) { ctx.fillStyle = B ? '#ff3b3b' : marron; dot(ctx, ex, hy - 2.2, 1.7); ctx.fillStyle = '#fff'; dot(ctx, ex - 0.5, hy - 2.8, 0.6); }
     if (!B) {
       ctx.fillStyle = 'rgba(240,120,150,.45)';
@@ -2869,9 +2874,6 @@ function drawPerrita(ctx, pal, facing, walk, opts) {
     ctx.fillStyle = azulAbrigoOsc; for (const x of [-4.5, -1.5, 1.5, 4.5]) ctx.fillRect(hx + x - 0.4, hy - 9.4, 0.8, 4.4);
     ctx.fillStyle = blanco; rrect(ctx, hx - 9, hy - 6, 18, 2.8, 1.4); ctx.fill();
     dot(ctx, hx, hy - 10.6, 2.2);
-  } else if (!pj && !B) {
-    // el lirio de la oreja izquierda, con el polen amarillo: rosa; con la ropa nueva, blanco (Elora)
-    lirio(ctx, hx - 8.6, hy - 5, rp ? '#fffdf7' : '#f48fb8', rp ? '#e4efc0' : '#e0457f', rp ? '#cfc4b0' : null);
   }
 }
 // Un lirio de seis pétalos en punta (el de la perrita), con los estambres y el polen amarillo
