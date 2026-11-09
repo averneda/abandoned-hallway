@@ -354,6 +354,7 @@ export class UI {
     box.innerHTML = '';
     const lista = skins ? skinsDe(ch.id).filter((k) => skins.disponible(k) && skins.puede(ch.id, k)) : [];
     box.classList.toggle('hidden', !lista.length);
+    box.classList.toggle('muchas', lista.length >= 2);   // con tres cartitas o más, más pequeñitas para que quepan
     if (!lista.length) return;
     box.appendChild(this.el('div', 'skins-titulo', t('skins.title')));
     const puesta = skins.elegida(ch.id) || null;

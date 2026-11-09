@@ -92,6 +92,9 @@ button.primary:hover, button.primary:focus { background: #ee2a36; }
 .card.skin canvas { width: 72px; height: 72px; }
 .card.skin .name { font-size: 13px; font-weight: 700; line-height: 1.15; max-width: 104px; }
 .skin-precio { font-size: 12px; color: #b9f5c4; min-height: 15px; }
+.skins-panel.muchas { gap: 4px; }
+.skins-panel.muchas .card.skin canvas { width: 50px; height: 50px; }
+.skins-panel.muchas .card.skin .name { font-size: 12px; }
 .skin-frase { font-size: 11px; font-style: italic; color: #e7dcf2; line-height: 1.2; max-width: 104px; }
 .card.skin.current .skin-precio { color: #ffd95a; }
 .pijama-badge { background: #6a4fa8; color: #fff; font-weight: 700; font-size: 15px; padding: 3px 12px; border-radius: 12px; box-shadow: 0 2px 0 #000; }
