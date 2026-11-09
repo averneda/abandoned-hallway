@@ -196,11 +196,13 @@ function drawOctB(ctx, facing, walk, chasing) {
 
 // Caty (dibujo de Elora): gata amarilla con los ojos azules de gato, la mancha de pintura roja en el ojo, la boca
 // abierta con dientes y sangre que le cae como saliva; las orejas rojas por dentro y las puntas de las patas y la cola rojas.
-function drawCatyB(ctx, facing, walk, chasing) {
+// media: sin cola, piernas ni brazos (sale de la boca); boca: la boca del gato, que se convierte en la suya (Elora)
+function drawCatyB(ctx, facing, walk, chasing, media = false, boca = null) {
   const am = '#f2d64a', amOsc = '#c9a92a', back = facing === 'up';
   const paso = Math.sin(walk) * 2;
   // la cola, con la punta roja
   const w = Math.sin(walk * 0.7) * 2.5;
+  if (!media) {
   ctx.strokeStyle = am; ctx.lineWidth = 4; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(4, 4); ctx.quadraticCurveTo(16, 2, 15 + w, -10); ctx.stroke();
   ctx.fillStyle = '#e05a6a'; dot(ctx, 15 + w, -10, 2.8);
@@ -210,6 +212,7 @@ function drawCatyB(ctx, facing, walk, chasing) {
     ctx.fillStyle = am; ctx.fillRect(side * 3.5 - 1.8, 3, 3.6, 7 + lift);
     ctx.fillStyle = '#e05a6a'; ctx.beginPath(); ctx.ellipse(side * 3.8, 10 + lift, 2.8, 1.8, 0, 0, Math.PI * 2); ctx.fill();
   }
+  }
   // el cuerpo amarillo con garabatos rojos
   ctx.fillStyle = am; ctx.beginPath(); ctx.ellipse(0, -3, 7.5, 9.5, 0, 0, Math.PI * 2); ctx.fill();
   if (!back) {
@@ -218,7 +221,7 @@ function drawCatyB(ctx, facing, walk, chasing) {
     ctx.stroke();
   }
   // los brazos, con las puntas rojas
-  for (const side of [-1, 1]) {
+  if (!media) for (const side of [-1, 1]) {
     const sw = Math.sin(walk * (chasing ? 2 : 0.7) + side) * (chasing ? 4 : 1.5);
     const mano = chasing ? [side * 12, -18 + Math.abs(sw)] : [side * 10 + sw * 0.4, 1];
     ctx.strokeStyle = am; ctx.lineWidth = 3;
@@ -242,6 +245,10 @@ function drawCatyB(ctx, facing, walk, chasing) {
     ctx.fillStyle = chasing ? '#c81e2b' : '#1a1a1a'; ctx.fillRect(s * 3.6 - 0.35, hy - 3.6, 0.7, 4);
   }
   ctx.fillStyle = '#d42a36'; ctx.beginPath(); ctx.moveTo(-0.9, hy + 1.6); ctx.lineTo(0.9, hy + 1.6); ctx.lineTo(0, hy + 2.6); ctx.closePath(); ctx.fill();   // la nariz
+  if (boca) {   // la boca del gato se ha convertido en la boca de Caty (Elora)
+    ctx.save(); ctx.translate(0, hy + 5); ctx.scale(0.5, 0.5); bocaGato(ctx, boca, 1); ctx.restore();
+    return;
+  }
   // la boca abierta con los dientes y la lengua roja
   ctx.fillStyle = '#3a1a1a'; ctx.beginPath(); ctx.ellipse(0, hy + 5.4, 4, 2.4, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-3.6, hy + 4.4);
@@ -315,7 +322,7 @@ export function hacerBocas(L, start, T, TILE) {
   // la del gato: en el suelo, a más de 6 casillas de donde empiezas
   const lejos = suelo.filter((c) => Math.hypot((c.tx + 0.5) * TILE - start.x, (c.ty + 0.5) * TILE - start.y) > TILE * 6);
   const c = lejos.length ? lejos[Math.floor(Math.random() * lejos.length)] : (suelo[0] || { tx: 2, ty: 2 });
-  bocas.push({ x: (c.tx + 0.5) * TILE, y: (c.ty + 0.5) * TILE, k: 1.1, fase: 0, ang: 0, gato: true, muerde: 0, espera: 0 });
+  bocas.push({ x: (c.tx + 0.5) * TILE, y: (c.ty + 0.5) * TILE, k: 1.1, fase: 0, ang: 0, gato: true, muerde: 0, espera: 0, sitios: suelo, tile: TILE });
   return bocas;
 }
 
@@ -323,7 +330,13 @@ export function hacerBocas(L, start, T, TILE) {
 export function drawBoca(ctx, b, time) {
   const abre = 0.55 + 0.45 * Math.abs(Math.sin(time * 5 + b.fase));
   ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.ang); ctx.scale(b.k, b.k);
-  if (b.gato) { bocaGato(ctx, b, abre); ctx.restore(); return; }
+  if (b.gato) {
+    if (b.coge == null && !(b.baja > 0)) {   // mientras sale media Caty, la boca es la suya; luego aparece en otro sitio
+      if (b.aparece > 0) ctx.scale(1 - b.aparece / 0.4, 1 - b.aparece / 0.4);
+      bocaGato(ctx, b, abre);
+    }
+    ctx.restore(); return;
+  }
   const w = 7, h = 6 * abre;
   const forma = () => { ctx.beginPath(); ctx.moveTo(-w, 0); ctx.quadraticCurveTo(0, h * 1.9, w, 0); ctx.closePath(); };
   ctx.fillStyle = '#3a0a10'; forma(); ctx.fill();
@@ -336,6 +349,54 @@ export function drawBoca(ctx, b, time) {
   ctx.restore();
   ctx.strokeStyle = '#c8303c'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(-w - 0.5, 0.2); ctx.quadraticCurveTo(0, -1.6, w + 0.5, 0.2); ctx.stroke();
+  ctx.restore();
+}
+
+// Después de coger a alguien, la boca del gato desaparece y aparece en otro sitio (Elora), lejos de ti
+export function moverBoca(b, px, py) {
+  const T = b.tile, lejos = b.sitios.filter((c) => Math.hypot((c.tx + 0.5) * T - px, (c.ty + 0.5) * T - py) > T * 6);
+  const lista = lejos.length ? lejos : b.sitios;
+  if (!lista.length) return;
+  const c = lista[Math.floor(Math.random() * lista.length)];
+  b.x = (c.tx + 0.5) * T; b.y = (c.ty + 0.5) * T; b.aparece = 0.4;
+}
+
+// Media Caty (Elora): cuando pasas por la boca del gato, sale de ella de cintura para arriba, te coge con los
+// brazos y te quita 2 corazones; luego se vuelve a meter. Cuánto ha salido, de 0 a 1:
+const GRANDE = 1.5;   // media Caty sale más grande que tú, para que se vea bien [PROVISIONAL]
+function cuantoSale(b) {
+  if (b.coge != null) return Math.min(1, b.coge / 0.3);
+  if (b.baja > 0) return b.baja / 0.5;
+  return 0;
+}
+// el cuerpo (debajo de ti)
+export function drawMediaCaty(ctx, b, time) {
+  const sube = cuantoSale(b);
+  if (sube <= 0) return;
+  ctx.save(); ctx.translate(b.x, b.y); ctx.scale(GRANDE, GRANDE);
+  ctx.fillStyle = SANGRE; ctx.beginPath(); ctx.ellipse(0, 1, 15 * sube, 5 * sube, 0, 0, Math.PI * 2); ctx.fill();   // el charco
+  ctx.beginPath(); ctx.rect(-40, -70, 80, 71); ctx.clip();   // solo se ve lo que ha salido por encima de la boca
+  ctx.translate(0, -6 + (1 - sube) * 46);   // sale un poco por encima de ti, para que se le vea la cara
+  drawCatyB(ctx, 'down', time * 3, true, true, b);
+  ctx.restore();
+}
+// los brazos (encima de ti): se estiran desde los hombros y te rodean
+export function drawBrazosCaty(ctx, b, px, py) {
+  const sube = cuantoSale(b);
+  if (sube <= 0) return;
+  const estira = b.coge != null ? Math.min(1, Math.max(0, (b.coge - 0.15) / 0.3)) : sube;
+  const am = '#f2d64a';
+  ctx.save(); ctx.translate(b.x, b.y); ctx.scale(GRANDE, GRANDE);
+  const hy = -6 + (1 - sube) * 46 - 8;   // la altura de los hombros
+  const dx = (px - b.x) / GRANDE, dy = (py - b.y - 6) / GRANDE;
+  ctx.lineCap = 'round';
+  for (const side of [-1, 1]) {
+    const sx = side * 5, mx = dx + side * 7, my = dy;           // del hombro a tu cintura, por un lado
+    const hx = sx + (mx - sx) * estira, hyy = hy + (my - hy) * estira;
+    ctx.strokeStyle = am; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(sx, hy); ctx.quadraticCurveTo(sx + side * 9, (hy + hyy) / 2, hx, hyy); ctx.stroke();
+    ctx.fillStyle = '#e05a6a'; dot(ctx, hx - side * 1.5 * estira, hyy, 2.2);   // la punta roja de la mano
+  }
   ctx.restore();
 }
 

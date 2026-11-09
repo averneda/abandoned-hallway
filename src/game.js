@@ -10,7 +10,7 @@ import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
 import { poseAndando } from './andares.js';
-import { decidirEspecial, drawBloodieEspecial, hacerBocas, drawBoca, nuevaPecera, updatePecera, drawPecera, entre } from './especiales.js';
+import { decidirEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, nuevaPecera, updatePecera, drawPecera, entre } from './especiales.js';
 import { sortearAdorno, drawAdorno, adorno, drawArbolCompleto } from './adornos.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
@@ -437,7 +437,7 @@ export class Game {
         if (this.proximaPecera <= 0) { this.pecera = nuevaPecera(); sfx.tapeIn(); }
       }
     }
-    if (this.pecera) input = QUIETO;
+    if (this.pecera || this.cogida) input = QUIETO;   // y mientras media Caty te tiene cogida, tampoco
 
     // --- habilidades con la tecla Q ---
     if (this.freeze > 0) this.freeze -= dt;
@@ -462,11 +462,22 @@ export class Game {
     if (this.bocas) for (const b of this.bocas) {
       if (!b.gato) continue;
       if (b.muerde > 0) b.muerde -= dt;
+      if (b.coge != null) {   // media Caty ha salido de la boca y te tiene cogida con los brazos (Elora)
+        b.coge += dt; b.muerde = 0.2;
+        p.x += (b.x - p.x) * Math.min(1, dt * 5); p.y += (b.y + 14 - p.y) * Math.min(1, dt * 5);   // te acerca a ella
+        if (!b.hecho && b.coge >= BE.cogeDano) {
+          b.hecho = true;
+          p.hearts -= BE.bocaDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * 2 * statMul(this.ch, 'cordura');
+          this.flash = 0.7; this.say(t('esp.boca'), 2.5); sfx.hurt();
+        }
+        if (b.coge >= BE.cogeDura) { b.coge = null; b.baja = 0.5; b.espera = BE.bocaEspera; this.cogida = null; p.invuln = PLAYER.invuln; }
+        continue;
+      }
+      if (b.aparece > 0) b.aparece -= dt;
+      if (b.baja > 0) { b.baja -= dt; if (b.baja <= 0) moverBoca(b, p.x, p.y); }   // y aparece en otro sitio (Elora)
       if (b.espera > 0) { b.espera -= dt; continue; }
-      if (dist(b.x, b.y, p.x, p.y) < BE.bocaRadio + p.r * 0.5 && p.tun <= 0 && p.fly <= 0 && !p.seguro) {
-        p.hearts -= BE.bocaDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * 2 * statMul(this.ch, 'cordura');
-        b.muerde = 0.6; b.espera = BE.bocaEspera; this.flash = 0.7;
-        this.say(t('esp.boca'), 2.5);
+      if (dist(b.x, b.y, p.x, p.y) < BE.bocaRadio + p.r * 0.5 && p.tun <= 0 && p.fly <= 0 && !p.seguro && !this.cogida) {
+        b.coge = 0; b.hecho = false; b.baja = 0; this.cogida = b; p.invuln = PLAYER.invuln;
         sfx.bite();
       }
     }
@@ -745,7 +756,7 @@ export class Game {
     this.renderWorld(ctx);
 
     // las bocas que se ríen de la Bloodie Caty (Elora)
-    if (this.bocas) for (const b of this.bocas) drawBoca(ctx, b, this.time);
+    if (this.bocas) for (const b of this.bocas) { drawBoca(ctx, b, this.time); if (b.gato) drawMediaCaty(ctx, b, this.time); }
 
     // rastros de sangre de los Bloodies
     for (const e of this.enemies) for (const tr of e.trail) {
@@ -764,6 +775,8 @@ export class Game {
     actors.push({ y: p.y, draw: () => this.drawPlayer(ctx) });
     actors.sort((a, b) => a.y - b.y);
     for (const a of actors) a.draw();
+    // los brazos de media Caty, por encima de ti, que te tiene cogida (Elora)
+    if (this.bocas) for (const b of this.bocas) if (b.gato) drawBrazosCaty(ctx, b, p.x, p.y);
 
     ctx.restore();
 
