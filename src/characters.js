@@ -55,7 +55,7 @@ export const CHARACTERS = [
   { id: 'hoppy', name: 'Hoppy', species: { es: 'Liebre', en: 'Hare' }, color: '#c49a7a', dark: '#93694c', shape: 'hare', price: 50, ability: 'hoppy',
     pequena: true,   // chica, más pequeña que los demás: tiene 7 u 8 años; enérgica, adoptada por humanos (Elora)
     stats: { velocidad: 80, cordura: 41, sigilo: 30, resistencia: 70 }, corazones: 3, ficha: 'assets/sprites/fichas/hoppy.webp',
-    fichaCuadro: { left: 65.5, top: 26, right: 2.5, bottom: 4 } },
+    fichaCuadro: { left: 61.5, top: 31, right: 3, bottom: 4 } },   // la ficha nueva (Elora, 10-11-2026)
   // Chop, el reno (Elora; el nombre lo eligió ella): el personaje secreto de Navidad. Su id sigue siendo 'reno'.
   // Se gana abriendo los 5 días del calendario de Adviento grande (src/adviento.js) o se juega gratis en el
   // modo Navidad (código). Ya tiene su ficha de Elora, su habilidad (la Nariz brillante) y sus números (Elora,
@@ -1964,114 +1964,107 @@ function macetaCasco(ctx, hx, hy, B) {
   ctx.fillStyle = sombra; ctx.globalAlpha *= 0.35; ctx.fillRect(hx - 10.4, hy + 1.2, 20.8, 0.8); ctx.globalAlpha /= 0.35;
 }
 
+// Hoppy, según su ficha nueva (Elora, 10-11-2026; inspirada en un personaje de otro juego, pero es suya): la maceta
+// marroncita boca abajo en la cabeza (le tapa las orejas y los ojos; la cara, con pecas y la sonrisita, sí se ve),
+// envuelta en una MANTA amarilla que sujeta con las manos por delante, con una tira lila de florecitas amarillas abajo,
+// y las PLANTAS de su maceta le hacen de manos: dos tallos verdes que acaban en un girasol. Asoman los pies de liebre.
 function drawHoppy(ctx, pal, facing, walk, opts) {
   const rp = pal.skin === 'ropa' && !opts.bloody;   // la ropa nueva (la hizo Clad para Elora) [PROVISIONAL]
   const B = !!opts.bloody, chasing = !!opts.chasing, back = facing === 'up';
   const skin = pal.color, skinDark = pal.dark;
-  // skin de pijama (hecha por Clad a partir del cartel de Elora; Elora la dejó así): camisón rosa y un peluchito
+  const cara = B ? skin : '#e7c9ae';   // la cara, clarita como en la ficha
+  // las skins, de momento, cambian la manta [PROVISIONAL]: pijama = manta rosa con estrellitas; Navidad = manta
+  // marrón MUY peludita con la felpa de cuernos de reno y la naricita roja; ropa nueva = manta verde y margaritas
   const pj = pal.skin === 'pijama';
-  // skin de Navidad (la pensó Elora con el quiz): de reno. Un jersey marrón MUY peludito (Elora: "DEMASIADO
-  // PELUDITO"), una felpa con cuernos de reno y la naricita pintada de rojo con pintacaras
   const inv = pal.skin === 'invierno' && !B;
-  const jersey = '#8a5a3a', jerseyClaro = '#a8744e', jerseyOsc = '#6a4228', cuerno = '#5a3418';
-  const manoPeluche = facing === 'left' ? -1 : 1;   // la mano que coge el peluchito
-  const shirt = B ? '#5e0810' : pj ? '#f4b9cf' : rp ? '#4fb36a' : '#d8344a', shirtDark = B ? '#3a0408' : pj ? '#d48aa8' : rp ? '#2f8a4a' : '#a8202f';
-  const panel = B ? '#c9a0a0' : '#cfe9f6';
+  const cuerno = '#5a3418';
+  const manta = B ? '#5e0810' : pj ? '#f4b9cf' : inv ? '#8a5a3a' : rp ? '#4fb36a' : '#f5d33c';
+  const mantaOsc = B ? '#3a0408' : pj ? '#d48aa8' : inv ? '#6a4228' : rp ? '#2f8a4a' : '#d9ae1e';
+  const tira = B ? '#4a0a10' : inv ? '#6a4228' : '#b9a6e6', flor = B ? '#8a4a2a' : rp ? '#fbf8f0' : '#ffd83a';
+  const tallo = B ? '#3a4a1a' : '#5cc23a', talloOsc = B ? '#22300e' : '#3c8e24';
+  const petalo = B ? '#8a6a20' : '#ffd02a', centro = B ? '#1a0a06' : '#3a2a1e';
   const line = B ? '#2a0306' : '#4a2e22';
   const hx = 0, hy = back ? -15 : -14;
   const step = Math.sin(walk) * 1.8;
 
-  // colita (detrás si mira de frente)
-  if (!back) { ctx.fillStyle = skinDark; dot(ctx, -9.5, 4, 2.6); }
-  // piernas con las patas de liebre grandes
+  // los pies de liebre, que asoman por debajo de la manta
   ctx.fillStyle = skin;
   for (const side of [-1, 1]) {
     const lift = side * step > 0 ? -side * step * 0.7 : 0;
-    girado(ctx, piernaPose(opts, side), side * 3.5, 3, () => {
-      ctx.fillRect(side * 3.5 - 1.8, 3, 3.6, 7 + lift);
-      ctx.beginPath(); ctx.ellipse(side * 4.5, 10.5 + lift, 4.2, 2, 0, 0, Math.PI * 2); ctx.fill();
+    girado(ctx, piernaPose(opts, side), side * 4, 6, () => {
+      ctx.beginPath(); ctx.ellipse(side * 5.2, 10.4 + lift, 4, 2, side * 0.25, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = skinDark; ctx.globalAlpha *= 0.5; dot(ctx, side * 6.6, 10.8 + lift, 0.9); ctx.globalAlpha /= 0.5; ctx.fillStyle = skin;
     });
   }
-  // brazos abiertos (de Bloodie que persigue, arriba)
-  ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  for (const side of [-1, 1]) {
-    const sw = Math.sin(walk * (chasing ? 2 : 0.8) + side) * (chasing ? 4 : 1.5);
-    const aH = brazoPose(opts, side), hombroH = [side * 5.5, -4];
-    if (pj && !B && !back && side === manoPeluche) continue;   // esa mano coge el peluchito (se dibuja con él; de espaldas, no)
-    const manoH = girar(B && chasing ? [side * 13 + sw, -17 + Math.abs(sw)] : [side * 11 + sw * 0.4, -1 + sw * 0.3], hombroH, aH);
-    if (inv) {
-      // las mangas del jersey peludito: bolitas de pelo a lo largo del brazo
-      for (let k = 0; k <= 4; k++) {
-        const u = k / 5, x = side * 5.5 + (manoH[0] - side * 5.5) * u, y = -4 + (manoH[1] + 4) * u;
-        ctx.fillStyle = jerseyOsc; dot(ctx, x, y + 0.4, 1.9);
-        ctx.fillStyle = k % 2 ? jerseyClaro : jersey; dot(ctx, x, y, 1.7);
-      }
-      ctx.fillStyle = skin; dot(ctx, manoH[0], manoH[1], 2);   // la mano asoma por la manga
-      continue;
-    }
-    ctx.beginPath(); ctx.moveTo(side * 5.5, -4); ctx.lineTo(manoH[0], manoH[1]); ctx.stroke();
-    if (!(B && chasing)) { const pm = girar([side * 11.5 + sw * 0.4, -1 + sw * 0.3], hombroH, aH); ctx.fillStyle = skin; dot(ctx, pm[0], pm[1], 2); }
-  }
-  if (pj) {
-    // el camisón y, de frente, el peluchito abrazado (un perrito de orejas caídas)
-    camison(ctx, -8, shirt, shirtDark);
-    // el peluchito, cogido con una mano (Elora): el brazo sale de la manga hasta el peluche
-    if (!back) {
-      const m = manoPeluche;
-      ctx.strokeStyle = skin; ctx.lineWidth = 3; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(m * 6.5, -4.5); ctx.lineTo(m * 4.4, -1.6); ctx.stroke();
-      peluche(ctx, m * 1.2, -2.6, '#ecdcc0', '#a87a54', 'caidas');
-      ctx.fillStyle = skin; dot(ctx, m * 4.4, -1.6, 2);
-    }
-  } else if (inv) {
-    // el jersey marrón MUY peludito: el cuerpo y, todo alrededor, bolitas de pelo, y mechoncitos por dentro
-    // (Elora: menos ancho, que se pasó con el pelo)
-    ctx.fillStyle = jersey; rrect(ctx, -6.2, -8.3, 12.4, 13, 3); ctx.fill();
-    const borde = [];
-    for (let x = -5.4; x <= 5.5; x += 2.2) { borde.push([x, -8.4]); borde.push([x, 4.8]); }
-    for (let y = -6; y <= 3; y += 2.2) { borde.push([-6.3, y]); borde.push([6.3, y]); }
-    ctx.fillStyle = jerseyOsc; for (const [x, y] of borde) dot(ctx, x, y + 0.4, 1.25);
-    ctx.fillStyle = jersey; for (const [x, y] of borde) dot(ctx, x, y, 1.15);
-    ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = jerseyOsc; ctx.fillRect(3.2, -7, 2.8, 11); ctx.restore();
-    ctx.strokeStyle = jerseyClaro; ctx.lineWidth = 0.7; ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (const [x, y] of [[-4, -5], [-1, -3], [2.4, -5.4], [-3.2, 0], [0.6, 1.6], [3.6, -1.2], [-5, 3], [2.2, 3.4]]) {
-      ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 0.8, y - 1, x + 1.6, y - 0.2); ctx.moveTo(x + 0.4, y + 1); ctx.quadraticCurveTo(x + 1.2, y, x + 2, y + 0.8);
-    }
+  // la manta: ancha abajo, como una campana, desde el cuello hasta los pies
+  const mantaForma = () => {
+    ctx.beginPath(); ctx.moveTo(-4.6, -6.4); ctx.lineTo(4.6, -6.4);
+    ctx.quadraticCurveTo(6.4, 2, 9.4, 9.2); ctx.quadraticCurveTo(0, 10.6, -9.4, 9.2);
+    ctx.quadraticCurveTo(-6.4, 2, -4.6, -6.4); ctx.closePath();
+  };
+  ctx.fillStyle = manta; mantaForma(); ctx.fill();
+  ctx.save(); mantaForma(); ctx.clip();
+  ctx.fillStyle = mantaOsc; ctx.globalAlpha *= 0.45; ctx.fillRect(3.4, -7, 7, 18); ctx.globalAlpha /= 0.45;   // la sombra de un lado
+  if (inv) {   // la manta marrón MUY peludita: mechoncitos por dentro
+    ctx.strokeStyle = '#a8744e'; ctx.lineWidth = 0.7; ctx.lineCap = 'round'; ctx.beginPath();
+    for (const [x, y] of [[-4, -3], [1.6, -4.6], [-5.6, 2], [3, 0.6], [-1.6, 4.6], [5.4, 5]]) { ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 0.8, y - 1, x + 1.6, y - 0.2); }
     ctx.stroke();
-  } else {
-  // camiseta roja
-  ctx.fillStyle = shirt;
-  rrect(ctx, -6.5, -8, 13, 12.5, 2.5); ctx.fill();
-  for (const side of [-1, 1]) ctx.fillRect(side > 0 ? 4.5 : -8.5, -8, 4, 4);
-  ctx.save(); ctx.globalAlpha *= 0.4; ctx.fillStyle = shirtDark; ctx.fillRect(3.5, -7, 3, 11); ctx.restore();
   }
-  if (!back && !pj && !inv) {
-    // el dibujo azul clarito con el corazón con brazos y piernas
-    ctx.fillStyle = panel; ctx.fillRect(-4, -6, 8, 9);
-    if (!B) {
-      ctx.fillStyle = '#ef8fb0';
-      ctx.beginPath(); ctx.moveTo(0, 0.2); ctx.lineTo(-2.4, -2.4); ctx.quadraticCurveTo(-2.6, -4.6, -0.8, -4.2);
-      ctx.lineTo(0, -3.4); ctx.lineTo(0.8, -4.2); ctx.quadraticCurveTo(2.6, -4.6, 2.4, -2.4); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = '#7a5a6a'; ctx.lineWidth = 0.5;
-      ctx.beginPath(); ctx.moveTo(-1.6, -2.6); ctx.lineTo(-3.2, -4); ctx.moveTo(1.6, -2.6); ctx.lineTo(3.2, -4);
-      ctx.moveTo(-0.8, -0.6); ctx.lineTo(-1.4, 1.6); ctx.moveTo(0.8, -0.6); ctx.lineTo(1.4, 1.6); ctx.stroke();
-      ctx.fillStyle = '#4ea84a'; ctx.fillRect(1, 3, 4, 1.4);   // el trocito verde de abajo
+  if (pj) { ctx.fillStyle = '#fff7c2'; for (const [x, y] of [[-3.6, -2.6], [2.4, -4.4], [-1.4, 2.4], [4.6, 1.8], [-6, 6.2]]) estrella(ctx, x, y, 1); }
+  // la tira lila de abajo, con florecitas amarillas
+  ctx.fillStyle = tira; ctx.fillRect(-11, 6.6, 22, 5);
+  for (let x = -7.6; x <= 7.7; x += 2.55) {
+    ctx.fillStyle = flor; for (let k = 0; k < 5; k++) { const a = k * Math.PI * 2 / 5; dot(ctx, x + Math.cos(a) * 0.75, 8.5 + Math.sin(a) * 0.75, 0.55); }
+    ctx.fillStyle = B ? '#5a3a1a' : '#f0a21a'; dot(ctx, x, 8.5, 0.45);
+  }
+  ctx.restore();
+  if (inv) {   // el borde peludito de la manta
+    ctx.fillStyle = '#a8744e'; for (let x = -9; x <= 9.1; x += 1.8) dot(ctx, x, 9.4 + Math.abs(x) * -0.05, 1.05);
+  }
+  ctx.strokeStyle = line; ctx.lineWidth = 0.6; mantaForma(); ctx.stroke();
+  if (!back) {
+    // por delante: el borde de la manta, que se cruza, y las dos manitas que la sujetan (como en el dibujo)
+    ctx.beginPath(); ctx.moveTo(0.4, -6.2); ctx.quadraticCurveTo(-0.6, 1, 0.4, 9.6); ctx.stroke();
+    for (const [x, y, s] of [[0.4, -3.2, 1], [-0.3, 1.8, -1]]) {
+      ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(x + s * 1.1, y, 1.8, 1.1, s * 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = line; ctx.lineWidth = 0.45;
+      ctx.beginPath(); ctx.arc(x + s * 1.1, y, 1.3, s > 0 ? Math.PI * 0.6 : Math.PI * 1.6, s > 0 ? Math.PI * 1.4 : Math.PI * 2.4); ctx.stroke();
     }
   }
-  // (las orejas largas ya no se ven: van escondidas dentro de la maceta, Elora)
-  // cabeza
-  ctx.fillStyle = skin; dot(ctx, hx, hy, 9);
-  // la Hoppy de verdad (Elora, noviembre 2026; la ficha estaba mal): lleva una maceta marroncita boca abajo en la
-  // cabeza, como un casco. Le tapa las orejas y los ojos; la boca sí se ve
+  // la cabeza (la cara asoma por debajo de la maceta)
+  ctx.fillStyle = cara; dot(ctx, hx, hy, 9);
+  // las plantas de la maceta, que le hacen de manos (Elora): un tallo verde por cada lado, que baja un poco y vuelve
+  // a subir, y un girasol en la punta. De Bloodie que persigue, los suben más
+  for (const side of [-1, 1]) {
+    const sw = Math.sin(walk * (chasing ? 2 : 0.8) + side) * (chasing ? 2.4 : 1);
+    const base = [hx + side * 7.6, hy + 1.6];
+    girado(ctx, brazoPose(opts, side), base[0], base[1], () => {
+      const codo = [side * 13.6, hy + 9 + sw * 0.5], punta = [side * 13 + sw * 0.4, hy - (B && chasing ? 12 : 7) + sw * 0.3];
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = talloOsc; ctx.lineWidth = 3.4;
+      ctx.beginPath(); ctx.moveTo(base[0], base[1]); ctx.quadraticCurveTo(codo[0], codo[1], punta[0], punta[1] + 2.4); ctx.stroke();
+      ctx.strokeStyle = tallo; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(base[0], base[1]); ctx.quadraticCurveTo(codo[0], codo[1], punta[0], punta[1] + 2.4); ctx.stroke();
+      // el girasol: los pétalos son como deditos (Elora): cuatro largos y redonditos, abiertos hacia arriba
+      ctx.fillStyle = petalo;
+      for (const o of [-1.05, -0.35, 0.35, 1.05]) {
+        const a = -Math.PI / 2 + side * 0.3 + o + Math.sin(walk * 0.6 + o * 3) * 0.06;
+        ctx.save(); ctx.translate(punta[0] + Math.cos(a) * 3.6, punta[1] + Math.sin(a) * 3.6); ctx.rotate(a);
+        ctx.beginPath(); ctx.ellipse(0, 0, 2.3, 0.95, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = centro; dot(ctx, punta[0], punta[1], 2.2);
+      if (!B) { ctx.fillStyle = 'rgba(255,255,255,0.18)'; dot(ctx, punta[0] - 0.7, punta[1] - 0.7, 0.8); }
+    });
+  }
+  // la maceta marroncita boca abajo, como un casco (Elora): tapa las orejas y los ojos
   macetaCasco(ctx, hx, hy, B);
   if (rp) for (const [x, y] of [[-4.2, -5], [0.6, -7.8], [4.6, -4.2]]) {   // margaritas pintadas en la maceta (la ropa nueva)
     ctx.fillStyle = '#fbf8f0'; for (let k = 0; k < 5; k++) { const a = k * Math.PI * 2 / 5; dot(ctx, hx + x + Math.cos(a) * 1.2, hy + y + Math.sin(a) * 1.2, 0.8); }
     ctx.fillStyle = '#ffd83a'; dot(ctx, hx + x, hy + y, 0.7);
   }
   if (inv) {
-    // la felpa con cuernos de reno: la diadema por encima de la cabeza y dos cuernos con dos puntas
-    // (con la maceta, la felpa va por encima de la maceta y los cuernos salen de arriba) [PROVISIONAL]
+    // la felpa con cuernos de reno, por encima de la maceta
     ctx.strokeStyle = '#c4303a'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.arc(hx, hy + 1, 12.4, Math.PI * 1.22, Math.PI * 1.78); ctx.stroke();
     ctx.strokeStyle = cuerno; ctx.lineWidth = 1.6;
@@ -2085,12 +2078,15 @@ function drawHoppy(ctx, pal, facing, walk, opts) {
   }
   if (B) bloodyMarks(ctx, hx, hy, facing);
   if (back) return;
-  // los ojos no se ven (la maceta los tapa, Elora): solo la naricita y la sonrisita
+  // la cara: los ojos no se ven (la maceta los tapa); la naricita, la sonrisita y las pecas (Elora)
   ctx.strokeStyle = line; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
-  if (inv) { ctx.fillStyle = '#e8303c'; dot(ctx, hx, hy + 3.1, 1.6); ctx.fillStyle = 'rgba(255,255,255,0.6)'; dot(ctx, hx - 0.5, hy + 2.6, 0.45); }   // la nariz pintada de rojo con pintacaras (Elora)
+  if (inv) { ctx.fillStyle = '#e8303c'; dot(ctx, hx, hy + 3.1, 1.6); ctx.fillStyle = 'rgba(255,255,255,0.6)'; dot(ctx, hx - 0.5, hy + 2.6, 0.45); }
   else { ctx.fillStyle = B ? '#2a0306' : '#8a5a48'; dot(ctx, hx, hy + 3.3, 0.8); }
   ctx.beginPath(); ctx.moveTo(hx - 2, hy + 4.6); ctx.quadraticCurveTo(hx - 1, hy + 6, hx, hy + 4.8); ctx.quadraticCurveTo(hx + 1, hy + 6, hx + 2, hy + 4.6); ctx.stroke();
-  if (!B) { ctx.save(); ctx.globalAlpha *= 0.45; ctx.fillStyle = '#f08aa8'; dot(ctx, hx - 5.2, hy + 3, 1.4); dot(ctx, hx + 5.2, hy + 3, 1.4); ctx.restore(); }
+  if (!B) {
+    ctx.fillStyle = '#9a6a52';
+    for (const s of [-1, 1]) for (const [x, y] of [[4.6, 3.2], [5.8, 4.4], [6.4, 2.8], [4.2, 5.2]]) dot(ctx, hx + s * x, hy + y, 0.35);
+  }
 }
 
 // Draila, según su ficha (Elora): cocodrilo verde de morro largo con la boca abierta enseñando los
