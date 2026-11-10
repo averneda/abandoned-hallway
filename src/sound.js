@@ -50,6 +50,8 @@ export const sfx = {
   // agua que entra de golpe (inundación de Jely)
   flood() { tone({ type: 'sine', from: 180, to: 60, time: 0.9, gain: 0.14 }); tone({ type: 'triangle', from: 700, to: 250, time: 0.5, gain: 0.06, delay: 0.1 }); tone({ type: 'sine', from: 500, to: 900, time: 0.12, gain: 0.05, delay: 0.5 }); tone({ type: 'sine', from: 600, to: 1000, time: 0.1, gain: 0.05, delay: 0.7 }); },
   freeze() { tone({ type: 'sine', from: 1200, to: 300, time: 0.6, gain: 0.12 }); tone({ type: 'triangle', from: 900, to: 200, time: 0.6, gain: 0.08, delay: 0.05 }); },
+  // las garras de la Bloodie Tarda al trepar un trasto (Elora): tres arañazos rápidos
+  garras() { for (let i = 0; i < 3; i++) { ruido({ time: 0.05, gain: 0.09, delay: i * 0.09 }); tone({ type: 'sawtooth', from: 2200, to: 1300, time: 0.05, gain: 0.03, delay: i * 0.09 }); } },
   bite() { tone({ type: 'sawtooth', from: 180, to: 60, time: 0.18, gain: 0.16 }); tone({ type: 'square', from: 900, to: 200, time: 0.3, gain: 0.08, delay: 0.05 }); },
   // Drake despega: un "fuush" que sube y un aleteo
   fly() { tone({ type: 'sawtooth', from: 150, to: 520, time: 0.35, gain: 0.1 }); tone({ type: 'triangle', from: 300, to: 260, time: 0.08, gain: 0.1, delay: 0.3 }); tone({ type: 'triangle', from: 300, to: 260, time: 0.08, gain: 0.1, delay: 0.45 }); },

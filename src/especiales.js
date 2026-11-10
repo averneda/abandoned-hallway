@@ -43,15 +43,37 @@ export const entre = ([a, b]) => a + Math.random() * (b - a);
 // un número entero al azar de a a b, los dos incluidos (Gec y Draila: 5, 6, 7, 8, 9 o 10 segundos, Elora)
 export const enteroEntre = ([a, b]) => a + Math.floor(Math.random() * (b - a + 1));
 
+// Los arañazos rojos que deja la Bloodie Tarda en los trastos que trepa (Elora). Cada uno: { x, y, s } (la casilla)
+export function drawZarpazos(ctx, lista) {
+  ctx.save(); ctx.lineCap = 'round';
+  for (const z of lista) {
+    const a = z.s * 6.28, cx = z.x + 16 + Math.cos(a) * 3, cy = z.y + 15 + Math.sin(a) * 2, inc = (z.s - 0.5) * 0.8;
+    for (let k = -1; k <= 1; k++) {
+      const ox = k * 5;
+      ctx.strokeStyle = 'rgba(120,10,18,0.9)'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(cx + ox - 4 + inc * 4, cy - 7); ctx.lineTo(cx + ox + 3 - inc * 4, cy + 7); ctx.stroke();
+      ctx.strokeStyle = '#d42a36'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx + ox - 4 + inc * 4, cy - 7); ctx.lineTo(cx + ox + 3 - inc * 4, cy + 7); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 // ------------------------------------------------------------------ dibujo de los cuatro
 
-// Dibuja un Bloodie especial en (x, y) (los pies), como drawCharacter. opts: { chasing, frozen, modo }
+// Dibuja un Bloodie especial en (x, y) (los pies), como drawCharacter. opts: { chasing, frozen, modo, sube }
+// sube (de 0 a 1): la Bloodie Tarda encima de un trasto naranja; se sube 20 px, se inclina mientras trepa y se
+// agarra al borde con las garras (Elora: que se note que lo ha trepado)
+const SUBE_PX = 20;   // Elora: que suba más alto
 export function drawBloodieEspecial(ctx, tipo, x, y, facing, walk, opts = {}) {
   const chasing = !!opts.chasing;
+  const sube = tipo === 'tarda' ? (opts.sube || 0) : 0, alto = sube * SUBE_PX;
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath(); ctx.ellipse(x, y + 10, tipo === 'tarda' ? 20 : 13, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.translate(x, y + Math.sin(walk) * (chasing ? 2.2 : 1.2));
+  ctx.beginPath(); ctx.ellipse(x, y + 10 - alto, (tipo === 'tarda' ? 20 : 13) * (1 - sube * 0.25), 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.translate(x, y - alto + Math.sin(walk) * (chasing ? 2.2 : 1.2));
+  // mientras trepa (a medio subir o bajar), se inclina hacia donde va
+  if (sube > 0.02 && sube < 0.98) ctx.rotate(-0.45 * Math.sin(Math.PI * sube) * (facing === 'left' ? -1 : 1));
   if (chasing) ctx.translate(Math.sin(walk * 3) * 1.2, 0);
   // el charco de sangre y los goterones de siempre
   ctx.fillStyle = SANGRE;
@@ -59,7 +81,16 @@ export function drawBloodieEspecial(ctx, tipo, x, y, facing, walk, opts = {}) {
   for (let i = -1; i <= 1; i++) { const g = (Math.sin(walk * 0.3 + i * 2) + 1) * 3; ctx.beginPath(); ctx.ellipse(i * 7, 8 + g, 2.5, 4 + g * 0.5, 0, 0, Math.PI * 2); ctx.fill(); }
   if (tipo === 'caty') drawCatyB(ctx, facing, walk, chasing);
   else if (tipo === 'oct') drawOctB(ctx, facing, walk, chasing);
-  else if (tipo === 'tarda') drawTardaB(ctx, facing, walk, chasing);
+  else if (tipo === 'tarda') {
+    drawTardaB(ctx, facing, walk, chasing);
+    if (sube > 0.3) {   // las garras rojas agarradas al borde del trasto
+      ctx.strokeStyle = '#c41e2a'; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.globalAlpha *= Math.min(1, (sube - 0.3) / 0.4);
+      for (const gx of [-14, -7, 0, 7, 14]) {
+        const m = Math.sin(walk * 2 + gx) * 0.8;
+        ctx.beginPath(); ctx.moveTo(gx - 1.5, 9); ctx.quadraticCurveTo(gx, 13 + m, gx + 1.8, 15 + m); ctx.stroke();
+      }
+    }
+  }
   else drawGecDraila(ctx, facing, walk, chasing, opts.modo || 'gec');
   if (opts.frozen) {   // hielo de Oct (la habilidad del personaje)
     ctx.globalAlpha = 0.55; ctx.fillStyle = '#9fe8ff';

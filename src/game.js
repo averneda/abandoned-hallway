@@ -10,7 +10,7 @@ import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
 import { poseAndando } from './andares.js';
-import { decidirEspecial, soloEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, nuevaPecera, updatePecera, drawPecera, entre, enteroEntre } from './especiales.js';
+import { decidirEspecial, soloEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, drawZarpazos, nuevaPecera, updatePecera, drawPecera, entre, enteroEntre } from './especiales.js';
 import { sortearAdorno, drawAdorno, adorno, drawArbolCompleto } from './adornos.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
@@ -617,6 +617,23 @@ export class Game {
       const moved = Math.hypot(mdx, mdy);
       if (moved > 0.2) { e.facing = facingOf(mdx, mdy, e.facing); e.walk += dt * (e.chasing ? 20 : 8); }
       if (e.chasing) e.stuck = moved < 0.5 ? e.stuck + dt : 0;
+      // la Bloodie Tarda sube encima de los trastos naranjas (Elora: que se note que trepa y no es un fallo)
+      if (e.especial === 'tarda') {
+        const ttx = Math.floor(e.x / TILE), tty = Math.floor((e.y + 4) / TILE);
+        const encima = tileAt(L, ttx, tty) === T.OBSTACLE;
+        if (encima && e.trasto !== ttx + ',' + tty) {
+          // al subirse a un trasto nuevo: le deja arañazos rojos y suenan las garras si estás cerca (Elora)
+          e.trasto = ttx + ',' + tty;
+          if (!this.zarpazos) this.zarpazos = [];
+          if (!this.zarpazos.some((z) => z.x === ttx * TILE && z.y === tty * TILE)) {
+            this.zarpazos.push({ x: ttx * TILE, y: tty * TILE, s: this.rand() });
+            if (this.zarpazos.length > 80) this.zarpazos.shift();
+          }
+          if (d < TILE * 9) sfx.garras();
+        } else if (!encima) e.trasto = null;
+        const s0 = e.sube || 0;
+        e.sube = encima ? Math.min(1, s0 + dt * 4) : Math.max(0, s0 - dt * 4);
+      }
 
       // rastro de sangre: una gota por casilla recorrida, se guardan las últimas 7
       e.trailDist += moved;
@@ -765,6 +782,8 @@ export class Game {
 
     // las bocas que se ríen de la Bloodie Caty (Elora)
     if (this.bocas) for (const b of this.bocas) { drawBoca(ctx, b, this.time); if (b.gato) drawMediaCaty(ctx, b, this.time); }
+    // los arañazos de la Bloodie Tarda en los trastos que ha trepado (Elora)
+    if (this.zarpazos) drawZarpazos(ctx, this.zarpazos);
 
     // rastros de sangre de los Bloodies
     for (const e of this.enemies) for (const tr of e.trail) {
@@ -776,7 +795,7 @@ export class Game {
     // Bloodies y jugador (ordenados por altura para que se tapen bien)
     const frozen = this.freeze > 0;
     const actors = this.enemies.map((e) => ({ y: e.y, draw: () => (e.especial
-      ? drawBloodieEspecial(ctx, e.especial, e.x, e.y, e.facing, frozen ? 0 : e.walk, { chasing: e.chasing && !frozen, frozen, modo: e.modo })
+      ? drawBloodieEspecial(ctx, e.especial, e.x, e.y, e.facing, frozen ? 0 : e.walk, { chasing: e.chasing && !frozen, frozen, modo: e.modo, sube: e.sube || 0 })
       : drawCharacter(ctx, e.look, e.x, e.y, e.facing, frozen ? 0 : e.walk, 0, false, { bloody: true, chasing: e.chasing && !frozen, frozen, pintado: e.pintado > 0 ? this.pintura : null, navidad: this.navidad, dormir: this.diaNino && !this.navidad })) }));
     // Tarda, en el pasillo de Drake (Elora: está ahí para explicarte cómo funciona)
     if (this.npc) actors.push({ y: this.npc.y, draw: () => drawCharacter(ctx, this.npc.look, this.npc.x, this.npc.y - 6, 'down', this.time * 2, 0, false, { alta: true }) });
