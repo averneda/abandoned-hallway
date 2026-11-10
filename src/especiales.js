@@ -25,6 +25,9 @@ const SANGRE = '#7a0b12', ROJO = '#d42a36';
 // ¿Sale un Bloodie especial en este pasillo? (con index.html?bloodie=caty|oct|tarda|gecdraila sale siempre ese)
 // ?bloodie=… se lee al cargar: con ?pasillo=N la dirección se limpia antes de que empiece el pasillo
 const PEDIDO = (() => { try { return new URLSearchParams(location.search).get('bloodie'); } catch (e) { return null; } })();
+// Solo con el enlace (Elora): ?bloodie=tarda&solo=1 hace un pasillo en el que solo está ese Bloodie especial
+const SOLO = (() => { try { return new URLSearchParams(location.search).get('solo') === '1'; } catch (e) { return false; } })();
+export const soloEspecial = () => SOLO && ESPECIALES.includes(PEDIDO);
 // Hasta la actualización de los Bloodies (Elora), solo salen con su código secreto (holeway.modoBloodies).
 export function decidirEspecial(n, L) {
   const pedido = PEDIDO;

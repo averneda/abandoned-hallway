@@ -10,7 +10,7 @@ import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
 import { poseAndando } from './andares.js';
-import { decidirEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, nuevaPecera, updatePecera, drawPecera, entre, enteroEntre } from './especiales.js';
+import { decidirEspecial, soloEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, nuevaPecera, updatePecera, drawPecera, entre, enteroEntre } from './especiales.js';
 import { sortearAdorno, drawAdorno, adorno, drawArbolCompleto } from './adornos.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
@@ -183,6 +183,7 @@ export class Game {
       });
       if (tipo === 'caty') this.bocas = hacerBocas(L, this.player, T, TILE);
       if (tipo === 'oct') this.proximaPecera = entre(BE.minijuego);
+      if (soloEspecial()) this.enemies = this.enemies.filter((e) => e.especial);   // ?solo=1: solo el Bloodie especial (Elora)
     }
     // El pasillo de Drake (Elora): el fuego del Drake Sangriento, las T y Tarda explicándolo
     this.fuego = L.fuego ? { fase: 'espera', t: 0 } : null;
