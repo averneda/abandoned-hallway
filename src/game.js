@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL, BLOODIES_ESPECIALES as BE } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL, BLOODIES_ESPECIALES as BE, zoomJuego } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS, rrect } from './characters.js';
 // de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
@@ -216,6 +216,8 @@ export class Game {
     this.dark = document.createElement('canvas');
     this.dark.width = VIEW_W * res; this.dark.height = VIEW_H * res;
     this.dark.getContext('2d').setTransform(res, 0, 0, res, 0, 0);
+    // modo móvil (Ajustes): la cámara se acerca y se ve todo más grande
+    this.zoom = zoomJuego();
     this.updateCamera();
   }
 
@@ -659,11 +661,15 @@ export class Game {
     this.updateCamera();
   }
 
+  // lo que se ve del mapa (con el modo móvil, menos: la cámara está más cerca)
+  get vw() { return VIEW_W / (this.zoom || 1); }
+  get vh() { return VIEW_H / (this.zoom || 1); }
+
   updateCamera() {
     const L = this.level, p = this.player;
-    const mw = L.w * TILE, mh = L.h * TILE;
-    this.cam.x = mw <= VIEW_W ? (mw - VIEW_W) / 2 : Math.max(0, Math.min(mw - VIEW_W, p.x - VIEW_W / 2));
-    this.cam.y = mh <= VIEW_H ? (mh - VIEW_H) / 2 : Math.max(0, Math.min(mh - VIEW_H, p.y - VIEW_H / 2));
+    const mw = L.w * TILE, mh = L.h * TILE, VW = this.vw, VH = this.vh;
+    this.cam.x = mw <= VW ? (mw - VW) / 2 : Math.max(0, Math.min(mw - VW, p.x - VW / 2));
+    this.cam.y = mh <= VH ? (mh - VH) / 2 : Math.max(0, Math.min(mh - VH, p.y - VH / 2));
   }
 
   // Monedas que aparecen y desaparecen durante los primeros segundos del Bonus.
@@ -752,6 +758,7 @@ export class Game {
     const sx = Math.round(Math.sin(this.time * 47) * temblor), sy = Math.round(Math.cos(this.time * 53) * temblor);
     ctx.save();
     ctx.translate(sx, sy);
+    ctx.scale(this.zoom, this.zoom);   // modo móvil: todo más grande
     ctx.save();
     ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
     this.renderWorld(ctx);
@@ -955,7 +962,7 @@ export class Game {
     const cam = this.cam, m = 22;
     for (const e of this.enemies) {
       if (e.pintado <= 0) continue;
-      const sx = e.x - cam.x, sy = e.y - cam.y;
+      const sx = (e.x - cam.x) * this.zoom, sy = (e.y - cam.y) * this.zoom;   // en la pantalla (con el modo móvil, más cerca)
       if (sx > m && sx < VIEW_W - m && sy > m && sy < VIEW_H - m) continue;  // ya se ve
       const cx = VIEW_W / 2, cy = VIEW_H / 2;
       const dx = sx - cx, dy = sy - cy;
@@ -1053,14 +1060,14 @@ export class Game {
   renderWorld(ctx) {
     const L = this.level, cam = this.cam;
     const tx0 = Math.floor(cam.x / TILE), ty0 = Math.floor(cam.y / TILE);
-    const tx1 = Math.ceil((cam.x + VIEW_W) / TILE), ty1 = Math.ceil((cam.y + VIEW_H) / TILE);
+    const tx1 = Math.ceil((cam.x + this.vw) / TILE), ty1 = Math.ceil((cam.y + this.vh) / TILE);
 
     // Lo que no cambia nunca (suelo, paredes, manchas y trastos) se pinta una sola vez
     // en una imagen guardada y aquí solo se copia el trozo que se ve.
     if (!this.staticLayer) this.staticLayer = this.buildStaticLayer();
     const layer = this.staticLayer;
     const sx = Math.max(0, Math.floor(cam.x)), sy = Math.max(0, Math.floor(cam.y));
-    const sw = Math.min(layer.width - sx, VIEW_W + 1), sh = Math.min(layer.height - sy, VIEW_H + 1);
+    const sw = Math.min(layer.width - sx, Math.ceil(this.vw) + 1), sh = Math.min(layer.height - sy, Math.ceil(this.vh) + 1);
     if (sw > 0 && sh > 0) ctx.drawImage(layer, sx, sy, sw, sh, sx, sy, sw, sh);
 
     // puertas y botón: cambian durante la partida, se pintan en cada fotograma
@@ -1256,7 +1263,7 @@ export class Game {
   renderItems(ctx) {
     const L = this.level, cam = this.cam;
     for (const it of L.items) {
-      if (it.x < cam.x - 20 || it.x > cam.x + VIEW_W + 20 || it.y < cam.y - 20 || it.y > cam.y + VIEW_H + 20) continue;
+      if (it.x < cam.x - 20 || it.x > cam.x + this.vw + 20 || it.y < cam.y - 20 || it.y > cam.y + this.vh + 20) continue;
       if (it.taken) continue;
       const bob = Math.sin(this.time * 3 + it.x) * 2;
       if (it.type === 'tape') this.drawTape(ctx, it.x, it.y + bob);

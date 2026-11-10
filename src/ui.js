@@ -1,4 +1,4 @@
-import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL, horaRopa, ropaLista } from './config.js';
+import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL, horaRopa, ropaLista, modoMovil, ponerModoMovil } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
@@ -138,7 +138,7 @@ export class UI {
     if (bloodies && bloodies.activo()) s.appendChild(this.el('p', 'pijama-badge bloodies-badge', t('menu.bloodies')));
     const row = this.el('div', 'row');
     const play = this.button(t('menu.play'), onPlay, true);
-    row.append(play, this.button('🎮 ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies, perrita)));
+    row.append(play, this.button('⚙️ ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies, perrita)));
     s.appendChild(row);
     s.appendChild(this.langRow(otraVez));
     this.root.appendChild(s);
@@ -222,7 +222,13 @@ export class UI {
   showPadSetup({ input, onClose }) {
     this.clear();
     const s = this.el('div', 'screen opaque pad');
-    s.appendChild(this.el('h2', '', '🎮 ' + t('pad.title')));
+    // Ajustes (Elora: antes «Configurar mando»): el modo móvil y, debajo, el mando
+    s.appendChild(this.el('h2', '', '⚙️ ' + t('ajustes.title')));
+    const movilTxt = () => '📱 ' + t('ajustes.movil') + ': ' + (modoMovil() ? '✅ ' + t('ajustes.si') : '❌ ' + t('ajustes.no'));
+    const movil = this.button(movilTxt(), () => { ponerModoMovil(!modoMovil()); movil.textContent = movilTxt(); });
+    s.appendChild(movil);
+    s.appendChild(this.el('p', 'small', t('ajustes.movilAyuda')));
+    s.appendChild(this.el('h3', '', '🎮 ' + t('pad.title')));
     const status = this.el('p', 'small', '');
     s.appendChild(status);
     s.appendChild(this.el('p', 'small', t('pad.help')));

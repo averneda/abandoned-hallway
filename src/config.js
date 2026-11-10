@@ -172,6 +172,12 @@ export function horaSkins() {
 // La ropa nueva (skins de Clad para Elora): sale «mañana más o menos antes del cole, por la mañana» (Elora): el
 // martes 10-11-2026 a las 8:00 [PROVISIONAL la hora]. Hasta entonces, un cartel en el lobby cuenta lo que falta.
 // Para probarla ya: index.html?ropa=1
+// Modo móvil (idea del padre de Elora, que juega en el móvil; Elora: en Ajustes): la cámara se acerca y todo se ve
+// más grande, aunque se vea menos del mapa. Se guarda en holeway.modoMovil. Cuánto se acerca [PROVISIONAL]
+export const MODO_MOVIL = { zoom: 1.5 };
+export function modoMovil() { try { return localStorage.getItem('holeway.modoMovil') === '1'; } catch (e) { return false; } }
+export function ponerModoMovil(on) { try { localStorage.setItem('holeway.modoMovil', on ? '1' : '0'); } catch (e) { /* nada */ } }
+export function zoomJuego() { return modoMovil() ? MODO_MOVIL.zoom : 1; }
 export const ROPA_SALE = '2026-11-10T08:00:00';
 export function horaRopa() { return new Date(ROPA_SALE); }
 export function ropaLista(ahora = ahoraJuego()) {

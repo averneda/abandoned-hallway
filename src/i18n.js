@@ -8,7 +8,9 @@ const dict = {
     'menu.play': 'Jugar',
     'menu.language': 'Idioma',
     'menu.controls': 'Teclado: flechas moverte · Shift correr · Espacio saltar · E coger · Q habilidad · Esc pausa. Mando de NES: cruceta moverte · B correr · A saltar · Start coger · Select habilidad.',
-    'menu.pad': 'Configurar mando',
+    'menu.pad': 'Ajustes',
+    'ajustes.title': 'Ajustes', 'ajustes.movil': 'Modo móvil', 'ajustes.si': 'Sí', 'ajustes.no': 'No',
+    'ajustes.movilAyuda': 'Para jugar en el móvil: la cámara se acerca y todo se ve más grande, aunque se ve menos del mapa a la vez.',
     'code.button': 'Introducir código', 'code.title': 'Introducir código', 'code.placeholder': 'Escribe el código secreto',
     'code.enter': 'Entrar', 'code.back': 'Volver', 'code.ok': '¡Código correcto! Entrando...', 'code.wrong': 'Ese código no es. ¡Prueba otra vez!',
     // el modo pijama secreto (Elora): las skins de pijama, gratis
@@ -464,7 +466,9 @@ const dict = {
     'menu.play': 'Play',
     'menu.language': 'Language',
     'menu.controls': 'Keyboard: arrows move · Shift run · Space jump · E pick up · Q ability · Esc pause. NES controller: D-pad move · B run · A jump · Start pick up · Select ability.',
-    'menu.pad': 'Set up controller',
+    'menu.pad': 'Settings',
+    'ajustes.title': 'Settings', 'ajustes.movil': 'Phone mode', 'ajustes.si': 'On', 'ajustes.no': 'Off',
+    'ajustes.movilAyuda': 'For playing on a phone: the camera comes closer and everything looks bigger, but you see less of the map at once.',
     'code.button': 'Enter code', 'code.title': 'Enter code', 'code.placeholder': 'Type the secret code',
     'code.enter': 'Go', 'code.back': 'Back', 'code.ok': 'Correct code! Going in...', 'code.wrong': "That's not the code. Try again!",
     // the secret pyjama mode (Elora): pyjama skins, for free

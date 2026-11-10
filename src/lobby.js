@@ -206,6 +206,7 @@ export class Lobby extends Game {
     ctx.fillStyle = '#0b0a0e';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     ctx.save();
+    ctx.scale(this.zoom, this.zoom);   // modo móvil: todo más grande
     ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
     this.renderWorld(ctx);
 

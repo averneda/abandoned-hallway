@@ -156,9 +156,19 @@ function cintasDeLaCaja() { return [...cajaCintas].sort((a, b) => a - b); }
 // ---------------- ajuste al tamaño de la ventana
 function fit() {
   const s = Math.min(window.innerWidth / VIEW_W, window.innerHeight / VIEW_H);
-  document.getElementById('stage').style.transform = `translate(-50%, -50%) scale(${s})`;
+  const st = document.getElementById('stage');
+  // centrado con el tamaño de verdad de la ventana: en algunos móviles el 100 % de alto de la página es más
+  // bajito que la pantalla y se cortaba un trozo de arriba (los corazones)
+  st.style.left = (window.innerWidth / 2) + 'px';
+  st.style.top = (window.innerHeight / 2) + 'px';
+  st.style.transform = `translate(-50%, -50%) scale(${s})`;
 }
 window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', fit);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+// algunos móviles cambian el tamaño de la ventana sin avisar (al cargar o al girarlo): se mira cada medio segundo
+let tamFit = '';
+setInterval(() => { const k = window.innerWidth + 'x' + window.innerHeight; if (k !== tamFit) { tamFit = k; fit(); } }, 500);
 fit();
 
 // ---------------- pantallas
