@@ -9,15 +9,15 @@
 //   'gecdraila' → Gec y Draila en un solo cuerpo: se turnan cada 5 a 10 s; con Gec va más rápido, con Draila más
 //                 lento pero te ve desde más lejos.
 //   'hoppy'     → Hoppy Bloody (dibujo de Elora): por el pasillo hay girasoles con ojo; si pisas uno, sale del suelo
-//                 un girasol con forma de garra que te coge y te quita 1 corazón. De momento solo sale con el enlace
-//                 (?bloodie=hoppy).
+//                 un girasol con forma de garra que te coge y te quita 1 corazón. Con el código de los Bloodies sale
+//                 al azar, como los demás (o con ?bloodie=hoppy).
 // Los números, en BLOODIES_ESPECIALES de config.js. Cómo están dibujados, a partir de los dibujos de Elora (Clad).
 
 import { BLOODIES_ESPECIALES as BE } from './config.js';
 
 export const ESPECIALES = ['caty', 'oct', 'tarda', 'gecdraila', 'hoppy'];
-// los que pueden salir al azar (Hoppy Bloody, de momento, solo con el enlace: Elora todavía la va a cambiar)
-const AL_AZAR = ['caty', 'oct', 'tarda', 'gecdraila'];
+// los que pueden salir al azar con el código de los Bloodies (Elora: Hoppy Bloody también, 11-11-2026)
+const AL_AZAR = ['caty', 'oct', 'tarda', 'gecdraila', 'hoppy'];
 
 const dot = (ctx, x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
 function rr(ctx, x, y, w, h, r) {
