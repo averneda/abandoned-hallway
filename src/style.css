@@ -308,6 +308,14 @@ button.cartel-x:hover, button.cartel-x:focus-visible { background: #fff6dc; colo
 .arbolj-ayuda { font-size: 13px; color: var(--muted); max-width: 390px; min-height: 34px; }
 .arbolj-x { position: absolute; top: 8px; right: 10px; min-width: 0; width: 42px; height: 42px; padding: 0; border-radius: 50%; font-size: 20px; }
 .tienda-puntas { font-size: 17px; padding: 8px 18px; }
+/* los trinkets (Elora) */
+.screen.trinkets { justify-content: flex-start; overflow-y: auto; gap: 8px; }
+.trinkets-fila { max-width: 840px; gap: 8px; }
+.card.trinket { width: 152px; min-width: 0; padding: 6px 5px; gap: 1px; font: inherit; color: inherit; }
+.card.trinket.locked { opacity: 0.8; filter: none; cursor: pointer; }
+.card.trinket .name { font-size: 15px; line-height: 1.15; }
+.card.trinket .ability { font-size: 12px; min-height: 2.4em; }
+.card.trinket canvas.trinket-dibujo { width: 70px; height: 70px; }
 .puntas-fila .card { width: 150px; }
 .screen.arbol-tienda { gap: 8px; padding: 14px; }
 .arbol-tienda-lista { max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 8px; }

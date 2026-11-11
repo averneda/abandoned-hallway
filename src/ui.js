@@ -1,7 +1,8 @@
-import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL, horaRopa, ropaLista, modoMovil, ponerModoMovil } from './config.js';
+import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL, horaRopa, ropaLista, modoMovil, ponerModoMovil, TRINKETS, huecosTrinkets } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
+import { drawTrinket } from './trinkets.js';
 import { CHARACTERS, drawCharacter, SKINS, skinsDe, conSkin, characterById, TARDA_GRIS, FICHA_POSE } from './characters.js';
 import { PAD_ACTIONS } from './input.js';
 import { TapePlayer, grabacionDeCinta } from './tapes.js';
@@ -46,6 +47,9 @@ const CODIGO_BLOODIES = new Set(["d79e5401", "e03eef76", "484794fd", "f216695c",
 // La huella del código de la perrita (Elora): con él sale la perrita en la tienda, gratis, para jugar con ella.
 // Las mayúsculas dan igual; vale también con holeway/hallway/holway, con «abandonned» y con o sin «the».
 const CODIGO_PERRITA = new Set(["806e4c8c", "a1af03f9", "ff50ebb", "7cacf996", "468e33aa", "ebdbce3f", "c9dcca40", "19fd005d", "430093fa", "9bc2de2f", "df2a46f1", "30981934", "a7fa9ddc", "1e84c8e9", "c19c3522", "174be807"]);
+// La huella del código de los trinkets (Elora): los trinkets serán una actualización futura; hasta entonces, solo con
+// este código. Las mayúsculas dan igual; vale también con holeway/hallway/holway, «abandonned», catgames y trinket.
+const CODIGO_TRINKETS = new Set(["67b916c4","6a8cd8df","adcb003e","21c19df9","5a452b33","e96eb392","5f634767","f5d7972e","dd5fcaf6","16d13a81","1a658d04","b761711f","7317bc98","6217907b","7a14ceea","fa276fdd","322b77a6","334189f1","36072154","4e5b7daf","76dc481d","6d335dfc","c995910d","dd0246ac","543919b4","17165f8f","7a95b08e","f80f9d89","e558b3ee","57882969","1bc560ac","c2ff3857"]);
 function huellaCodigo(texto, mayusculas = false) {
   let n = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   n = (mayusculas ? n : n.toLowerCase()).replace(/[^A-Za-z0-9]+/g, ' ').trim();
@@ -128,9 +132,9 @@ export class UI {
   // El título lo dibuja la escena Title en el canvas (el cartel de Elora);
   // aquí solo van los botones, abajo del todo.
   // pijama: el modo pijama secreto (Elora) = { activo(), cambiar(on) }
-  showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita }) {
+  showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita, trinkets }) {
     this.clear();
-    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita });
+    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita, trinkets });
     const s = this.el('div', 'screen titlemenu');
     s.appendChild(this.el('p', 'subtitle', t('menu.subtitle')));
     if (pijama && pijama.activo()) s.appendChild(this.el('p', 'pijama-badge', t('menu.pijama')));
@@ -138,7 +142,7 @@ export class UI {
     if (bloodies && bloodies.activo()) s.appendChild(this.el('p', 'pijama-badge bloodies-badge', t('menu.bloodies')));
     const row = this.el('div', 'row');
     const play = this.button(t('menu.play'), onPlay, true);
-    row.append(play, this.button('⚙️ ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies, perrita)));
+    row.append(play, this.button('⚙️ ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies, perrita, trinkets)));
     s.appendChild(row);
     s.appendChild(this.langRow(otraVez));
     this.root.appendChild(s);
@@ -153,7 +157,7 @@ export class UI {
   // Con el del pasillo 50 (Elora), vas directo al pasillo de Drake. Con el del modo pijama (Elora), las skins de pijama salen en la tienda de Tarda, gratis; se queda puesto
   // en este navegador hasta que se quita con el botón de aquí.
   // Los códigos no están escritos aquí (para que sigan siendo secretos): se compara su "huella".
-  showCode(onBack, pijama, navidad, bloodies, perrita) {
+  showCode(onBack, pijama, navidad, bloodies, perrita, trinkets) {
     this.clear();
     const s = this.el('div', 'screen');
     s.appendChild(this.el('h2', '', '🔑 ' + t('code.title')));
@@ -182,6 +186,10 @@ export class UI {
         perrita.cambiar(true);
         nota.textContent = t('code.perritaOn');
         setTimeout(onBack, 1800);
+      } else if (trinkets && CODIGO_TRINKETS.has(huella)) {
+        trinkets.cambiar(true);
+        nota.textContent = t('code.trinketsOn');
+        setTimeout(onBack, 1800);
       } else if (bloodies && CODIGO_BLOODIES.has(huella)) {
         bloodies.cambiar(true);
         nota.textContent = t('code.bloodiesOn');
@@ -204,6 +212,9 @@ export class UI {
     }
     if (perrita && perrita.activo()) {
       s.appendChild(this.button(t('code.perritaOff'), () => { perrita.cambiar(false); this.toast(t('code.perritaOffDone')); onBack(); }));
+    }
+    if (trinkets && trinkets.activo()) {
+      s.appendChild(this.button(t('code.trinketsOff'), () => { trinkets.cambiar(false); this.toast(t('code.trinketsOffDone')); onBack(); }));
     }
     if (bloodies && bloodies.activo()) {
       s.appendChild(this.button(t('code.bloodiesOff'), () => { bloodies.cambiar(false); this.toast(t('code.bloodiesOffDone')); onBack(); }));
@@ -576,7 +587,7 @@ export class UI {
 
   // ---------------- la tienda de Tarda (dibujo de Elora): "Depositar cintas" y "Cambiar personaje"
   // Se ve el dibujo entero; las dos franjas de la izquierda son los botones.
-  showTarda({ onDeposit, onCharacters, onPuntas, onClose }) {
+  showTarda({ onDeposit, onCharacters, onTrinkets, onPuntas, onClose }) {
     this.clear();
     const s = this.el('div', 'screen dim tienda');
     const hoja = this.el('div', 'tienda-hoja');
@@ -619,6 +630,8 @@ export class UI {
     s.appendChild(hoja);
     // en Navidad, Tarda vende las cosas para la punta del árbol (Elora)
     const ops = [op1, op2];
+    // los trinkets (Elora): debajo del dibujo, como las cosas del árbol en Navidad
+    if (onTrinkets) { const opT = this.button(t('shop.trinkets'), onTrinkets); opT.className = 'tienda-puntas'; s.appendChild(opT); ops.push(opT); }
     if (onPuntas) { const op3 = this.button(t('shop.puntas'), onPuntas); op3.className = 'tienda-puntas'; s.appendChild(op3); ops.push(op3); }
     s.appendChild(this.button(t('shop.close'), onClose));
     this.root.appendChild(s);
@@ -1380,6 +1393,46 @@ export class UI {
 
   // ---------------- la tienda de Tarda: las cosas para la punta del árbol (Elora: 50 monedas cada una,
   // para siempre; la estrella es gratis)
+  // ---------------- los trinkets (Elora): se compran con monedas (el primer toque pregunta y el segundo compra) y,
+  // los que tienes, se ponen o se quitan tocándolos. Caben 3 (6 con la Mochila grande, que no ocupa hueco).
+  showTrinkets({ tienes, puestos, monedas, focoId, onComprar, onPoner, onQuitar, onBack }) {
+    this.clear();
+    const s = this.el('div', 'screen dim trinkets');
+    s.appendChild(this.el('h2', '', t('trinkets.title')));
+    const huecos = huecosTrinkets(puestos), llevas = puestos.filter((id) => id !== 'mochila').length;
+    s.appendChild(this.el('p', 'small', t('trinkets.llevas', { n: llevas, max: huecos })));
+    const fila = this.el('div', 'cards trinkets-fila');
+    let foco = null;
+    for (const tk of TRINKETS.lista) {
+      const tiene = tienes.has(tk.id), puesto = puestos.includes(tk.id);
+      const c = this.el('button', 'card trinket' + (puesto ? ' current' : '') + (tiene ? '' : ' locked'));
+      // el dibujo del trinket, como lo describió Elora (src/trinkets.js)
+      const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; cv.className = 'trinket-dibujo';
+      const cx = cv.getContext('2d'); cx.translate(64, 64); cx.scale(1.15, 1.15); drawTrinket(cx, tk.id);
+      c.appendChild(cv);
+      c.appendChild(this.el('div', 'name', t('trinket.' + tk.id)));
+      c.appendChild(this.el('div', 'ability', t('trinket.' + tk.id + '.hace')));
+      const pie = this.el('div', 'skin-precio', puesto ? t('trinkets.puesto') : tiene ? t('trinkets.poner') : t('puntas.precio', { n: tk.precio }));
+      c.appendChild(pie);
+      c.onclick = () => {
+        if (puesto) { onQuitar(tk.id); return; }
+        if (tiene) {
+          if (tk.id !== 'mochila' && llevas >= huecos) { pie.textContent = t('trinkets.lleno'); return; }
+          onPoner(tk.id); return;
+        }
+        if (monedas() < tk.precio) { pie.textContent = t('puntas.faltan', { n: tk.precio - monedas() }); return; }
+        if (c.dataset.preguntado) { onComprar(tk.id); return; }
+        c.dataset.preguntado = '1'; pie.textContent = t('puntas.comprar', { n: tk.precio });
+      };
+      if (tk.id === focoId) foco = c;
+      fila.appendChild(c);
+    }
+    s.append(fila, this.el('p', 'small', t('trinkets.ayuda')), this.button(t('puntas.back'), onBack));
+    this.root.appendChild(s);
+    (foco || fila.firstChild).focus();
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyE') onBack(); };
+  }
+
   showPuntas({ tienes, macetas, monedas, precio, precioMaceta, onComprar, onBack }) {
     this.clear();
     const s = this.el('div', 'screen dim arbol-tienda');

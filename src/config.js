@@ -140,6 +140,32 @@ export function statMul(ch, stat) {
   return STAT_EFFECTS[stat](Math.max(0, Math.min(100, v)));
 }
 
+// Los trinkets (Elora, 11-11-2026, como los de Dandy's World): cosas que te pones y te dan un poder pequeño. Se
+// compran en la tienda de Tarda; llevas 3 a la vez y, con la Mochila grande, 6. Los precios son de Elora (su página
+// «Trinkets de Tarda»). Cuánto hace cada uno, [PROVISIONAL] hasta que lo diga ella: multiplicadores de los
+// parámetros (velocidad, cordura, sigilo, resistencia: como en STAT_EFFECTS), luz, casillas del imán y corazones.
+// La Mochila no ocupa hueco [PROVISIONAL].
+export const TRINKETS = {
+  // Elora: serán una actualización futura (todavía sin fecha); hasta entonces, solo con su código secreto. Para abrirlos: true
+  abierto: false,
+  huecos: 3, huecosMochila: 6,
+  lista: [
+    { id: 'mochila',    emoji: '🎒', precio: 150 },
+    { id: 'zapatillas', emoji: '👟', precio: 30,  velocidad: 1.15 },
+    { id: 'linterna',   emoji: '🔦', precio: 50,  luz: 1.3 },
+    { id: 'peluche',    emoji: '🧸', precio: 30,  cordura: 0.75 },
+    { id: 'iman',       emoji: '🧲', precio: 80,  iman: 3.5 },
+    { id: 'calcetines', emoji: '🧦', precio: 30,  sigilo: 0.75 },
+    { id: 'corazon',    emoji: '💖', precio: 150, corazones: 1 },
+    { id: 'botella',    emoji: '🥤', precio: 30,  resistencia: 0.75 },
+    // el de Elora: un 30 % de las veces que un Bloodie te tendría que ver, no te ve (durante suerteDura s [PROVISIONAL])
+    { id: 'amuleto',    emoji: '🍀', precio: 80,  suerte: 0.3, suerteDura: 3 },
+  ],
+};
+export function trinket(id) { return TRINKETS.lista.find((t) => t.id === id) || null; }
+// cuántos trinkets caben (la Mochila no cuenta)
+export function huecosTrinkets(puestos) { return puestos.includes('mochila') ? TRINKETS.huecosMochila : TRINKETS.huecos; }
+
 export const LEVEL = {
   bloodDecals: 14,    // manchas de sangre (dibujada) por el suelo de cada pasillo
 };

@@ -1,6 +1,6 @@
 // Arranque del juego y paso entre pantallas: menú → lobby → (cinemática) → pasillos.
 
-import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ropaLista, ARBOL } from './config.js';
+import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ropaLista, ARBOL, TRINKETS, trinket, huecosTrinkets } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
@@ -39,7 +39,7 @@ const cajaCintas = new Set();
 // modoNavidad: se puso el código del modo Navidad (Elora): lobby de Navidad y el reno gratis
 // modoBloodies: se puso el código de la actualización de los Bloodies (Elora): salen ya los Bloodies especiales
 // modoPerrita: se puso el código de la perrita (Elora): la perrita sale en la tienda, gratis
-const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false, modoBloodies: false, modoPerrita: false };
+const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false, modoBloodies: false, modoPerrita: false, modoTrinkets: false };
 // La skin que lleva puesta cada personaje (id del personaje → skin). Se ven en el modo pijama o, desde que
 // salen las skins (Elora: martes 10 a las 16:00), si la has comprado.
 const skinsElegidas = {};
@@ -63,7 +63,12 @@ let adviento = advientoVacio();
 const adornosInv = {};
 let arbol = arbolVacio();
 const puntasTuyas = new Set(['estrella']);
-const macetasTuyas = new Set([MACETA_GRATIS]);   // los colores de la maceta que tienes (la marrón, gratis: Elora)
+const macetasTuyas = new Set([MACETA_GRATIS]);
+// los trinkets (Elora): los que has comprado y los que llevas puestos (3, o 6 con la Mochila grande)
+const trinketsTuyos = new Set();
+// los trinkets son una actualización futura (Elora): hasta que se abra (TRINKETS.abierto), solo con su código
+const trinketsAbiertos = () => TRINKETS.abierto || flags.modoTrinkets;
+let trinketsPuestos = [];   // los colores de la maceta que tienes (la marrón, gratis: Elora)
 // Los personajes que tienes: los comprados y, gratis y sin guardarlo, el reno en el modo Navidad y Drake en el
 // modo pijama (Elora: para probar su pijama)
 function tienes() {
@@ -92,6 +97,7 @@ try {
   flags.modoNavidad = localStorage.getItem('holeway.modoNavidad') === '1';
   flags.modoBloodies = localStorage.getItem('holeway.modoBloodies') === '1';
   flags.modoPerrita = localStorage.getItem('holeway.modoPerrita') === '1';
+  flags.modoTrinkets = localStorage.getItem('holeway.modoTrinkets') === '1';
   Object.assign(skinsElegidas, JSON.parse(localStorage.getItem('holeway.skins') || '{}'));
   Object.assign(skinsCompradas, JSON.parse(localStorage.getItem('holeway.skinsCompradas') || '{}'));
   // el calendario de este año (los de antes de 2027 no guardaban el año: eran de 2026)
@@ -105,6 +111,8 @@ try {
   for (const id of JSON.parse(localStorage.getItem('holeway.macetas') || '[]')) if (MACETAS[id]) macetasTuyas.add(id);
   if (!macetasTuyas.has(arbol.maceta)) arbol.maceta = MACETA_GRATIS;
   Object.assign(recordAlm, JSON.parse(localStorage.getItem('holeway.recordAlmohadas') || '{}'));
+  for (const id of JSON.parse(localStorage.getItem('holeway.trinkets') || '[]')) if (trinket(id)) trinketsTuyos.add(id);
+  trinketsPuestos = JSON.parse(localStorage.getItem('holeway.trinketsPuestos') || '[]').filter((id) => trinketsTuyos.has(id));
   const chId = localStorage.getItem('holeway.character');
   if (chId && tienes().has(chId)) run.character = aplicarSkin(characterById(chId));
 } catch (e) { /* nada */ }
@@ -123,6 +131,7 @@ function save() {
     localStorage.setItem('holeway.modoNavidad', flags.modoNavidad ? '1' : '0');
     localStorage.setItem('holeway.modoBloodies', flags.modoBloodies ? '1' : '0');
     localStorage.setItem('holeway.modoPerrita', flags.modoPerrita ? '1' : '0');
+    localStorage.setItem('holeway.modoTrinkets', flags.modoTrinkets ? '1' : '0');
     localStorage.setItem('holeway.skins', JSON.stringify(skinsElegidas));
     localStorage.setItem('holeway.skinsCompradas', JSON.stringify(skinsCompradas));
     localStorage.setItem('holeway.adviento', JSON.stringify(adviento));
@@ -131,6 +140,8 @@ function save() {
     localStorage.setItem('holeway.puntas', JSON.stringify([...puntasTuyas]));
     localStorage.setItem('holeway.macetas', JSON.stringify([...macetasTuyas]));
     localStorage.setItem('holeway.recordAlmohadas', JSON.stringify(recordAlm));
+    localStorage.setItem('holeway.trinkets', JSON.stringify([...trinketsTuyos]));
+    localStorage.setItem('holeway.trinketsPuestos', JSON.stringify(trinketsPuestos));
   } catch (e) { /* nada */ }
 }
 
@@ -181,6 +192,8 @@ function gotoMenu() {
     onPad: () => ui.showPadSetup({ input, onClose: gotoMenu }),
     // la actualización de los Bloodies (Elora): con su código salen ya los Bloodies especiales
     bloodies: { activo: () => flags.modoBloodies, cambiar: (on) => { flags.modoBloodies = on; save(); } },
+    // los trinkets (Elora): una actualización futura; hasta que se abra, solo con su código
+    trinkets: { activo: () => flags.modoTrinkets, cambiar: (on) => { flags.modoTrinkets = on; save(); } },
     // la perrita (Elora): con su código sale en la tienda, gratis; al quitarlo, si la llevabas, vuelves a Carot
     perrita: {
       activo: () => flags.modoPerrita,
@@ -226,7 +239,26 @@ function gotoLobby(abrir) {
       lobby.paused = true;
       const close = () => { ui.clear(); lobby.paused = false; input.clear(); };
       // la tienda de Tarda (dibujo de Elora): Depositar cintas o Cambiar personaje
-      const menu = () => ui.showTarda({ onDeposit: depositar, onCharacters: () => open(), onPuntas: esNavidad() ? puntas : null, onClose: close });
+      const menu = () => ui.showTarda({ onDeposit: depositar, onCharacters: () => open(), onTrinkets: trinketsAbiertos() ? () => trinkets() : null, onPuntas: esNavidad() ? puntas : null, onClose: close });
+      // los trinkets (Elora): se compran aquí y se ponen o se quitan tocándolos
+      const trinkets = (focoId) => ui.showTrinkets({
+        tienes: trinketsTuyos, puestos: trinketsPuestos, monedas: () => wallet.coins, focoId,
+        onComprar: (id) => {
+          const tk = trinket(id); if (!tk || wallet.coins < tk.precio) return;
+          wallet.coins -= tk.precio; trinketsTuyos.add(id);
+          if (id === 'mochila' || trinketsPuestos.filter((x) => x !== 'mochila').length < huecosTrinkets(trinketsPuestos)) trinketsPuestos.push(id);
+          save(); trinkets(id);
+          ui.toast(tk.emoji + ' ' + t('trinkets.comprado', { name: t('trinket.' + id) }));
+        },
+        onPoner: (id) => { if (!trinketsPuestos.includes(id)) trinketsPuestos.push(id); save(); trinkets(id); },
+        onQuitar: (id) => {
+          trinketsPuestos = trinketsPuestos.filter((x) => x !== id);
+          // sin la Mochila solo caben 3: se quitan los que sobran (los últimos que te pusiste)
+          if (id === 'mochila') trinketsPuestos = trinketsPuestos.slice(0, TRINKETS.huecos);
+          save(); trinkets(id);
+        },
+        onBack: menu,
+      });
       // en Navidad, las cosas para la punta del árbol y los colores de la maceta (Elora: para siempre)
       const puntas = () => ui.showPuntas({
         tienes: puntasTuyas, macetas: macetasTuyas, monedas: () => wallet.coins, precio: ARBOL.precioPunta, precioMaceta: ARBOL.precioMaceta,
@@ -419,6 +451,7 @@ function startLevel(n, reintento = false) {
   const game = new Game(run.character, n, {
     ...common,
     startHearts: run.hearts,
+    trinkets: trinketsAbiertos() ? trinketsPuestos : [],   // los trinkets que llevas (Elora; solo si están abiertos)
     nieve: esNavidad(),   // en Navidad, montones de nieve en los pasillos (Elora)
     navidad: esNavidad(), // y los Bloodies con gorrito de Papá Noel (Elora)
     adornos: esNavidad(), // y adornos para el árbol del lobby (Elora)

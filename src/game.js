@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL, BLOODIES_ESPECIALES as BE, zoomJuego } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL, BLOODIES_ESPECIALES as BE, zoomJuego, trinket } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS, rrect } from './characters.js';
 // de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
@@ -121,6 +121,17 @@ function hacerNieve(L, rand) {
 export class Game {
   // levelOrNumber: número de pasillo, o un nivel ya cargado (lo usa el lobby).
   // callbacks: { onDeath(reason), onComplete({tapes, coins}), onPause(), onCoin(n), totalCoins() }
+  // un parámetro del personaje, con lo que le cambian los trinkets que lleva (Elora)
+  mul(stat) {
+    let m = statMul(this.ch, stat);
+    for (const tk of this.trinkets || []) if (typeof tk[stat] === 'number') m *= tk[stat];
+    return m;
+  }
+  // corazones como mucho: los del personaje más los del Corazón de repuesto
+  maxH() { return maxHearts(this.ch) + (this.trinkets || []).reduce((n, tk) => n + (tk.corazones || 0), 0); }
+  // lo que te da un trinket (luz, imán...), o 0 si no lo llevas
+  extra(cosa) { return (this.trinkets || []).reduce((n, tk) => Math.max(n, tk[cosa] || 0), 0); }
+
   constructor(character, levelOrNumber, callbacks) {
     this.ch = character;
     this.cb = callbacks;
@@ -132,10 +143,12 @@ export class Game {
     this.rand = rng(this.n * 31 + 7);
 
     const L = this.level;
+    // los trinkets que llevas puestos (Elora): cada uno cambia un poco un parámetro, la luz, los corazones o atrae monedas
+    this.trinkets = ((callbacks && callbacks.trinkets) || []).map(trinket).filter(Boolean);
     this.jumpTime = character.ability === 'carot' ? ABILITIES.carot.jumpTime : PLAYER.jumpTime;
     this.player = {
       x: L.spawn.x, y: L.spawn.y, r: PLAYER.radius, facing: 'up', walk: 0,
-      hearts: maxHearts(character), anxiety: ANXIETY.start, invuln: 0, jump: 0, jumping: false,
+      hearts: this.maxH(), anxiety: ANXIETY.start, invuln: 0, jump: 0, jumping: false,
       kx: 0, ky: 0, moving: false, cooldown: 0,
       tongue: null,  // lengua de Gec: {dir, len, max, phase, target}
       tun: 0,        // segundos que le quedan a Tarda hecha una bolita Tun (quieta, invisible e inmortal)
@@ -148,7 +161,7 @@ export class Game {
       sinCorrer: 0,            // segundos desde la última vez que corrió
     };
     // corazones con los que llegas de otro pasillo (si no, todos)
-    if (callbacks && callbacks.startHearts != null) this.player.hearts = Math.max(1, Math.min(maxHearts(character), callbacks.startHearts));
+    if (callbacks && callbacks.startHearts != null) this.player.hearts = Math.max(1, Math.min(this.maxH(), callbacks.startHearts));
     this.wave = null;  // onda del mordisco de Draila: {x, y, dir, len, max, golpeados}
     this.freeze = 0; // segundos que quedan de Bloodies parados (habilidad de Oct)
     this.flood = 0;  // segundos que quedan de sala inundada (habilidad de Jely)
@@ -240,15 +253,15 @@ export class Game {
     } else if (corriendo) {
       p.agotado = false;
       p.sinCorrer = 0;
-      p.stamina -= STAMINA.runCost * dt * statMul(this.ch, 'resistencia');
+      p.stamina -= STAMINA.runCost * dt * this.mul('resistencia');
       if (p.stamina <= 0) { p.stamina = 0; p.agotado = true; this.say(t('msg.tired'), 1.5); }
     } else {
       p.sinCorrer += dt;
       if (p.sinCorrer >= STAMINA.regenDelay) p.stamina = Math.min(STAMINA.max, p.stamina + STAMINA.regen * dt);
     }
-    let speed = (corriendo ? PLAYER.run : PLAYER.walk) * statMul(this.ch, 'velocidad');
+    let speed = (corriendo ? PLAYER.run : PLAYER.walk) * this.mul('velocidad');
     if (p.tun > 0) speed = 0;   // hecha una bolita Tun, Tarda no se mueve (Elora)
-    if (turbo) speed = PLAYER.run * ABILITIES.hoppy.speed * statMul(this.ch, 'velocidad');   // Supercarrera de Hoppy
+    if (turbo) speed = PLAYER.run * ABILITIES.hoppy.speed * this.mul('velocidad');   // Supercarrera de Hoppy
     if (this.flood > 0) speed *= ABILITIES.jely.playerFast;   // Jely nada más rápido en el agua
     // en la nieve se va más despacio (Elora), salvo volando o en el aire
     if (p.fly <= 0 && !p.jumping && this.enNieve(p.x, p.y)) {
@@ -471,7 +484,7 @@ export class Game {
         p.x += (b.x - p.x) * Math.min(1, dt * 5); p.y += (b.y + 14 - p.y) * Math.min(1, dt * 5);   // te acerca a ella
         if (!b.hecho && b.coge >= BE.cogeDano) {
           b.hecho = true;
-          p.hearts -= BE.bocaDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * 2 * statMul(this.ch, 'cordura');
+          p.hearts -= BE.bocaDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * 2 * this.mul('cordura');
           this.flash = 0.7; this.say(t('esp.boca'), 2.5); sfx.hurt();
         }
         if (b.coge >= BE.cogeDura) { b.coge = null; b.baja = 0.5; b.espera = BE.bocaEspera; this.cogida = null; p.invuln = PLAYER.invuln; }
@@ -494,7 +507,7 @@ export class Game {
       if (g.espera > 0) { g.espera -= dt; continue; }
       if (dist(g.x, g.y, p.x, p.y) < BE.girasolPisa && !p.jumping && p.tun <= 0 && p.fly <= 0 && !p.seguro) {
         g.grita = 1; g.espera = BE.girasolEspera; g.garra = 0; g.gx = p.x; g.gy = p.y;
-        if (p.invuln <= 0) { p.hearts -= BE.girasolDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * statMul(this.ch, 'cordura'); this.flash = 0.6; }
+        if (p.invuln <= 0) { p.hearts -= BE.girasolDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * this.mul('cordura'); this.flash = 0.6; }
         this.say(t('esp.girasol'), 2.5); sfx.girasol(); sfx.bite();
       }
     }
@@ -502,13 +515,23 @@ export class Game {
     // --- lluvia de monedas del Bonus: salen varias a la vez, duran unos segundos y se van ---
     if (L.coinRush) this.updateCoinRush(dt);
 
+    // --- el Imán (trinket): las monedas cercanas vienen hacia ti ---
+    const iman = this.extra('iman') * TILE;
+    if (iman > 0) for (const it of L.items) {
+      if (it.taken || it.type !== 'coin') continue;
+      const d = dist(it.x, it.y, p.x, p.y);
+      if (d > iman || d < 1) continue;
+      const paso = Math.min(d, 280 * dt);
+      it.x += (p.x - it.x) / d * paso; it.y += (p.y - it.y) / d * paso;
+    }
+
     // --- objetos ---
     for (const it of L.items) {
       if (it.taken || dist(it.x, it.y, p.x, p.y) > p.r + 10) continue;
       it.taken = true;
       if (it.type === 'tape') { this.tapes++; p.anxiety += ANXIETY.tape; this.say(t('msg.tape'), 1.5); sfx.tape(); this.cb.onTape(); }
       else if (it.type === 'food') { p.anxiety += ANXIETY.food; this.say(t('msg.food'), 1.5); sfx.food(); }
-      else if (it.type === 'heart') { p.hearts = Math.min(maxHearts(this.ch), p.hearts + 1); this.say(t('msg.heart'), 1.5); sfx.heart(); }
+      else if (it.type === 'heart') { p.hearts = Math.min(this.maxH(), p.hearts + 1); this.say(t('msg.heart'), 1.5); sfx.heart(); }
       else if (it.type === 'coin') { const v = coinValue(it.kind); this.coins += v; this.cb.onCoin(v); sfx.coin(); }
       else if (it.type === 'stamina') {
         p.stamina = Math.min(STAMINA.max, p.stamina + STAMINA.ball);
@@ -602,7 +625,12 @@ export class Game {
       if (e.especial === 'oct' && this.pecera) { e.chasing = true; e.lostFor = 0; e.lastSeen = { x: p.x, y: p.y }; e.stuck = 0; }
 
       // Solo te ven si no hay pared ni trasto alto en medio.
-      const sees = p.tun <= 0 && e.recoil <= 0 && d < ENEMY.sightTiles * ve * TILE * statMul(this.ch, 'sigilo') && canSee(L, e.x, e.y, p.x, p.y);
+      let sees = p.tun <= 0 && e.recoil <= 0 && d < ENEMY.sightTiles * ve * TILE * this.mul('sigilo') && canSee(L, e.x, e.y, p.x, p.y);
+      // Amuleto de la suerte (trinket de Elora): cuando un Bloodie te va a ver, un 30 % de las veces no te ve
+      if (e.suerte > 0) { e.suerte -= dt; sees = false; }
+      else if (sees && !e.chasing && this.extra('suerte') > 0 && Math.random() < this.extra('suerte')) {
+        e.suerte = this.extra('suerteDura'); sees = false; this.say(t('msg.suerte'), 1.5);
+      }
       if (sees) { e.chasing = true; e.lostFor = 0; e.lastSeen = { x: p.x, y: p.y }; }
       else if (e.chasing) {
         e.lostFor += dt;
@@ -664,7 +692,7 @@ export class Game {
       if (d < e.r + p.r && p.invuln <= 0 && e.recoil <= 0 && !overJump && !inmortal && !p.seguro) {
         p.hearts -= 1;
         p.invuln = PLAYER.invuln;
-        p.anxiety += ANXIETY.hit * statMul(this.ch, 'cordura');
+        p.anxiety += ANXIETY.hit * this.mul('cordura');
         e.recoil = ENEMY.recoil;
         e.chasing = false;
         this.flash = 0.5;
@@ -676,7 +704,7 @@ export class Game {
 
     // --- ansiedad (sube con Bloodies cerca, baja cuando estás tranquilo) ---
     const nr = ANXIETY.nearRadiusTiles * TILE;
-    if (nearest < nr && !frozen && !p.seguro && p.tun <= 0) p.anxiety += (ANXIETY.nearGain * (1 - nearest / nr) + 2) * dt * statMul(this.ch, 'cordura');
+    if (nearest < nr && !frozen && !p.seguro && p.tun <= 0) p.anxiety += (ANXIETY.nearGain * (1 - nearest / nr) + 2) * dt * this.mul('cordura');
     else p.anxiety -= ANXIETY.calm * dt;
     p.anxiety = Math.max(0, Math.min(ANXIETY.max, p.anxiety));
 
@@ -760,7 +788,7 @@ export class Game {
   pillaOct() {
     const p = this.player;
     this.pecera = null; this.proximaPecera = entre(BE.minijuego);
-    p.hearts -= BE.octDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * 2 * statMul(this.ch, 'cordura');
+    p.hearts -= BE.octDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * 2 * this.mul('cordura');
     this.flash = 0.7; this.say(t('esp.pecera.mal'), 2.5); sfx.hurt();
     const oct = this.enemies.find((e) => e.especial === 'oct');
     if (oct) { oct.recoil = ENEMY.recoil; oct.chasing = false; }
@@ -887,7 +915,7 @@ export class Game {
       if (libre) this.say(t('msg.fuegoSalvado'), 3);
       else {
         p.hearts = Math.max(0, p.hearts - DRAKE.damage);
-        p.anxiety += ANXIETY.hit * statMul(this.ch, 'cordura');
+        p.anxiety += ANXIETY.hit * this.mul('cordura');
         this.flash = 0.8;
         sfx.hurt();
         this.say(t('msg.fuegoQuema', { n: DRAKE.damage }), 3);
@@ -899,7 +927,7 @@ export class Game {
       music.play(this.musica || 'pasillo');   // la del pasillo (en Navidad, la de Navidad)
     }
     // Drake está viniendo y aún no te has escondido: te sube un poco la ansiedad (Elora)
-    if (f.fase === 'aviso' && !p.seguro && !p.enHueco) p.anxiety += DRAKE.anxiety * dt * statMul(this.ch, 'cordura');
+    if (f.fase === 'aviso' && !p.seguro && !p.enHueco) p.anxiety += DRAKE.anxiety * dt * this.mul('cordura');
   }
 
   // Drake (gigante, DRAKE.size veces un Bloody) volando por la pantalla, el aviso y las llamas.
@@ -1394,7 +1422,7 @@ export class Game {
     const flicker = 1 + Math.sin(this.time * 9) * 0.02 + Math.sin(this.time * 23) * 0.01;
     // El Bonus está mucho más iluminado: es una sala alegre y se tiene que ver entera.
     // con la Nariz brillante de Chop, la luz llega más lejos
-    const radio = (L.noButton ? LIGHT_RADIUS_TILES * 2.6 : LIGHT_RADIUS_TILES) * (p.nariz > 0 ? ABILITIES.chop.luz : 1) * TILE * flicker;
+    const radio = (L.noButton ? LIGHT_RADIUS_TILES * 2.6 : LIGHT_RADIUS_TILES) * (p.nariz > 0 ? ABILITIES.chop.luz : 1) * (this.extra('luz') || 1) * TILE * flicker;
     hole(p.x - cam.x, p.y - cam.y, radio);
     // Con la salida abierta, su luz verde se ve desde lejos para guiarte hasta ella.
     if (this.buttonPressed) for (const e of L.exits) hole((e.tx + 0.5) * TILE - cam.x, (e.ty + 0.5) * TILE - cam.y, TILE * 3, 0.8);
@@ -1432,7 +1460,7 @@ export class Game {
     ctx.save();
     ctx.textBaseline = 'top';
     // corazones
-    for (let i = 0; i < maxHearts(this.ch); i++) {
+    for (let i = 0; i < this.maxH(); i++) {
       ctx.fillStyle = i < p.hearts ? '#ff3b47' : 'rgba(255,255,255,0.18)';
       this.heart(ctx, 26 + i * 30, 26, 11);
     }
