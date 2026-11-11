@@ -71,6 +71,23 @@ export const CHARACTERS = [
     stats: { velocidad: 60, cordura: 40, sigilo: 40, resistencia: 85 }, corazones: 3 },
 ];
 
+// La pose de cada personaje en su ficha (Elora, 11-11-2026: en la tienda salen los personajes del juego en vez de sus
+// dibujos, pero con la pose de su foto). Mismo formato que opts.pose (grados); null = la postura de siempre.
+// Más opciones para drawCharacter: skate (Gec en su monopatín). Las poses las sacó Clad mirando cada ficha [PROVISIONAL]
+export const FICHA_POSE = {
+  carot: null,                                            // de pie, con la mano en la tripa (la postura de siempre)
+  froggy: { pose: { bi: 55, bd: -55, pi: 12, pd: -12 } },   // los brazos abiertos y las piernas separadas
+  oct: { pose: { bd: -110 } },                              // saludando con un tentáculo
+  tarda: null,                                            // con su cinta
+  gek: { pose: { bi: 40, bd: -70 }, skate: true },          // en su monopatín, con los brazos abiertos
+  drake: { pose: { bi: 75, bd: -75, pi: 8, pd: -8, ai: 0, ad: 0 } },   // los brazos en cruz y las alas abiertas
+  draila: null,                                           // la mano en la cintura
+  katy: { pose: { bi: 140 } },                              // saludando con la mano
+  jely: null,
+  hoppy: null,                                            // los girasoles-manos arriba
+  reno: { pose: { bi: 140, bd: -50 } },                     // saludando
+};
+
 // La Tarda de verdad (la de la tienda del lobby y la que habla en las grabaciones) es gris, como la
 // dibujó Elora; la Tarda que se compra es marrón (Elora).
 export const TARDA_GRIS = { color: '#a9a8ad', dark: '#74737a' };
@@ -1794,7 +1811,9 @@ function drawTarda(ctx, pal, facing, walk, opts) {
       if (B && side === 1 && k === 2) return;   // de Bloodie le falta una pata
       const sw = Math.sin(walk * (chasing ? 2 : 1) + fase + (side > 0 ? 1.5 : 0)) * (chasing ? 2.5 : 1.2);
       const yEnd = chasing ? y - 7 + sw : y + 2 + sw;
-      const fin = girar([side * 12.5, yEnd], [side * 6.5, y], brazoPose(opts, side));
+      // saludando (la Tarda del dibujo de la tienda, Elora): la pata de arriba de la derecha, levantada
+      const fin = opts.saluda && side === 1 && k === 0 ? [side * 17, y - 9]
+        : girar([side * 12.5, yEnd], [side * 6.5, y], brazoPose(opts, side));
       pata(side * 6.5, y, fin[0], fin[1], 3.2);
     });
   }
@@ -1936,7 +1955,7 @@ function drawTarda(ctx, pal, facing, walk, opts) {
     ctx.strokeStyle = '#f7f6f0'; ctx.lineWidth = 0.55;
     ctx.beginPath(); ctx.moveTo(ax + 3, ay - 8 - sube); ctx.bezierCurveTo(ax + 9, ay - 12 - sube, ax + 9, ay + 2, ax - 0.6, ay); ctx.stroke();
     ctx.restore();
-  } else if (alta && !B && !back && !opts.peluche) {   // (con el osito en la mano, sin la cinta: Elora)
+  } else if (alta && !B && !back && !opts.peluche && !opts.saluda) {   // (con el osito en la mano, sin la cinta: Elora)
     // la cinta que lleva en una pata de arriba (la de la derecha)
     ctx.save();
     ctx.translate(13.5, -15 + fy * 0.5); ctx.rotate(-0.25);

@@ -2,7 +2,7 @@ import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fecha
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
-import { CHARACTERS, drawCharacter, SKINS, skinsDe, conSkin, characterById, TARDA_GRIS } from './characters.js';
+import { CHARACTERS, drawCharacter, SKINS, skinsDe, conSkin, characterById, TARDA_GRIS, FICHA_POSE } from './characters.js';
 import { PAD_ACTIONS } from './input.js';
 import { TapePlayer, grabacionDeCinta } from './tapes.js';
 import { music } from './music.js';
@@ -424,9 +424,28 @@ export class UI {
   fillFicha(box, ch) {
     box.innerHTML = '';
     if (ch.ficha) {
-      const img = this.el('img', 'ficha-foto');
-      img.src = ch.ficha; img.alt = ch.name;
-      box.appendChild(img);
+      // Elora (11-11-2026): en vez de su dibujo, sale el personaje del juego con la pose de su foto (FICHA_POSE).
+      // De la foto se queda la parte de la derecha: su nombre escrito a mano y el cuadro donde van los números.
+      const cv = this.el('canvas', 'ficha-foto');
+      cv.setAttribute('aria-label', ch.name);
+      const img = new Image();
+      img.onload = () => {
+        cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+        const x = cv.getContext('2d'), W = cv.width, H = cv.height;
+        x.drawImage(img, 0, 0);
+        const corte = W * Math.max(0.3, ((ch.fichaCuadro ? ch.fichaCuadro.left : 60) - 4) / 100);
+        x.fillStyle = '#ffffff'; x.fillRect(0, 0, corte, H);
+        // el suelo, como la raya que pinta Elora en sus fichas
+        x.strokeStyle = '#8a8580'; x.lineWidth = Math.max(2, H / 320);
+        x.beginPath(); x.moveTo(0, H * 0.9); x.quadraticCurveTo(corte / 2, H * 0.87, corte, H * 0.9); x.stroke();
+        const fp = FICHA_POSE[ch.id] || {};
+        const k = Math.min(H * 0.8 / 46, corte / 64);
+        x.save(); x.translate(corte / 2, H * 0.9 - 12 * k); x.scale(k, k);
+        drawCharacter(x, characterById(ch.id), 0, 0, 'down', 0, 0, false, { ...(fp.pose ? { pose: fp.pose } : {}), skate: !!fp.skate });
+        x.restore();
+      };
+      img.src = ch.ficha;
+      box.appendChild(cv);
     } else {
       box.appendChild(this.paperFicha(ch));
     }
@@ -561,7 +580,34 @@ export class UI {
     this.clear();
     const s = this.el('div', 'screen dim tienda');
     const hoja = this.el('div', 'tienda-hoja');
-    const img = this.el('img', 'tienda-dibujo'); img.src = 'assets/sprites/tienda/tienda.webp'; img.alt = "Tarda's shop";
+    // el dibujo de Elora, pero con la Tarda del juego saludando en vez de su Tarda dibujada (Elora, 11-11-2026)
+    const img = this.el('canvas', 'tienda-dibujo'); img.setAttribute('aria-label', "Tarda's shop");
+    const foto = new Image();
+    foto.onload = () => {
+      img.width = foto.naturalWidth; img.height = foto.naturalHeight;   // 1372 x 967
+      const x = img.getContext('2d');
+      x.drawImage(foto, 0, 0);
+      x.fillStyle = '#cfe8f6'; x.fillRect(915, 262, 395, 452);           // tapa su Tarda con el azul de la ventana
+      x.save(); x.translate(1100, 668); x.scale(8, 8);
+      drawCharacter(x, { ...characterById('tarda'), ...TARDA_GRIS }, 0, 0, 'down', 0, 0, false, { alta: true, saluda: true });
+      x.restore();
+      // el mostrador por delante (con su papel y su boli, como en el dibujo)
+      x.fillStyle = '#b67a45';
+      x.beginPath(); x.moveTo(848, 712); x.lineTo(1372, 704); x.lineTo(1372, 967); x.lineTo(832, 967); x.closePath(); x.fill();
+      x.strokeStyle = '#4a3a2e'; x.lineWidth = 3;
+      x.beginPath(); x.moveTo(848, 712); x.lineTo(1372, 704); x.stroke();
+      x.save(); x.translate(1068, 800); x.rotate(-0.06);
+      x.fillStyle = '#f6eed8'; x.fillRect(-80, -75, 160, 165);
+      x.strokeStyle = '#7a7068'; x.lineWidth = 2; x.strokeRect(-80, -75, 160, 165);
+      x.strokeStyle = '#9a9088'; x.lineWidth = 2;
+      for (let i = 0; i < 6; i++) { x.beginPath(); x.moveTo(-60, -50 + i * 24); x.quadraticCurveTo(0, -56 + i * 24, 55, -48 + i * 24); x.stroke(); }
+      x.restore();
+      x.save(); x.translate(1170, 800); x.rotate(-0.95);
+      x.fillStyle = '#3b3b40'; x.fillRect(-55, -7, 100, 14);
+      x.fillStyle = '#c9c9cf'; x.beginPath(); x.moveTo(45, -7); x.lineTo(62, 0); x.lineTo(45, 7); x.closePath(); x.fill();
+      x.restore();
+    };
+    foto.src = 'assets/sprites/tienda/tienda.webp';
     hoja.appendChild(img);
     // las franjas del dibujo (en % del dibujo; están torcidas, como las dibujó Elora)
     const op1 = this.button(t('shop.deposit'), onDeposit);
