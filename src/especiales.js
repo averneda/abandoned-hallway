@@ -8,11 +8,16 @@
 //   'tarda'     → gusano gris enroscado: camina también por las paredes, así que escala los trastos que se saltan.
 //   'gecdraila' → Gec y Draila en un solo cuerpo: se turnan cada 5 a 10 s; con Gec va más rápido, con Draila más
 //                 lento pero te ve desde más lejos.
+//   'hoppy'     → Hoppy Bloody (dibujo de Elora): por el pasillo hay girasoles con ojo; si pisas uno, sale del suelo
+//                 un girasol con forma de garra que te coge y te quita 1 corazón. De momento solo sale con el enlace
+//                 (?bloodie=hoppy).
 // Los números, en BLOODIES_ESPECIALES de config.js. Cómo están dibujados, a partir de los dibujos de Elora (Clad).
 
 import { BLOODIES_ESPECIALES as BE } from './config.js';
 
-export const ESPECIALES = ['caty', 'oct', 'tarda', 'gecdraila'];
+export const ESPECIALES = ['caty', 'oct', 'tarda', 'gecdraila', 'hoppy'];
+// los que pueden salir al azar (Hoppy Bloody, de momento, solo con el enlace: Elora todavía la va a cambiar)
+const AL_AZAR = ['caty', 'oct', 'tarda', 'gecdraila'];
 
 const dot = (ctx, x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
 function rr(ctx, x, y, w, h, r) {
@@ -37,7 +42,7 @@ export function decidirEspecial(n, L) {
   if (!codigo) return null;
   if (n < BE.desdePasillo || L.noButton || L.lobby || L.fuego || !L.enemies || !L.enemies.length) return null;
   if (Math.random() >= BE.prob) return null;
-  return ESPECIALES[Math.floor(Math.random() * ESPECIALES.length)];
+  return AL_AZAR[Math.floor(Math.random() * AL_AZAR.length)];
 }
 export const entre = ([a, b]) => a + Math.random() * (b - a);
 // un número entero al azar de a a b, los dos incluidos (Gec y Draila: 5, 6, 7, 8, 9 o 10 segundos, Elora)
@@ -81,6 +86,7 @@ export function drawBloodieEspecial(ctx, tipo, x, y, facing, walk, opts = {}) {
   for (let i = -1; i <= 1; i++) { const g = (Math.sin(walk * 0.3 + i * 2) + 1) * 3; ctx.beginPath(); ctx.ellipse(i * 7, 8 + g, 2.5, 4 + g * 0.5, 0, 0, Math.PI * 2); ctx.fill(); }
   if (tipo === 'caty') drawCatyB(ctx, facing, walk, chasing);
   else if (tipo === 'oct') drawOctB(ctx, facing, walk, chasing);
+  else if (tipo === 'hoppy') drawHoppyB(ctx, facing, walk, chasing);
   else if (tipo === 'tarda') {
     drawTardaB(ctx, facing, walk, chasing);
     if (sube > 0.3) {   // las garras rojas agarradas al borde del trasto
@@ -340,6 +346,211 @@ function drawTardaB(ctx, facing, walk, chasing) {
 // ------------------------------------------------------------------ las bocas que se ríen (Bloodie Caty)
 
 // Bocas por el suelo y por las paredes que dan al suelo; una de ellas, la del gato, lejos de donde empiezas.
+// Hoppy Bloody, según el dibujo de Elora (assets/referencias/bloodies/hoppy.webp, 11-11-2026): la maceta más alta,
+// rota por una esquina de arriba y desconchada por abajo; debajo, una sonrisa enorme de dientes en punta; la manta
+// sucia, gris marronácea, con manchas de sangre y la tira de abajo con las florecitas solo dibujadas (sin color); las
+// manitas con garras sujetándola, y dos pies grises. Los tallos de la maceta, larguísimos, bajan hasta el suelo como
+// patas de araña y acaban en unas flores rojas que son GARRAS.
+function drawHoppyB(ctx, facing, walk, chasing) {
+  const back = facing === 'up', hx = 0, hy = back ? -15 : -14;
+  const manta = '#a39a8e', mantaOsc = '#7d7468', piel = '#d6b8a0', tallo = '#6fb83a', talloOsc = '#3c7a1e';
+  const maceta = '#b07a5a', macetaOsc = '#7a4e34', raya = '#2a1a14';
+  const step = Math.sin(walk) * 1.6;
+  // los tallos-patas: salen de los lados de la maceta, se abren y bajan hasta el suelo; las garras rojas se apoyan
+  // en el suelo y se van levantando al andar, una y otra
+  for (const side of [-1, 1]) {
+    const sube = Math.max(0, Math.sin(walk + (side > 0 ? Math.PI : 0))) * (chasing ? 3.4 : 2.2);
+    const base = [hx + side * 8.6, hy + 1.4], codo = [side * 22, hy - 2 - sube], pie = [side * 19, 9.4 - sube];
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = talloOsc; ctx.lineWidth = 3.6;
+    ctx.beginPath(); ctx.moveTo(base[0], base[1]); ctx.quadraticCurveTo(codo[0], codo[1], pie[0], pie[1] - 2); ctx.stroke();
+    ctx.strokeStyle = tallo; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(base[0], base[1]); ctx.quadraticCurveTo(codo[0], codo[1], pie[0], pie[1] - 2); ctx.stroke();
+    // la flor roja-garra: un capullo rojo y cuatro uñas curvas que se clavan en el suelo
+    ctx.fillStyle = '#c4303a';
+    ctx.beginPath(); ctx.ellipse(pie[0], pie[1] - 1.2, 2.6, 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#a3141c'; ctx.lineWidth = 1.3;
+    for (const o of [-2.6, -1, 1, 2.6]) {
+      ctx.beginPath(); ctx.moveTo(pie[0] + o * 0.5, pie[1] - 0.4);
+      ctx.quadraticCurveTo(pie[0] + o * 1.5, pie[1] - 0.6, pie[0] + o * 1.7, pie[1] + 1.6); ctx.stroke();
+    }
+    ctx.fillStyle = SANGRE; dot(ctx, pie[0] + side * 0.6, pie[1] + 1.4, 0.7);
+  }
+  // Elora: NO tiene pies; anda solo con las plantas, y el cuerpo va flotando. La manta la lleva por detrás, echada
+  // hacia atrás por el viento (al andar de lado, ondea hacia el lado contrario)
+  const viento = facing === 'left' ? 1 : facing === 'right' ? -1 : 0, ola = Math.sin(walk * 1.3) * 1.2;
+  const manta_ = () => {
+    ctx.beginPath(); ctx.moveTo(-4.4, -7); ctx.lineTo(4.4, -7);
+    ctx.quadraticCurveTo(9 + viento * 3, -1, 11 + viento * 6 + ola, 6.4 - ola * 0.5);
+    ctx.quadraticCurveTo(6 + viento * 5, 8.6 + ola, 0 + viento * 5, 7.4);
+    ctx.quadraticCurveTo(-6 + viento * 5, 8.6 - ola, -11 + viento * 6 - ola, 6.4 + ola * 0.5);
+    ctx.quadraticCurveTo(-9 + viento * 3, -1, -4.4, -7); ctx.closePath();
+  };
+  const pintaManta = () => {
+    ctx.fillStyle = manta; manta_(); ctx.fill();
+    ctx.save(); manta_(); ctx.clip();
+    ctx.fillStyle = mantaOsc; ctx.globalAlpha *= 0.4; ctx.fillRect(4 + viento * 4, -8, 10, 18); ctx.globalAlpha /= 0.4;
+    // la tira de abajo, con las florecitas solo dibujadas
+    ctx.fillStyle = '#e8e4dc'; ctx.strokeStyle = raya; ctx.lineWidth = 0.35;
+    ctx.beginPath(); ctx.moveTo(-13 + viento * 6, 3.6); ctx.quadraticCurveTo(viento * 5, 5.2, 13 + viento * 6, 3.6); ctx.lineTo(13 + viento * 6, 12); ctx.lineTo(-13 + viento * 6, 12); ctx.closePath(); ctx.fill(); ctx.stroke();
+    for (let x = -9; x <= 9.1; x += 2.6) {
+      const fx = x + viento * 5.5, fy = 5.8 + Math.abs(x) * 0.08;
+      ctx.beginPath(); ctx.arc(fx, fy, 0.7, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; ctx.moveTo(fx + Math.cos(a) * 0.8, fy + Math.sin(a) * 0.8); ctx.lineTo(fx + Math.cos(a) * 1.2, fy + Math.sin(a) * 1.2); } ctx.stroke();
+    }
+    ctx.fillStyle = '#c4303a'; for (const [x, y, r] of [[7, 0, 1.1], [-7.4, 2, 1.2]]) { ctx.beginPath(); ctx.ellipse(x + viento * 3, y, r * 1.2, r, 0.3, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+    ctx.strokeStyle = raya; ctx.lineWidth = 0.6; manta_(); ctx.stroke();
+  };
+  // el cuerpo: largo y gris, flotando (sin pies), con manchas de sangre
+  const cuerpo_ = () => { ctx.beginPath(); ctx.moveTo(-4.2, -7); ctx.lineTo(4.2, -7); ctx.quadraticCurveTo(5.4, 1, 3.8, 6.2); ctx.quadraticCurveTo(0, 8.4, -3.8, 6.2); ctx.quadraticCurveTo(-5.4, 1, -4.2, -7); ctx.closePath(); };
+  const flota = Math.sin(walk * 0.5) * 0.6;
+  const pintaCuerpo = () => {
+    ctx.save(); ctx.translate(0, flota);
+    ctx.fillStyle = '#9a948c'; cuerpo_(); ctx.fill();
+    ctx.fillStyle = '#c4303a'; for (const [x, y, r] of [[2.4, -2, 1.1], [-2.2, 3, 1.2], [1.6, 4.4, 0.7]]) { ctx.beginPath(); ctx.ellipse(x, y, r * 1.2, r, 0.3, 0, Math.PI * 2); ctx.fill(); }
+    ctx.strokeStyle = raya; ctx.lineWidth = 0.6; cuerpo_(); ctx.stroke();
+    if (!back) {
+      // las manitas con garras, sujetando la manta por delante del pecho
+      for (const [x, y, s] of [[0.6, -3.4, 1], [-0.6, -1.2, -1]]) {
+        ctx.fillStyle = piel; ctx.beginPath(); ctx.ellipse(x + s * 1.2, y, 1.9, 1.2, s * 0.3, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = raya; ctx.lineWidth = 0.4;
+        for (const k of [-0.8, 0, 0.8]) { ctx.beginPath(); ctx.moveTo(x - s * 0.4, y + k); ctx.lineTo(x - s * 1.4, y + k + 0.5); ctx.stroke(); }
+      }
+    }
+    ctx.restore();
+  };
+  // de frente o de lado, la manta va por detrás; de espaldas, se ve por encima
+  if (back) { pintaCuerpo(); pintaManta(); } else { pintaManta(); pintaCuerpo(); }
+  // la cara, debajo de la maceta
+  ctx.fillStyle = piel; dot(ctx, hx, hy, 9);
+  // la maceta, más alta: rota por la esquina de arriba (a la derecha) y desconchada por abajo (a la izquierda)
+  const top = hy - 15;
+  ctx.fillStyle = maceta;
+  ctx.beginPath(); ctx.moveTo(hx - 6.4, top); ctx.lineTo(hx + 2.4, top); ctx.lineTo(hx + 3.4, top + 1.6); ctx.lineTo(hx + 4.6, top + 0.4);
+  ctx.lineTo(hx + 5.4, top + 2.4); ctx.lineTo(hx + 6.6, top + 1.4); ctx.lineTo(hx + 9.8, hy - 0.4); ctx.lineTo(hx - 9.8, hy - 0.4); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = macetaOsc; ctx.globalAlpha *= 0.4;
+  ctx.beginPath(); ctx.moveTo(hx + 3, top + 1); ctx.lineTo(hx + 6.6, top + 1.4); ctx.lineTo(hx + 9.8, hy - 0.4); ctx.lineTo(hx + 5, hy - 0.4); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha /= 0.4;
+  ctx.strokeStyle = raya; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(hx - 6.4, top); ctx.lineTo(hx + 2.4, top); ctx.lineTo(hx + 3.4, top + 1.6); ctx.lineTo(hx + 4.6, top + 0.4);
+  ctx.lineTo(hx + 5.4, top + 2.4); ctx.lineTo(hx + 6.6, top + 1.4); ctx.lineTo(hx + 9.8, hy - 0.4); ctx.moveTo(hx - 6.4, top); ctx.lineTo(hx - 9.8, hy - 0.4); ctx.stroke();
+  // el borde de la maceta y el desconchón de abajo (Elora: por ahí asoma su ojo)
+  ctx.fillStyle = '#c99070'; rrectB(ctx, hx - 10.8, hy - 1.4, 21.6, 3.2, 1);
+  ctx.strokeStyle = raya; ctx.lineWidth = 0.45; ctx.strokeRect(hx - 10.8, hy - 1.4, 21.6, 3.2);
+  ctx.fillStyle = '#e8d8c4'; ctx.beginPath(); ctx.moveTo(hx - 7.6, hy - 1.6); ctx.lineTo(hx - 6.6, hy - 4.2); ctx.lineTo(hx - 5.6, hy - 2.8); ctx.lineTo(hx - 4.4, hy - 4.6); ctx.lineTo(hx - 3.4, hy - 1.6); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Elora: en el desconchón asoma su OJO, amarillo y medio cerrado
+  ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.ellipse(hx - 5.5, hy - 2.6, 1.7, 1, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1a0a06'; ctx.beginPath(); ctx.ellipse(hx - 5.3, hy - 2.4, 0.35, 0.7, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#b07a5a'; ctx.beginPath(); ctx.ellipse(hx - 5.5, hy - 3.2, 1.9, 0.9, 0, Math.PI, Math.PI * 2); ctx.fill();   // el párpado, medio cerrado
+  ctx.strokeStyle = raya; ctx.lineWidth = 0.4; ctx.beginPath(); ctx.moveTo(hx - 7.3, hy - 3); ctx.quadraticCurveTo(hx - 5.5, hy - 2.4, hx - 3.7, hy - 3); ctx.stroke();
+  if (back) return;
+  // la sonrisa enorme con los dientes en punta, y la naricita
+  ctx.fillStyle = raya; dot(ctx, hx, hy + 2.6, 0.5);
+  ctx.fillStyle = '#3a1418';
+  ctx.beginPath(); ctx.moveTo(hx - 5.4, hy + 3.6); ctx.quadraticCurveTo(hx, hy + 8.4, hx + 5.4, hy + 3.6); ctx.quadraticCurveTo(hx, hy + 5.4, hx - 5.4, hy + 3.6); ctx.fill();
+  ctx.fillStyle = '#f7f2e6';
+  ctx.beginPath(); ctx.moveTo(hx - 4.8, hy + 4); for (let k = 0; k <= 8; k++) ctx.lineTo(hx - 4.8 + k * 1.2, hy + (k % 2 ? 6 : 4.4)); ctx.lineTo(hx + 4.8, hy + 4); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = raya; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(hx - 5.4, hy + 3.6); ctx.quadraticCurveTo(hx, hy + 8.4, hx + 5.4, hy + 3.6); ctx.stroke();
+  ctx.fillStyle = '#c4303a'; ctx.fillRect(hx + 2.2, hy + 6.4, 0.8, 1.6 + (walk * 0.5) % 2);   // la sangre que le cae
+}
+function rrectB(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); ctx.fill();
+}
+
+// Los girasoles marchitos de Hoppy Bloody, por el suelo, lejos de donde empiezas [PROVISIONAL]
+export function hacerGirasoles(L, start, T, TILE) {
+  const sitios = [];
+  for (let ty = 1; ty < L.h - 1; ty++) for (let tx = 1; tx < L.w - 1; tx++) {
+    if (L.tiles[ty * L.w + tx] !== T.FLOOR) continue;
+    const x = (tx + 0.5) * TILE, y = (ty + 0.5) * TILE;
+    if (Math.hypot(x - start.x, y - start.y) > TILE * 5) sitios.push({ x, y });
+  }
+  const lista = [];
+  for (let k = 0; k < BE.girasoles && sitios.length; k++) {
+    const c = sitios.splice(Math.floor(Math.random() * sitios.length), 1)[0];
+    lista.push({ x: c.x + (Math.random() - 0.5) * 10, y: c.y + (Math.random() - 0.5) * 8, grita: 0, espera: 0, fase: Math.random() * 6 });
+  }
+  return lista;
+}
+// Los girasoles con ojo del dibujo de Elora: un tallo verde con raíces y hojas en el suelo, y dos girasoles (uno
+// grande y otro pequeño en una ramita) con un OJO en el centro: el blanco con venitas rojas, el iris verde y la pupila
+// de raya, que te sigue. Cuando gritan, tiemblan, la pupila se hace grande y el ojo se pone rojo
+export function drawGirasol(ctx, g, time, px, py) {
+  const grita = g.grita > 0, tiembla = grita ? Math.sin(time * 40) * 0.8 : Math.sin(time * 1.5 + g.fase) * 0.3;
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.translate(g.x, g.y); ctx.scale(1.3, 1.3); ctx.translate(-g.x, -g.y);
+  const x = g.x, y = g.y;
+  // las raíces y las hojas del suelo
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x, y + 1, 6, 2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#2f6e2a'; ctx.lineWidth = 0.9;
+  for (const a of [-2.6, -2, -1.2, 1.2, 2, 2.6]) { ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.sign(a) * 2, y + 0.6, x + a * 1.8, y + 1.4 + Math.abs(a) * 0.3); ctx.stroke(); }
+  ctx.fillStyle = '#3c8e2a';
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + s * 3, y - 1.4, 2.6, 0.9, s * 0.5, 0, Math.PI * 2); ctx.fill(); }
+  // el tallo, ondulado, y la ramita del girasol pequeño
+  const hx = x + 2 + tiembla, hy = y - 17, sx = x + 6.4 + tiembla * 0.5, sy = y - 10;
+  ctx.strokeStyle = '#3c8e2a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.bezierCurveTo(x - 3, y - 6, x + 4, y - 10, hx, hy + 3); ctx.stroke();
+  ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(x + 1, y - 7); ctx.quadraticCurveTo(x + 4, y - 7, sx, sy + 1.6); ctx.stroke();
+  const flor = (cx, cy, r) => {
+    ctx.fillStyle = grita ? '#ffd23f' : '#f2cc3a'; ctx.strokeStyle = '#6a5a1a'; ctx.lineWidth = 0.3;
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4 + 0.2;
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(a - 0.32) * r, cy + Math.sin(a - 0.32) * r);
+      ctx.lineTo(cx + Math.cos(a) * r * 2.05, cy + Math.sin(a) * r * 2.05); ctx.lineTo(cx + Math.cos(a + 0.32) * r, cy + Math.sin(a + 0.32) * r); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    // el ojo: el blanco con venitas, el iris verde y la pupila de raya que te mira
+    ctx.fillStyle = '#fbf8f2'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#d42a36'; ctx.lineWidth = 0.22;
+    for (const a of [0.3, 1.4, 2.6, 3.9, 5.1]) { ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); ctx.lineTo(cx + Math.cos(a + 0.2) * r * 0.62, cy + Math.sin(a + 0.2) * r * 0.62); ctx.stroke(); }
+    const dx = Math.max(-1, Math.min(1, (px - cx) / 50)) * r * 0.22, dy = Math.max(-1, Math.min(1, (py - cy) / 50)) * r * 0.22;
+    ctx.fillStyle = grita ? '#d42a36' : '#2fae48'; ctx.beginPath(); ctx.arc(cx + dx, cy + dy, r * 0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0e0a08'; ctx.beginPath(); ctx.ellipse(cx + dx, cy + dy, grita ? r * 0.32 : r * 0.12, r * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#1a1410'; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  };
+  flor(sx, sy, 1.5);
+  flor(hx, hy, 2.6);
+  ctx.restore();
+}
+
+// El girasol garra (Elora): cuando pisas un girasol con ojo, sale del suelo, a tus pies, otro girasol con los pétalos
+// en forma de garra: sube, se cierra sobre ti como una mano y se vuelve a meter. g.garra va de 0 a 1 (segundos)
+export function drawGirasolGarra(ctx, g) {
+  const t = g.garra, x = g.gx, y = g.gy + 8;
+  const sube = t < 0.25 ? t / 0.25 : t > 0.7 ? Math.max(0, 1 - (t - 0.7) / 0.3) : 1;   // sube, se queda y baja
+  const cierra = t < 0.25 ? 0 : Math.min(1, (t - 0.25) / 0.2);                        // las garras se cierran
+  const alto = 26 * sube;
+  ctx.save(); ctx.lineCap = 'round';
+  // el agujero del suelo, con tierra
+  ctx.fillStyle = '#3a2a1e'; ctx.beginPath(); ctx.ellipse(x, y, 7 * Math.max(sube, 0.4), 2.4, 0, 0, Math.PI * 2); ctx.fill();
+  if (sube <= 0) { ctx.restore(); return; }
+  // el tallo que sale del agujero
+  ctx.strokeStyle = '#2f6e2a'; ctx.lineWidth = 3.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - 3, y - alto * 0.5, x, y - alto); ctx.stroke();
+  ctx.strokeStyle = '#4caa36'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - 3, y - alto * 0.5, x, y - alto); ctx.stroke();
+  // la cabeza: el centro con el ojo rojo y los pétalos amarillos en forma de garra, que se cierran
+  const hx = x, hy = y - alto;
+  for (let k = 0; k < 6; k++) {
+    const a0 = -Math.PI / 2 + (k - 2.5) * 0.5 * (1 - cierra * 0.55);
+    const largo = 9 * sube;
+    const px = hx + Math.cos(a0) * largo, py = hy + Math.sin(a0) * largo;
+    const curva = (k < 3 ? 1 : -1) * (2 + cierra * 3);
+    ctx.strokeStyle = '#6a5a1a'; ctx.lineWidth = 3.2;
+    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + px) / 2 + curva, (hy + py) / 2, px, py); ctx.stroke();
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + px) / 2 + curva, (hy + py) / 2, px, py); ctx.stroke();
+    ctx.fillStyle = '#c4303a'; ctx.beginPath(); ctx.arc(px, py, 1.2, 0, Math.PI * 2); ctx.fill();   // la uña roja
+  }
+  ctx.fillStyle = '#fbf8f2'; ctx.beginPath(); ctx.arc(hx, hy, 3.6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#d42a36'; ctx.beginPath(); ctx.arc(hx, hy, 2.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#0e0a08'; ctx.beginPath(); ctx.ellipse(hx, hy, 0.6, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#1a1410'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.arc(hx, hy, 3.6, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
 export function hacerBocas(L, start, T, TILE) {
   const suelo = [], pared = [];
   for (let ty = 1; ty < L.h - 1; ty++) for (let tx = 1; tx < L.w - 1; tx++) {

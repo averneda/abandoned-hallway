@@ -10,7 +10,7 @@ import { t, getLang } from './i18n.js';
 import { sfx } from './sound.js';
 import { music } from './music.js';
 import { poseAndando } from './andares.js';
-import { decidirEspecial, soloEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, drawZarpazos, nuevaPecera, updatePecera, drawPecera, entre, enteroEntre } from './especiales.js';
+import { decidirEspecial, soloEspecial, drawBloodieEspecial, hacerBocas, drawBoca, drawMediaCaty, drawBrazosCaty, moverBoca, drawZarpazos, hacerGirasoles, drawGirasol, drawGirasolGarra, nuevaPecera, updatePecera, drawPecera, entre, enteroEntre } from './especiales.js';
 import { sortearAdorno, drawAdorno, adorno, drawArbolCompleto } from './adornos.js';
 import { drawCoinFast, glowSprite, pickCoinKind, coinValue } from './coins.js';
 
@@ -183,6 +183,7 @@ export class Game {
       });
       if (tipo === 'caty') this.bocas = hacerBocas(L, this.player, T, TILE);
       if (tipo === 'oct') this.proximaPecera = entre(BE.minijuego);
+      if (tipo === 'hoppy') this.girasoles = hacerGirasoles(L, this.player, T, TILE);
       if (soloEspecial()) this.enemies = this.enemies.filter((e) => e.especial);   // ?solo=1: solo el Bloodie especial (Elora)
     }
     // El pasillo de Drake (Elora): el fuego del Drake Sangriento, las T y Tarda explicándolo
@@ -485,6 +486,19 @@ export class Game {
       }
     }
 
+    // --- los girasoles con ojo de Hoppy Bloody (Elora): si pisas uno, sale del suelo un girasol con forma de garra que
+    // te coge y te quita 1 corazón (saltando por encima no pasa nada) ---
+    if (this.girasoles) for (const g of this.girasoles) {
+      if (g.grita > 0) g.grita -= dt;
+      if (g.garra != null) { g.garra += dt; if (g.garra > 1) g.garra = null; }
+      if (g.espera > 0) { g.espera -= dt; continue; }
+      if (dist(g.x, g.y, p.x, p.y) < BE.girasolPisa && !p.jumping && p.tun <= 0 && p.fly <= 0 && !p.seguro) {
+        g.grita = 1; g.espera = BE.girasolEspera; g.garra = 0; g.gx = p.x; g.gy = p.y;
+        if (p.invuln <= 0) { p.hearts -= BE.girasolDano; p.invuln = PLAYER.invuln; p.anxiety += ANXIETY.hit * statMul(this.ch, 'cordura'); this.flash = 0.6; }
+        this.say(t('esp.girasol'), 2.5); sfx.girasol(); sfx.bite();
+      }
+    }
+
     // --- lluvia de monedas del Bonus: salen varias a la vez, duran unos segundos y se van ---
     if (L.coinRush) this.updateCoinRush(dt);
 
@@ -784,6 +798,8 @@ export class Game {
     if (this.bocas) for (const b of this.bocas) { drawBoca(ctx, b, this.time); if (b.gato) drawMediaCaty(ctx, b, this.time); }
     // los arañazos de la Bloodie Tarda en los trastos que ha trepado (Elora)
     if (this.zarpazos) drawZarpazos(ctx, this.zarpazos);
+    // los girasoles con ojo de Hoppy Bloody
+    if (this.girasoles) for (const g of this.girasoles) drawGirasol(ctx, g, this.time, p.x, p.y);
 
     // rastros de sangre de los Bloodies
     for (const e of this.enemies) for (const tr of e.trail) {
@@ -802,6 +818,8 @@ export class Game {
     actors.push({ y: p.y, draw: () => this.drawPlayer(ctx) });
     actors.sort((a, b) => a.y - b.y);
     for (const a of actors) a.draw();
+    // el girasol garra de Hoppy Bloody, que sale del suelo y te coge (por encima de ti)
+    if (this.girasoles) for (const g of this.girasoles) if (g.garra != null) drawGirasolGarra(ctx, g);
     // los brazos de media Caty, por encima de ti, que te tiene cogida (Elora)
     if (this.bocas) for (const b of this.bocas) if (b.gato) drawBrazosCaty(ctx, b, p.x, p.y);
 

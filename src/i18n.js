@@ -192,6 +192,7 @@ const dict = {
     // la guerra de almohadas (Elora)
     'lobby.almohadas': "E: ¡guerra de almohadas!",
     'esp.msg.caty': '😹 Se oyen risas por todo el pasillo…', 'esp.msg.oct': '📺 Se oye una tele encendida a lo lejos…',
+    'esp.msg.hoppy': '🌻 Los girasoles te están mirando…', 'esp.girasol': '🌻 ¡Has pisado un girasol! El girasol garra te ha cogido. −1 ❤',
     'esp.msg.tarda': '🐛 Algo trepa por los trastos…', 'esp.msg.gecdraila': '🦎🐊 Se oyen dos voces discutiendo…',
     'esp.boca': '😼 ¡La boca del gato te ha cogido! −2 ❤', 'esp.pecera.titulo': '🐙 ¡Ayuda al pulpito a salir de la pecera!',
     'esp.pecera.mar': '🌊 Mar', 'esp.pecera.oct': '📺 Oct te está buscando… ¡date prisa!', 'esp.pecera.bien': '🐙 ¡El pulpito ha llegado al mar!',
@@ -650,6 +651,7 @@ const dict = {
     // the pillow fight
     'lobby.almohadas': "E: pillow fight!",
     'esp.msg.caty': '😹 You can hear laughing all over the hallway…', 'esp.msg.oct': '📺 A TV is on somewhere…',
+    'esp.msg.hoppy': '🌻 The sunflowers are watching you…', 'esp.girasol': '🌻 You stepped on a sunflower! The claw sunflower got you. −1 ❤',
     'esp.msg.tarda': '🐛 Something is climbing over the junk…', 'esp.msg.gecdraila': '🦎🐊 Two voices are arguing…',
     'esp.boca': '😼 The cat mouth got you! −2 ❤', 'esp.pecera.titulo': '🐙 Help the little octopus out of the tank!',
     'esp.pecera.mar': '🌊 Sea', 'esp.pecera.oct': '📺 Oct is looking for you… hurry!', 'esp.pecera.bien': '🐙 The little octopus reached the sea!',

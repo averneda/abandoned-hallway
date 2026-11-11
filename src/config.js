@@ -58,6 +58,10 @@ export const BLOODIES_ESPECIALES = {
   cogeDano: 0.6, cogeDura: 1.4,   // media Caty sale de la boca y te coge con los brazos (Elora): a los 0,6 s, −2 ❤; a los 1,4 s te suelta [PROVISIONAL]
   minijuego: [9, 11], pecera: [9, 6], octTarda: 12, octDano: 2,  // Oct: cada ~10 s (Elora; antes 20); laberinto de 9 × 6; te encuentra en 12 s
   cambio: [5, 10], gecRapido: 1.35, drailaLento: 0.75, drailaVe: 1.6,   // Gec y Draila: se cambian a los 5, 6, 7, 8, 9 o 10 s, al azar (Elora)
+  // Hoppy Bloody (Elora): por el pasillo hay girasoles con ojo; si PISAS uno (más cerca de girasolPisa px), sale del
+  // suelo otro girasol con forma de garra que te coge y te quita girasolDano corazón. Cuántos hay y cuánto espera cada uno
+  // antes de volver a coger (girasolEspera s) [PROVISIONAL]
+  girasoles: 14, girasolPisa: 13, girasolDano: 1, girasolEspera: 4,
 };
 
 export const ENEMY = {
