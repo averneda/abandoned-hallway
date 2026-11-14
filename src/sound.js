@@ -63,6 +63,12 @@ export const sfx = {
   paint() { tone({ type: 'square', from: 700, to: 1300, time: 0.16, gain: 0.1 }); tone({ type: 'triangle', from: 400, to: 260, time: 0.25, gain: 0.08, delay: 0.1 }); },
   tongue() { tone({ type: 'square', from: 300, to: 900, time: 0.12, gain: 0.08 }); },
   dash() { tone({ type: 'sawtooth', from: 200, to: 700, time: 0.2, gain: 0.1 }); },
+  // al coger algo raro (azul): tres notitas que suben con brillo; súper raro (dorado): arpegio largo y campanitas
+  raro() { [880, 1175, 1568].forEach((f, i) => tone({ type: 'sine', from: f, time: 0.14, gain: 0.08, delay: 0.05 + i * 0.06 })); },
+  superRaro() {
+    [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => tone({ type: 'triangle', from: f, time: 0.2, gain: 0.09, delay: 0.04 + i * 0.06 }));
+    [2093, 2637, 3136].forEach((f, i) => tone({ type: 'sine', from: f, time: 0.35, gain: 0.04, delay: 0.42 + i * 0.07 }));
+  },
   stamina() { tone({ type: 'triangle', from: 440, to: 880, time: 0.18, gain: 0.12 }); tone({ type: 'sine', from: 660, to: 1320, time: 0.22, gain: 0.08, delay: 0.06 }); },
   // cintas de grabación: meter la cinta en el vídeo (clac-clac), tele sin señal, y apagar la tele
   tapeIn() { tone({ type: 'square', from: 180, to: 120, time: 0.06, gain: 0.12 }); tone({ type: 'square', from: 140, to: 90, time: 0.08, gain: 0.12, delay: 0.25 }); },

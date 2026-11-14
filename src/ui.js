@@ -50,6 +50,9 @@ const CODIGO_PERRITA = new Set(["806e4c8c", "a1af03f9", "ff50ebb", "7cacf996", "
 // La huella del código de los trinkets (Elora): los trinkets serán una actualización futura; hasta entonces, solo con
 // este código. Las mayúsculas dan igual; vale también con holeway/hallway/holway, «abandonned», catgames y trinket.
 const CODIGO_TRINKETS = new Set(["67b916c4","6a8cd8df","adcb003e","21c19df9","5a452b33","e96eb392","5f634767","f5d7972e","dd5fcaf6","16d13a81","1a658d04","b761711f","7317bc98","6217907b","7a14ceea","fa276fdd","322b77a6","334189f1","36072154","4e5b7daf","76dc481d","6d335dfc","c995910d","dd0246ac","543919b4","17165f8f","7a95b08e","f80f9d89","e558b3ee","57882969","1bc560ac","c2ff3857"]);
+// La huella del código de las chispitas (Elora): lo que se siente al coger algo (chispitas y rareza) sale más adelante;
+// hasta entonces, solo con este código. Las mayúsculas dan igual; vale con holeway/hallway/holway y «abandonned».
+const CODIGO_RARO = new Set(["3df6aa82","567b6ea3","cb7ce28c","1df8b746","3354b3c","af76241d","d9104e72","ea8d3944"]);
 function huellaCodigo(texto, mayusculas = false) {
   let n = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   n = (mayusculas ? n : n.toLowerCase()).replace(/[^A-Za-z0-9]+/g, ' ').trim();
@@ -132,9 +135,9 @@ export class UI {
   // El título lo dibuja la escena Title en el canvas (el cartel de Elora);
   // aquí solo van los botones, abajo del todo.
   // pijama: el modo pijama secreto (Elora) = { activo(), cambiar(on) }
-  showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita, trinkets }) {
+  showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita, trinkets, raro }) {
     this.clear();
-    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita, trinkets });
+    const otraVez = () => this.showMenu({ onPlay, onPad, pijama, navidad, bloodies, perrita, trinkets, raro });
     const s = this.el('div', 'screen titlemenu');
     s.appendChild(this.el('p', 'subtitle', t('menu.subtitle')));
     if (pijama && pijama.activo()) s.appendChild(this.el('p', 'pijama-badge', t('menu.pijama')));
@@ -142,7 +145,7 @@ export class UI {
     if (bloodies && bloodies.activo()) s.appendChild(this.el('p', 'pijama-badge bloodies-badge', t('menu.bloodies')));
     const row = this.el('div', 'row');
     const play = this.button(t('menu.play'), onPlay, true);
-    row.append(play, this.button('⚙️ ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies, perrita, trinkets)));
+    row.append(play, this.button('⚙️ ' + t('menu.pad'), onPad), this.button('🔑 ' + t('code.button'), () => this.showCode(otraVez, pijama, navidad, bloodies, perrita, trinkets, raro)));
     s.appendChild(row);
     s.appendChild(this.langRow(otraVez));
     this.root.appendChild(s);
@@ -157,7 +160,7 @@ export class UI {
   // Con el del pasillo 50 (Elora), vas directo al pasillo de Drake. Con el del modo pijama (Elora), las skins de pijama salen en la tienda de Tarda, gratis; se queda puesto
   // en este navegador hasta que se quita con el botón de aquí.
   // Los códigos no están escritos aquí (para que sigan siendo secretos): se compara su "huella".
-  showCode(onBack, pijama, navidad, bloodies, perrita, trinkets) {
+  showCode(onBack, pijama, navidad, bloodies, perrita, trinkets, raro) {
     this.clear();
     const s = this.el('div', 'screen');
     s.appendChild(this.el('h2', '', '🔑 ' + t('code.title')));
@@ -186,6 +189,10 @@ export class UI {
         perrita.cambiar(true);
         nota.textContent = t('code.perritaOn');
         setTimeout(onBack, 1800);
+      } else if (raro && CODIGO_RARO.has(huella)) {
+        raro.cambiar(true);
+        nota.textContent = t('code.raroOn');
+        setTimeout(onBack, 1800);
       } else if (trinkets && CODIGO_TRINKETS.has(huella)) {
         trinkets.cambiar(true);
         nota.textContent = t('code.trinketsOn');
@@ -212,6 +219,9 @@ export class UI {
     }
     if (perrita && perrita.activo()) {
       s.appendChild(this.button(t('code.perritaOff'), () => { perrita.cambiar(false); this.toast(t('code.perritaOffDone')); onBack(); }));
+    }
+    if (raro && raro.activo()) {
+      s.appendChild(this.button(t('code.raroOff'), () => { raro.cambiar(false); this.toast(t('code.raroOffDone')); onBack(); }));
     }
     if (trinkets && trinkets.activo()) {
       s.appendChild(this.button(t('code.trinketsOff'), () => { trinkets.cambiar(false); this.toast(t('code.trinketsOffDone')); onBack(); }));

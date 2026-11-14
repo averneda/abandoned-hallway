@@ -118,6 +118,13 @@ function hacerNieve(L, rand) {
   return nieve;
 }
 
+// Los colores de lo raro (idea del padre de Elora; colores [PROVISIONAL]): normal blanco, raro azul, súper raro dorado
+const RAREZA = [
+  { colores: ['#ffffff', '#fff6d0', '#e8e8f0'], texto: '#ffffff', brillo: '#ffffff' },
+  { colores: ['#5ab0ff', '#bfe3ff', '#8fd0ff', '#ffffff'], texto: '#9fd4ff', brillo: '#5ab0ff' },
+  { colores: ['#ffd23f', '#fff3a0', '#ff8ad8', '#7affd8', '#ffffff'], texto: '#ffe36b', brillo: '#ffd23f' },
+];
+
 export class Game {
   // levelOrNumber: número de pasillo, o un nivel ya cargado (lo usa el lobby).
   // callbacks: { onDeath(reason), onComplete({tapes, coins}), onPause(), onCoin(n), totalCoins() }
@@ -213,6 +220,9 @@ export class Game {
     this.doorClosed = false;
     this.messages = []; // {text, ttl}
     this.flash = 0;
+    this.chispitas = !!(callbacks && callbacks.chispitas);   // solo con el código de Elora, hasta que se abra
+    this.efectos = [];   // las chispitas y los números que salen al coger algo (idea del padre de Elora)
+    this.destello = 0;   // destello blanco de la pantalla al coger algo súper raro
     this.nextRush = 0;   // cuándo toca la siguiente tanda de monedas
     this.cam = { x: 0, y: 0 };
     if (this.n > 0) {
@@ -529,6 +539,7 @@ export class Game {
     for (const it of L.items) {
       if (it.taken || dist(it.x, it.y, p.x, p.y) > p.r + 10) continue;
       it.taken = true;
+      this.celebrar(it);
       if (it.type === 'tape') { this.tapes++; p.anxiety += ANXIETY.tape; this.say(t('msg.tape'), 1.5); sfx.tape(); this.cb.onTape(); }
       else if (it.type === 'food') { p.anxiety += ANXIETY.food; this.say(t('msg.food'), 1.5); sfx.food(); }
       else if (it.type === 'heart') { p.hearts = Math.min(this.maxH(), p.hearts + 1); this.say(t('msg.heart'), 1.5); sfx.heart(); }
@@ -712,6 +723,9 @@ export class Game {
     for (const m of this.messages) m.ttl -= dt;
     this.messages = this.messages.filter((m) => m.ttl > 0);
     if (this.flash > 0) this.flash -= dt;
+    if (this.destello > 0) this.destello -= dt;
+    for (const ef of this.efectos) ef.t += dt;
+    this.efectos = this.efectos.filter((ef) => ef.t < ef.dura);
 
     // --- muerte ---
     if (p.hearts <= 0) { this.finished = true; sfx.death(); this.cb.onDeath('hearts'); return; }
@@ -855,6 +869,12 @@ export class Game {
 
     // oscuridad
     this.renderDarkness(ctx);
+    // las chispitas y los números de lo que coges, por encima de la oscuridad
+    if (this.efectos.length) {
+      ctx.save(); ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
+      this.drawEfectos(ctx);
+      ctx.restore();
+    }
     // el bocadillo con el comentario del pijama (fiesta del Día del Niño, Elora), por encima de la oscuridad
     if (this.bocadillo && this.time < this.bocadillo.hasta) this.drawBocadillo(ctx, p.x - Math.round(this.cam.x), p.y - Math.round(this.cam.y) - 52, this.bocadillo.texto);
     ctx.restore();
@@ -867,6 +887,8 @@ export class Game {
 
     // golpe
     if (this.flash > 0) { ctx.fillStyle = `rgba(190,10,20,${this.flash * 0.7})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    // destello dorado al coger algo súper raro
+    if (this.destello > 0) { ctx.fillStyle = `rgba(255,236,160,${this.destello * 0.9})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     // hielo de Oct
     if (frozen) { ctx.fillStyle = `rgba(120,200,255,${Math.min(0.18, this.freeze * 0.1)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     // agua de Jely
@@ -1331,7 +1353,7 @@ export class Game {
       if (it.x < cam.x - 20 || it.x > cam.x + this.vw + 20 || it.y < cam.y - 20 || it.y > cam.y + this.vh + 20) continue;
       if (it.taken) continue;
       const bob = Math.sin(this.time * 3 + it.x) * 2;
-      if (it.type === 'tape') this.drawTape(ctx, it.x, it.y + bob);
+      if (it.type === 'tape') { if (this.chispitas) this.brillo(ctx, it.x, it.y + bob, 18, RAREZA[2].brillo, 0.45 + Math.sin(this.time * 4 + it.x) * 0.2); this.drawTape(ctx, it.x, it.y + bob); }
       else if (it.type === 'adorno') {
         this.brillo(ctx, it.x, it.y + bob, 16, '#fff0b0', 0.55);
         drawAdorno(ctx, it.adorno, it.x, it.y + bob, adorno(it.adorno).sec === 'grandes' ? 26 : adorno(it.adorno).pj ? 22 : 16, this.time);
@@ -1369,9 +1391,66 @@ export class Game {
         const w = (Math.abs(Math.cos(this.time * 4 + it.x)) * 7 + 1) * escala;
         const h = 7 * escala;
         if (it.ttl != null) this.brillo(ctx, it.x, it.y + bob, 16 * escala, '#ffe36b', 0.7);
+        // las monedas raras brillan en el suelo: la de metal, azul; la de oro, dorada (y más) [PROVISIONAL]
+        else if (this.chispitas && it.kind !== 'bronce') { const r = RAREZA[it.kind === 'oro' ? 2 : 1]; this.brillo(ctx, it.x, it.y + bob, it.kind === 'oro' ? 17 : 14, r.brillo, 0.35 + Math.sin(this.time * 4 + it.x) * 0.15); }
         drawCoinFast(ctx, it.x, it.y + bob, it.kind, w, h);
         ctx.restore();
       }
+    }
+  }
+
+  // ---- lo que se siente al coger algo (idea del padre de Elora): chispitas, un número que sube y un sonido que dependen
+  // de lo raro que es. 0 normal (blanco), 1 raro (azul), 2 súper raro (dorado). Qué es raro: [PROVISIONAL] (Clad)
+  rareza(it) {
+    if (it.type === 'coin') return it.kind === 'oro' ? 2 : it.kind === 'metal' ? 1 : 0;
+    if (it.type === 'tape') return 2;
+    if (it.type === 'heart') return 1;
+    if (it.type === 'adorno') { const pt = (adorno(it.adorno) || {}).puntos || 1; return pt >= 10 ? 2 : pt >= 3 ? 1 : 0; }
+    return 0;
+  }
+  celebrar(it) {
+    if (!this.chispitas) return;
+    const r = this.rareza(it);
+    const texto = it.type === 'coin' ? '+' + coinValue(it.kind)
+      : it.type === 'heart' ? '+1 ❤' : it.type === 'tape' ? '📼' : it.type === 'food' ? '😌' : it.type === 'stamina' ? '⚡'
+      : it.type === 'adorno' ? '+' + ((adorno(it.adorno) || {}).puntos || 1) + ' ⭐' : '';
+    const n = [8, 16, 30][r], parts = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.5, v = (40 + Math.random() * 60) * (1 + r * 0.35);
+      parts.push({ vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, c: RAREZA[r].colores[i % RAREZA[r].colores.length], s: 1.5 + Math.random() * (1.5 + r) });
+    }
+    this.efectos.push({ x: it.x, y: it.y, t: 0, dura: [0.8, 1.1, 1.6][r], r, texto, etiqueta: r ? t(r === 2 ? 'raro.super' : 'raro.raro') : '', parts });
+    if (r === 1) sfx.raro();
+    if (r === 2) { sfx.superRaro(); this.destello = 0.22; }
+  }
+  drawEfectos(ctx) {
+    for (const ef of this.efectos) {
+      const k = ef.t / ef.dura, R = RAREZA[ef.r];
+      ctx.save();
+      // el anillo que se abre (raros y súper raros)
+      if (ef.r) {
+        ctx.globalAlpha = Math.max(0, 1 - ef.t / 0.5); ctx.strokeStyle = R.colores[0]; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(ef.x, ef.y, 6 + ef.t * (ef.r === 2 ? 120 : 80), 0, Math.PI * 2); ctx.stroke();
+      }
+      // las chispitas (cuadraditos que giran un poco y caen)
+      for (const pa of ef.parts) {
+        const x = ef.x + pa.vx * ef.t, y = ef.y + pa.vy * ef.t + 90 * ef.t * ef.t;
+        ctx.globalAlpha = Math.max(0, 1 - k); ctx.fillStyle = pa.c;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(ef.t * 6 + pa.vx); ctx.fillRect(-pa.s, -pa.s, pa.s * 2, pa.s * 2); ctx.restore();
+      }
+      // el número que sube, y la etiqueta «¡Raro!» o «¡SÚPER RARO!»
+      const sube = 12 + ef.t * 34, crece = Math.min(1, ef.t / 0.12) * (1 + 0.15 * Math.sin(ef.t * 12) * (ef.r ? 1 : 0));
+      ctx.globalAlpha = Math.min(1, (1 - k) * 2.2);
+      ctx.translate(ef.x, ef.y - sube); ctx.scale(crece, crece);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+      ctx.font = `bold ${[13, 16, 19][ef.r]}px "Segoe UI", Arial`;
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.strokeText(ef.texto, 0, 0);
+      ctx.fillStyle = R.texto; ctx.fillText(ef.texto, 0, 0);
+      if (ef.etiqueta) {
+        ctx.font = `bold ${ef.r === 2 ? 12 : 10}px "Segoe UI", Arial`;
+        ctx.strokeText(ef.etiqueta, 0, -16); ctx.fillStyle = R.colores[0]; ctx.fillText(ef.etiqueta, 0, -16);
+      }
+      ctx.restore();
     }
   }
 

@@ -166,6 +166,10 @@ export function trinket(id) { return TRINKETS.lista.find((t) => t.id === id) || 
 // cuántos trinkets caben (la Mochila no cuenta)
 export function huecosTrinkets(puestos) { return puestos.includes('mochila') ? TRINKETS.huecosMochila : TRINKETS.huecos; }
 
+// Lo que se siente al coger algo (idea del padre de Elora; chispitas y rareza en src/game.js). A Elora le gusta, pero
+// todavía no se publica: hasta abierto = true, solo con su código secreto.
+export const CHISPITAS = { abierto: false };
+
 export const LEVEL = {
   bloodDecals: 14,    // manchas de sangre (dibujada) por el suelo de cada pasillo
 };

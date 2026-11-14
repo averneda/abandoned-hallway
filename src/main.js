@@ -1,6 +1,6 @@
 // Arranque del juego y paso entre pantallas: menú → lobby → (cinemática) → pasillos.
 
-import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ropaLista, ARBOL, TRINKETS, trinket, huecosTrinkets } from './config.js';
+import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ropaLista, ARBOL, TRINKETS, trinket, huecosTrinkets, CHISPITAS } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
@@ -39,7 +39,7 @@ const cajaCintas = new Set();
 // modoNavidad: se puso el código del modo Navidad (Elora): lobby de Navidad y el reno gratis
 // modoBloodies: se puso el código de la actualización de los Bloodies (Elora): salen ya los Bloodies especiales
 // modoPerrita: se puso el código de la perrita (Elora): la perrita sale en la tienda, gratis
-const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false, modoBloodies: false, modoPerrita: false, modoTrinkets: false };
+const flags = { introSeen: false, tutorialSeen: false, lobbySeen: false, drakeEnTienda: false, modoPijama: false, modoNavidad: false, modoBloodies: false, modoPerrita: false, modoTrinkets: false, modoRaro: false };
 // La skin que lleva puesta cada personaje (id del personaje → skin). Se ven en el modo pijama o, desde que
 // salen las skins (Elora: martes 10 a las 16:00), si la has comprado.
 const skinsElegidas = {};
@@ -98,6 +98,7 @@ try {
   flags.modoBloodies = localStorage.getItem('holeway.modoBloodies') === '1';
   flags.modoPerrita = localStorage.getItem('holeway.modoPerrita') === '1';
   flags.modoTrinkets = localStorage.getItem('holeway.modoTrinkets') === '1';
+  flags.modoRaro = localStorage.getItem('holeway.modoRaro') === '1';
   Object.assign(skinsElegidas, JSON.parse(localStorage.getItem('holeway.skins') || '{}'));
   Object.assign(skinsCompradas, JSON.parse(localStorage.getItem('holeway.skinsCompradas') || '{}'));
   // el calendario de este año (los de antes de 2027 no guardaban el año: eran de 2026)
@@ -132,6 +133,7 @@ function save() {
     localStorage.setItem('holeway.modoBloodies', flags.modoBloodies ? '1' : '0');
     localStorage.setItem('holeway.modoPerrita', flags.modoPerrita ? '1' : '0');
     localStorage.setItem('holeway.modoTrinkets', flags.modoTrinkets ? '1' : '0');
+    localStorage.setItem('holeway.modoRaro', flags.modoRaro ? '1' : '0');
     localStorage.setItem('holeway.skins', JSON.stringify(skinsElegidas));
     localStorage.setItem('holeway.skinsCompradas', JSON.stringify(skinsCompradas));
     localStorage.setItem('holeway.adviento', JSON.stringify(adviento));
@@ -194,6 +196,8 @@ function gotoMenu() {
     bloodies: { activo: () => flags.modoBloodies, cambiar: (on) => { flags.modoBloodies = on; save(); } },
     // los trinkets (Elora): una actualización futura; hasta que se abra, solo con su código
     trinkets: { activo: () => flags.modoTrinkets, cambiar: (on) => { flags.modoTrinkets = on; save(); } },
+    // las chispitas al coger cosas (Elora): salen más adelante; hasta entonces, solo con su código
+    raro: { activo: () => flags.modoRaro, cambiar: (on) => { flags.modoRaro = on; save(); } },
     // la perrita (Elora): con su código sale en la tienda, gratis; al quitarlo, si la llevabas, vuelves a Carot
     perrita: {
       activo: () => flags.modoPerrita,
@@ -451,6 +455,7 @@ function startLevel(n, reintento = false) {
   const game = new Game(run.character, n, {
     ...common,
     startHearts: run.hearts,
+    chispitas: CHISPITAS.abierto || flags.modoRaro,   // chispitas y rareza al coger cosas (Elora: con su código hasta que se abra)
     trinkets: trinketsAbiertos() ? trinketsPuestos : [],   // los trinkets que llevas (Elora; solo si están abiertos)
     nieve: esNavidad(),   // en Navidad, montones de nieve en los pasillos (Elora)
     navidad: esNavidad(), // y los Bloodies con gorrito de Papá Noel (Elora)

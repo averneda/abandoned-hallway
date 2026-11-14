@@ -15,6 +15,7 @@ const dict = {
     'code.enter': 'Entrar', 'code.back': 'Volver', 'code.ok': '¡Código correcto! Entrando...', 'code.wrong': 'Ese código no es. ¡Prueba otra vez!',
     // el modo pijama secreto (Elora): las skins de pijama, gratis
     'code.p50': '🐉🔥 ¡Al pasillo 50! Cuidado con el fuego...',
+    'code.raroOn': '✨ ¡Chispitas activadas! Coge cosas en los pasillos…', 'code.raroOff': '✨ Quitar las chispitas', 'code.raroOffDone': 'Chispitas quitadas',
     'code.trinketsOn': '🎒 ¡Trinkets abiertos! Búscalos en la tienda de Tarda…', 'code.trinketsOff': '🎒 Quitar los trinkets', 'code.trinketsOffDone': 'Trinkets quitados',
     'code.perritaOn': '🐶 ¡La perrita ha llegado! Búscala en la tienda de Tarda…', 'code.perritaOff': '🐶 Quitar la perrita', 'code.perritaOffDone': 'Perrita quitada',
     'code.bloodiesOn': '🩸 ¡Actualización de los Bloodies! Ya pueden salir los Bloodies especiales…', 'code.bloodiesOff': '🩸 Quitar los Bloodies especiales', 'code.bloodiesOffDone': 'Bloodies especiales quitados', 'menu.bloodies': '🩸 Bloodies especiales',
@@ -310,6 +311,7 @@ const dict = {
     'trinket.botella': "Botella de agua", 'trinket.botella.hace': "Te cansas menos al correr",
     'trinket.amuleto': "Amuleto de la suerte", 'trinket.amuleto.hace': "A veces los Bloodies no te ven",
     'msg.suerte': "🍀 ¡Qué suerte! No te ha visto",
+    'raro.raro': "¡Raro!", 'raro.super': "¡SÚPER RARO!",
     'puntas.precio': "{n} 🪙",
     'puntas.tuya': "✓ Ya es tuya",
     'puntas.comprar': "¿Comprar por {n}? Toca otra vez",
@@ -493,6 +495,7 @@ const dict = {
     'code.enter': 'Go', 'code.back': 'Back', 'code.ok': 'Correct code! Going in...', 'code.wrong': "That's not the code. Try again!",
     // the secret pyjama mode (Elora): pyjama skins, for free
     'code.p50': '🐉🔥 To hallway 50! Watch out for the fire...',
+    'code.raroOn': '✨ Sparkles on! Pick things up in the hallways…', 'code.raroOff': '✨ Remove the sparkles', 'code.raroOffDone': 'Sparkles removed',
     'code.trinketsOn': '🎒 Trinkets unlocked! Look for them in Tarda\'s shop…', 'code.trinketsOff': '🎒 Remove the trinkets', 'code.trinketsOffDone': 'Trinkets removed',
     'code.perritaOn': '🐶 The puppy is here! Look for her in Tarda\'s shop…', 'code.perritaOff': '🐶 Remove the puppy', 'code.perritaOffDone': 'Puppy removed',
     'code.bloodiesOn': '🩸 Bloodie update! The special Bloodies can show up now…', 'code.bloodiesOff': '🩸 Remove the special Bloodies', 'code.bloodiesOffDone': 'Special Bloodies removed', 'menu.bloodies': '🩸 Special Bloodies',
@@ -788,6 +791,7 @@ const dict = {
     'trinket.botella': "Water bottle", 'trinket.botella.hace': "You get less tired running",
     'trinket.amuleto': "Lucky charm", 'trinket.amuleto.hace': "Sometimes Bloodies don't see you",
     'msg.suerte': "🍀 Lucky! It didn't see you",
+    'raro.raro': "Rare!", 'raro.super': "SUPER RARE!",
     'puntas.precio': "{n} 🪙",
     'puntas.tuya': "✓ Yours",
     'puntas.comprar': "Buy for {n}? Tap again",
