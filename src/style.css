@@ -311,11 +311,19 @@ button.cartel-x:hover, button.cartel-x:focus-visible { background: #fff6dc; colo
 /* los trinkets (Elora) */
 .screen.trinkets { justify-content: flex-start; overflow-y: auto; gap: 8px; }
 .trinkets-fila { max-width: 840px; gap: 8px; }
-.card.trinket { width: 152px; min-width: 0; padding: 6px 5px; gap: 1px; font: inherit; color: inherit; }
-.card.trinket.locked { opacity: 0.8; filter: none; cursor: pointer; }
-.card.trinket .name { font-size: 15px; line-height: 1.15; }
-.card.trinket .ability { font-size: 12px; min-height: 2.4em; }
-.card.trinket canvas.trinket-dibujo { width: 70px; height: 70px; }
+.trinket-tarjeta { width: 152px; padding: 6px 5px; border-radius: 14px; background: var(--panel); border: 3px solid #3b2f47; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.trinket-tarjeta.current { border-color: #ffd95a; }
+.trinket-tarjeta.locked { opacity: 0.85; }
+.trinket-tarjeta .name { font-size: 14px; font-weight: 700; line-height: 1.15; text-align: center; }
+.trinket-tarjeta .ability { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.2; }
+.trinket-tarjeta canvas.trinket-dibujo { width: 46px; height: 46px; }
+.trinket-boton { min-width: 0; width: 100%; font-size: 12px; padding: 3px 5px; border-radius: 8px; margin-top: auto; }
+.trinket-boton.subir { background: #2f7a3e; border-color: #6fd08a; margin-top: 2px; }
+.trinket-nivel { font-size: 12px; font-weight: 800; color: #ffd95a; }
+.trinket-barra { position: relative; width: 100%; height: 14px; border-radius: 7px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.trinket-barra-dentro { height: 100%; background: linear-gradient(90deg, #4aa3ff, #7affd8); }
+.trinket-barra.llena .trinket-barra-dentro { background: linear-gradient(90deg, #ffd23f, #ffe9a0); }
+.trinket-barra-txt { position: absolute; inset: 0; font-size: 10px; font-weight: 800; line-height: 14px; text-align: center; color: #fff; text-shadow: 0 1px 2px #000; }
 .puntas-fila .card { width: 150px; }
 .screen.arbol-tienda { gap: 8px; padding: 14px; }
 .arbol-tienda-lista { max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 8px; }

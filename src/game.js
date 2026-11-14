@@ -1,6 +1,6 @@
 // El nivel en marcha: jugador, Bloodies, objetos, botón, puertas y dibujo.
 
-import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL, BLOODIES_ESPECIALES as BE, zoomJuego, trinket } from './config.js';
+import { TILE, VIEW_W, VIEW_H, PLAYER, ANXIETY, STRESS, STAMINA, ENEMY, ABILITIES, LIGHT_RADIUS_TILES, DOOR_CLOSE_DELAY, statMul, maxHearts, DRAKE, NIEVE, ARBOL, BLOODIES_ESPECIALES as BE, zoomJuego, trinketNivel } from './config.js';
 import { T, generateLevel, tileAt, setTile, solidFor, blocksSight, rng } from './level.js';
 import { CHARACTERS, drawCharacter, PINTURAS_FOSFORITO, DRAKE_SANGRIENTO, characterById, TARDA_GRIS, rrect } from './characters.js';
 // de quién puede ir disfrazado un Bloodie: de todos menos del personaje secreto de Navidad (el reno),
@@ -151,7 +151,8 @@ export class Game {
 
     const L = this.level;
     // los trinkets que llevas puestos (Elora): cada uno cambia un poco un parámetro, la luz, los corazones o atrae monedas
-    this.trinkets = ((callbacks && callbacks.trinkets) || []).map(trinket).filter(Boolean);
+    // (con su nivel: callbacks.nivelTrinket(id) dice el nivel de cada uno)
+    this.trinkets = ((callbacks && callbacks.trinkets) || []).map((id) => trinketNivel(id, callbacks.nivelTrinket ? callbacks.nivelTrinket(id) : 1)).filter(Boolean);
     this.jumpTime = character.ability === 'carot' ? ABILITIES.carot.jumpTime : PLAYER.jumpTime;
     this.player = {
       x: L.spawn.x, y: L.spawn.y, r: PLAYER.radius, facing: 'up', walk: 0,
@@ -641,6 +642,7 @@ export class Game {
       if (e.suerte > 0) { e.suerte -= dt; sees = false; }
       else if (sees && !e.chasing && this.extra('suerte') > 0 && Math.random() < this.extra('suerte')) {
         e.suerte = this.extra('suerteDura'); sees = false; this.say(t('msg.suerte'), 1.5);
+        if (this.cb.onUsoTrinket) this.cb.onUsoTrinket('amuleto');   // la barrita del Amuleto sube cuando hace su efecto (Elora)
       }
       if (sees) { e.chasing = true; e.lostFor = 0; e.lastSeen = { x: p.x, y: p.y }; }
       else if (e.chasing) {

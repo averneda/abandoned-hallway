@@ -1,6 +1,6 @@
 // Arranque del juego y paso entre pantallas: menú → lobby → (cinemática) → pasillos.
 
-import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ropaLista, ARBOL, TRINKETS, trinket, huecosTrinkets, CHISPITAS } from './config.js';
+import { VIEW_W, VIEW_H, CONTINUE_EVERY, COINS, DRAKE, ADVIENTO, NAVIDAD, skinsListas, ropaLista, ARBOL, TRINKETS, trinket, huecosTrinkets, CHISPITAS, TRINKETS_NIVEL, precioSubir, nivelMaxDe, barraDe } from './config.js';
 import { loadLang, t } from './i18n.js';
 import { Input } from './input.js';
 import { UI, tapeName } from './ui.js';
@@ -68,7 +68,16 @@ const macetasTuyas = new Set([MACETA_GRATIS]);
 const trinketsTuyos = new Set();
 // los trinkets son una actualización futura (Elora): hasta que se abra (TRINKETS.abierto), solo con su código
 const trinketsAbiertos = () => TRINKETS.abierto || flags.modoTrinkets;
-let trinketsPuestos = [];   // los colores de la maceta que tienes (la marrón, gratis: Elora)
+let trinketsPuestos = [];
+// el nivel y la barrita de cada trinket (Elora): { id: { nivel, barra } }
+const trinketsNivel = {};
+const nivelDe = (id) => (trinketsNivel[id] && trinketsNivel[id].nivel) || 1;
+// la barrita sube 1 (por pasillo con el trinket puesto, o el Amuleto cuando hace su efecto); llena, se queda en 30
+function llenarBarra(id) {
+  if (!trinketsTuyos.has(id)) return;
+  const tn = trinketsNivel[id] = trinketsNivel[id] || { nivel: 1, barra: 0 };
+  if (tn.nivel < nivelMaxDe(id)) tn.barra = Math.min(barraDe(id), tn.barra + 1);
+}   // los colores de la maceta que tienes (la marrón, gratis: Elora)
 // Los personajes que tienes: los comprados y, gratis y sin guardarlo, el reno en el modo Navidad y Drake en el
 // modo pijama (Elora: para probar su pijama)
 function tienes() {
@@ -114,6 +123,7 @@ try {
   Object.assign(recordAlm, JSON.parse(localStorage.getItem('holeway.recordAlmohadas') || '{}'));
   for (const id of JSON.parse(localStorage.getItem('holeway.trinkets') || '[]')) if (trinket(id)) trinketsTuyos.add(id);
   trinketsPuestos = JSON.parse(localStorage.getItem('holeway.trinketsPuestos') || '[]').filter((id) => trinketsTuyos.has(id));
+  for (const [id, tn] of Object.entries(JSON.parse(localStorage.getItem('holeway.trinketsNivel') || '{}'))) if (trinket(id) && tn) trinketsNivel[id] = { nivel: Math.max(1, Math.min(nivelMaxDe(id), tn.nivel | 0)), barra: Math.max(0, Math.min(barraDe(id), tn.barra | 0)) };
   const chId = localStorage.getItem('holeway.character');
   if (chId && tienes().has(chId)) run.character = aplicarSkin(characterById(chId));
 } catch (e) { /* nada */ }
@@ -144,6 +154,7 @@ function save() {
     localStorage.setItem('holeway.recordAlmohadas', JSON.stringify(recordAlm));
     localStorage.setItem('holeway.trinkets', JSON.stringify([...trinketsTuyos]));
     localStorage.setItem('holeway.trinketsPuestos', JSON.stringify(trinketsPuestos));
+    localStorage.setItem('holeway.trinketsNivel', JSON.stringify(trinketsNivel));
   } catch (e) { /* nada */ }
 }
 
@@ -247,10 +258,20 @@ function gotoLobby(abrir) {
       // los trinkets (Elora): se compran aquí y se ponen o se quitan tocándolos
       const trinkets = (focoId) => ui.showTrinkets({
         tienes: trinketsTuyos, puestos: trinketsPuestos, monedas: () => wallet.coins, focoId,
+        nivel: (id) => trinketsNivel[id] || { nivel: 1, barra: 0 },
+        // subir de nivel (Elora): con la barrita llena, pagando
+        onSubir: (id) => {
+          const tn = trinketsNivel[id] = trinketsNivel[id] || { nivel: 1, barra: 0 };
+          const precio = precioSubir(tn.nivel);
+          if (tn.barra < barraDe(id) || tn.nivel >= nivelMaxDe(id) || wallet.coins < precio) return;
+          wallet.coins -= precio; tn.nivel++; tn.barra = 0;
+          save(); trinkets(id);
+          ui.toast('⬆️ ' + t('trinkets.subido', { name: t('trinket.' + id), n: tn.nivel }));
+        },
         onComprar: (id) => {
           const tk = trinket(id); if (!tk || wallet.coins < tk.precio) return;
           wallet.coins -= tk.precio; trinketsTuyos.add(id);
-          if (id === 'mochila' || trinketsPuestos.filter((x) => x !== 'mochila').length < huecosTrinkets(trinketsPuestos)) trinketsPuestos.push(id);
+          if (id === 'mochila' || trinketsPuestos.filter((x) => x !== 'mochila').length < huecosTrinkets(trinketsPuestos, nivelDe('mochila'))) trinketsPuestos.push(id);
           save(); trinkets(id);
           ui.toast(tk.emoji + ' ' + t('trinkets.comprado', { name: t('trinket.' + id) }));
         },
@@ -458,7 +479,9 @@ function startLevel(n, reintento = false) {
     ...common,
     startHearts: run.hearts,
     chispitas: CHISPITAS.abierto || flags.modoRaro,   // chispitas y rareza al coger cosas (Elora: con su código hasta que se abra)
-    trinkets: trinketsAbiertos() ? trinketsPuestos : [],   // los trinkets que llevas (Elora; solo si están abiertos)
+    trinkets: trinketsAbiertos() ? trinketsPuestos : [],
+    nivelTrinket: nivelDe,
+    onUsoTrinket: (id) => { if (trinketsAbiertos()) { llenarBarra(id); save(); } },   // los trinkets que llevas (Elora; solo si están abiertos)
     nieve: esNavidad(),   // en Navidad, montones de nieve en los pasillos (Elora)
     navidad: esNavidad(), // y los Bloodies con gorrito de Papá Noel (Elora)
     adornos: esNavidad(), // y adornos para el árbol del lobby (Elora)
@@ -470,7 +493,9 @@ function startLevel(n, reintento = false) {
     },
     onPause: () => {
       game.paused = true;
-      ui.showPause({ onResume: () => { ui.clear(); game.paused = false; input.clear(); }, onMenu: () => gotoLobby(), confirmar: t('seguro.pasillo', { n }) });
+      // en la pausa del pasillo, el botón TRINKETS para ver los tuyos con su nivel y su barrita (Elora)
+      const trinketsPausa = trinketsAbiertos() ? { puestos: trinketsPuestos.slice(), nivel: (id) => trinketsNivel[id] || { nivel: 1, barra: 0 } } : null;
+      ui.showPause({ onResume: () => { ui.clear(); game.paused = false; input.clear(); }, onMenu: () => gotoLobby(), confirmar: t('seguro.pasillo', { n }), trinkets: trinketsPausa });
     },
     onDeath: (reason) => {
       music.stop();
@@ -482,6 +507,8 @@ function startLevel(n, reintento = false) {
     },
     onComplete: ({ tapes }) => {
       practiceTaken.clear();
+      // los trinkets que llevas puestos llenan su barrita 1 por pasillo (menos el Amuleto, que sube con su efecto: Elora)
+      if (trinketsAbiertos()) for (const id of trinketsPuestos) if (id !== 'amuleto') llenarBarra(id);
       run.hearts = game.player.hearts;   // pasan al pasillo siguiente tal cual
       run.tapes += tapes;
       wallet.coins += COINS.levelBonus;

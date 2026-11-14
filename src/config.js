@@ -163,8 +163,51 @@ export const TRINKETS = {
   ],
 };
 export function trinket(id) { return TRINKETS.lista.find((t) => t.id === id) || null; }
+// Subir de nivel los trinkets (Elora, 14-11-2026): hasta el nivel 150. Cada trinket tiene una barrita que se llena
+// jugando con él puesto (1 por pasillo; el Amuleto, 1 cada vez que hace su efecto); con la barrita llena (siempre 30)
+// se paga y sube 1 nivel. Precio: 10 la primera vez y 5 más cada vez (10, 15, 20...). Cada nivel, los que van en
+// porcentaje mejoran 5 puntos (Elora); el Amuleto es especial: 1 punto cada nivel, de 30 % a como mucho 90 % (Elora).
+// El Corazón, el Imán y la Mochila son distintos (Elora): solo suben hasta el nivel 3 y su barrita se llena con 100
+// pasillos. Cada nivel: el Corazón da 1 corazón más (+1, +2, +3), el Imán atrae desde 1 casilla más lejos y la Mochila
+// deja llevar 1 trinket más (6, 7, 8).
+// Máximos [PROVISIONAL] (Clad): los que restan (peluche, calcetines, botella) paran en 90 % menos, porque al 100 % ya no
+// habría ansiedad, ni Bloodies que te vieran, ni cansancio; los que suman, en el triple (zapatillas: más rápido, el
+// personaje atravesaría las paredes; linterna: ya se ve toda la pantalla).
+export const TRINKETS_NIVEL = {
+  max: 150, barra: 30, precio: 10, precioSube: 5,
+  // los que suben distinto (Elora): su nivel máximo y su barrita
+  especiales: { corazon: { max: 3, barra: 100 }, iman: { max: 3, barra: 100 }, mochila: { max: 3, barra: 100 } },
+  // cómo mejora cada uno: campo, cuánto por nivel, y si suma o resta (los que no salen aquí no cambian con el nivel)
+  mejora: {
+    zapatillas: { campo: 'velocidad', paso: 0.05, suma: true, max: 3 },
+    linterna:   { campo: 'luz', paso: 0.05, suma: true, max: 3 },
+    peluche:    { campo: 'cordura', paso: 0.05, max: 0.9 },
+    calcetines: { campo: 'sigilo', paso: 0.05, max: 0.9 },
+    botella:    { campo: 'resistencia', paso: 0.05, max: 0.9 },
+    amuleto:    { campo: 'suerte', paso: 0.01, prob: true, max: 0.9 },
+    corazon:    { campo: 'corazones', paso: 1, suma: true, max: 3 },
+    iman:       { campo: 'iman', paso: 1, suma: true, max: 5.5 },
+  },
+};
+export function nivelMaxDe(id) { const e = TRINKETS_NIVEL.especiales[id]; return e ? e.max : TRINKETS_NIVEL.max; }
+export function barraDe(id) { const e = TRINKETS_NIVEL.especiales[id]; return e ? e.barra : TRINKETS_NIVEL.barra; }
+export function precioSubir(nivel) { return TRINKETS_NIVEL.precio + TRINKETS_NIVEL.precioSube * (nivel - 1); }
+// el trinket con lo que hace en ese nivel
+export function trinketNivel(id, nivel = 1) {
+  const base = trinket(id); if (!base) return null;
+  const m = TRINKETS_NIVEL.mejora[id];
+  if (!m) return base;
+  const extra = m.paso * (Math.max(1, nivel) - 1);
+  if (!extra) return base;
+  const tk = { ...base }, v = base[m.campo];
+  if (m.prob) tk[m.campo] = Math.min(m.max, v + extra);                 // probabilidad: 0.30 → 0.31 → ... → 0.90
+  else if (m.suma) tk[m.campo] = Math.min(m.max, v + extra);           // multiplicador que suma: 1.15 → 1.20 → ... → 3
+  else tk[m.campo] = Math.max(1 - m.max, v - extra);                    // multiplicador que resta: 0.75 → 0.70 → ... → 0.10
+  return tk;
+}
 // cuántos trinkets caben (la Mochila no cuenta)
-export function huecosTrinkets(puestos) { return puestos.includes('mochila') ? TRINKETS.huecosMochila : TRINKETS.huecos; }
+// (la Mochila da 1 hueco más en cada nivel: Elora; nivelMochila es su nivel)
+export function huecosTrinkets(puestos, nivelMochila = 1) { return puestos.includes('mochila') ? TRINKETS.huecosMochila + Math.max(0, nivelMochila - 1) : TRINKETS.huecos; }
 
 // Lo que se siente al coger algo (idea del padre de Elora; chispitas y rareza en src/game.js). A Elora le gusta, pero
 // todavía no se publica: hasta abierto = true, solo con su código secreto.

@@ -1,4 +1,4 @@
-import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL, horaRopa, ropaLista, modoMovil, ponerModoMovil, TRINKETS, huecosTrinkets } from './config.js';
+import { maxHearts, horaSkins, ahoraJuego, skinsListas, NAVIDAD, ADVIENTO, fechaNavidad, ARBOL, horaRopa, ropaLista, modoMovil, ponerModoMovil, TRINKETS, huecosTrinkets, precioSubir, nivelMaxDe, barraDe } from './config.js';
 // Pantallas en HTML por encima del juego: menú, personajes, diálogo, pausa, fin, continuar.
 
 import { t, getLang, setLang } from './i18n.js';
@@ -743,16 +743,49 @@ export class UI {
 
   // ---------------- pausa
   // confirmar: un texto que se pregunta antes de salir (Elora: en un pasillo, «¿Seguro…?», para no perderlo sin querer)
-  showPause({ onResume, onMenu, menuLabel, confirmar }) {
+  // trinkets: { puestos, nivel(id) } para el botón TRINKETS de la pausa (Elora), o null si no hay trinkets
+  showPause({ onResume, onMenu, menuLabel, confirmar, trinkets }) {
     this.clear();
+    const otraVez = () => this.showPause({ onResume, onMenu, menuLabel, confirmar, trinkets });
     const s = this.el('div', 'screen dim');
     s.appendChild(this.el('h2', '', t('pause.title')));
     const r = this.button(t('pause.resume'), onResume, true);
     s.appendChild(r);
-    s.appendChild(this.button(t(menuLabel || 'pause.menu'), confirmar ? () => this.showSeguro({ texto: confirmar, onSi: onMenu, onNo: () => this.showPause({ onResume, onMenu, menuLabel, confirmar }) }) : onMenu));
+    if (trinkets) s.appendChild(this.button(t('pause.trinkets'), () => this.showTrinketsPausa({ ...trinkets, onBack: otraVez })));
+    s.appendChild(this.button(t(menuLabel || 'pause.menu'), confirmar ? () => this.showSeguro({ texto: confirmar, onSi: onMenu, onNo: otraVez }) : onMenu));
     this.root.appendChild(s);
     r.focus();
     this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyP') onResume(); };
+  }
+
+  // Los trinkets que llevas, con su nivel y su barrita, desde la pausa del pasillo (Elora). Solo para mirar.
+  showTrinketsPausa({ puestos, nivel, onBack }) {
+    this.clear();
+    const s = this.el('div', 'screen dim trinkets');
+    s.appendChild(this.el('h2', '', t('pause.trinketsTitulo')));
+    if (!puestos.length) s.appendChild(this.el('p', '', t('pause.trinketsNinguno')));
+    const fila = this.el('div', 'cards trinkets-fila');
+    for (const id of puestos) {
+      const c = this.el('div', 'trinket-tarjeta current');
+      const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; cv.className = 'trinket-dibujo';
+      const cx = cv.getContext('2d'); cx.translate(64, 64); cx.scale(1.15, 1.15); drawTrinket(cx, id);
+      c.appendChild(cv);
+      c.appendChild(this.el('div', 'name', t('trinket.' + id)));
+      const nv = nivel(id), tope = nv.nivel >= nivelMaxDe(id), lleno = nv.barra >= barraDe(id);
+      c.appendChild(this.el('div', 'trinket-nivel', t('trinkets.nivel', { n: nv.nivel })));
+      const barra = this.el('div', 'trinket-barra' + (lleno || tope ? ' llena' : ''));
+      const dentro = this.el('div', 'trinket-barra-dentro'); dentro.style.width = (tope ? 100 : 100 * nv.barra / barraDe(id)) + '%';
+      barra.append(dentro, this.el('span', 'trinket-barra-txt', tope ? t('trinkets.tope') : nv.barra + ' / ' + barraDe(id)));
+      c.appendChild(barra);
+      if (lleno && !tope) c.appendChild(this.el('div', 'ability', t('pause.trinketsLleno')));
+      fila.appendChild(c);
+    }
+    s.appendChild(fila);
+    const v = this.button(t('puntas.back'), onBack, true);
+    s.appendChild(v);
+    this.root.appendChild(s);
+    v.focus();
+    this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyP') onBack(); };
   }
 
   // ¿Seguro? Sí / No. Lo elegido primero es «No», para que no se salga sin querer (Elora)
@@ -1405,41 +1438,65 @@ export class UI {
   // para siempre; la estrella es gratis)
   // ---------------- los trinkets (Elora): se compran con monedas (el primer toque pregunta y el segundo compra) y,
   // los que tienes, se ponen o se quitan tocándolos. Caben 3 (6 con la Mochila grande, que no ocupa hueco).
-  showTrinkets({ tienes, puestos, monedas, focoId, onComprar, onPoner, onQuitar, onBack }) {
+  showTrinkets({ tienes, puestos, monedas, focoId, nivel, onComprar, onPoner, onQuitar, onSubir, onBack }) {
     this.clear();
     const s = this.el('div', 'screen dim trinkets');
     s.appendChild(this.el('h2', '', t('trinkets.title')));
-    const huecos = huecosTrinkets(puestos), llevas = puestos.filter((id) => id !== 'mochila').length;
+    const huecos = huecosTrinkets(puestos, nivel('mochila').nivel), llevas = puestos.filter((id) => id !== 'mochila').length;
     s.appendChild(this.el('p', 'small', t('trinkets.llevas', { n: llevas, max: huecos })));
     const fila = this.el('div', 'cards trinkets-fila');
     let foco = null;
     for (const tk of TRINKETS.lista) {
       const tiene = tienes.has(tk.id), puesto = puestos.includes(tk.id);
-      const c = this.el('button', 'card trinket' + (puesto ? ' current' : '') + (tiene ? '' : ' locked'));
+      // la tarjeta (no es un botón: dentro lleva el botón de comprar/poner/quitar y, si lo tienes, el de subir de nivel)
+      const c = this.el('div', 'trinket-tarjeta' + (puesto ? ' current' : '') + (tiene ? '' : ' locked'));
       // el dibujo del trinket, como lo describió Elora (src/trinkets.js)
       const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; cv.className = 'trinket-dibujo';
       const cx = cv.getContext('2d'); cx.translate(64, 64); cx.scale(1.15, 1.15); drawTrinket(cx, tk.id);
       c.appendChild(cv);
       c.appendChild(this.el('div', 'name', t('trinket.' + tk.id)));
       c.appendChild(this.el('div', 'ability', t('trinket.' + tk.id + '.hace')));
-      const pie = this.el('div', 'skin-precio', puesto ? t('trinkets.puesto') : tiene ? t('trinkets.poner') : t('puntas.precio', { n: tk.precio }));
-      c.appendChild(pie);
-      c.onclick = () => {
+      // el botón principal: comprar (dos toques), ponértelo o quitártelo
+      const b = this.el('button', 'trinket-boton', puesto ? t('trinkets.puesto') : tiene ? t('trinkets.poner') : t('puntas.precio', { n: tk.precio }));
+      b.onclick = () => {
         if (puesto) { onQuitar(tk.id); return; }
         if (tiene) {
-          if (tk.id !== 'mochila' && llevas >= huecos) { pie.textContent = t('trinkets.lleno'); return; }
+          if (tk.id !== 'mochila' && llevas >= huecos) { b.textContent = t('trinkets.lleno'); return; }
           onPoner(tk.id); return;
         }
-        if (monedas() < tk.precio) { pie.textContent = t('puntas.faltan', { n: tk.precio - monedas() }); return; }
-        if (c.dataset.preguntado) { onComprar(tk.id); return; }
-        c.dataset.preguntado = '1'; pie.textContent = t('puntas.comprar', { n: tk.precio });
+        if (monedas() < tk.precio) { b.textContent = t('puntas.faltan', { n: tk.precio - monedas() }); return; }
+        if (b.dataset.preguntado) { onComprar(tk.id); return; }
+        b.dataset.preguntado = '1'; b.textContent = t('puntas.comprar', { n: tk.precio });
       };
-      if (tk.id === focoId) foco = c;
+      // el nivel y la barrita (Elora): se llena jugando con él puesto; llena, se paga y sube de nivel
+      let bSubir = null;
+      if (tiene) {
+        const nv = nivel(tk.id), lleno = nv.barra >= barraDe(tk.id), tope = nv.nivel >= nivelMaxDe(tk.id);
+        c.appendChild(this.el('div', 'trinket-nivel', t('trinkets.nivel', { n: nv.nivel })));
+        const barra = this.el('div', 'trinket-barra' + (lleno ? ' llena' : ''));
+        const dentro = this.el('div', 'trinket-barra-dentro'); dentro.style.width = (tope ? 100 : 100 * nv.barra / barraDe(tk.id)) + '%';
+        barra.appendChild(dentro);
+        barra.appendChild(this.el('span', 'trinket-barra-txt', tope ? t('trinkets.tope') : nv.barra + ' / ' + barraDe(tk.id)));
+        barra.title = t(tk.id === 'amuleto' ? 'trinkets.barraAmuleto' : 'trinkets.barraPasillos');
+        c.appendChild(barra);
+        if (lleno && !tope) {
+          const precio = precioSubir(nv.nivel);
+          bSubir = this.el('button', 'trinket-boton subir', t('trinkets.subir', { n: precio }));
+          bSubir.onclick = () => {
+            if (monedas() < precio) { bSubir.textContent = t('puntas.faltan', { n: precio - monedas() }); return; }
+            if (bSubir.dataset.preguntado) { onSubir(tk.id); return; }
+            bSubir.dataset.preguntado = '1'; bSubir.textContent = t('trinkets.subirSeguro', { n: precio });
+          };
+        }
+      }
+      c.appendChild(b);
+      if (bSubir) c.appendChild(bSubir);
+      if (tk.id === focoId) foco = bSubir || b;
       fila.appendChild(c);
     }
     s.append(fila, this.el('p', 'small', t('trinkets.ayuda')), this.button(t('puntas.back'), onBack));
     this.root.appendChild(s);
-    (foco || fila.firstChild).focus();
+    (foco || fila.querySelector('button')).focus();
     this.keyHandler = (e) => { if (e.code === 'Escape' || e.code === 'KeyE') onBack(); };
   }
 
