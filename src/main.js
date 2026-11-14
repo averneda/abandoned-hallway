@@ -297,7 +297,9 @@ function gotoLobby(abrir) {
         skins: {
           gratis: (skin, id) => perritaGratis(id) || (esDeNavidad(skin) ? flags.modoNavidad : esDePijama(skin) ? flags.modoPijama : false),
           // la ropa nueva, desde que sale (Elora: el martes 10 por la mañana)
-          disponible: (skin, id) => perritaGratis(id) || esDeNavidad(skin) || (esDePijama(skin) ? flags.modoPijama || skinsListas() : ropaLista()),
+          // los pijamas (Elora, 14-11-2026): se venden solo en la fiesta de pijamas (15-20 nov, desde el estreno del 15 a las
+          // 16:00); el que compraste se puede llevar siempre
+          disponible: (skin, id) => perritaGratis(id) || esDeNavidad(skin) || (esDePijama(skin) ? flags.modoPijama || (skinsListas() && esDiaNino()) || comprada(id, skin) : ropaLista()),
           // de qué personajes se enseñan: en el modo pijama o Navidad, de todos (gratis); si no, solo de los tuyos
           // las de Navidad: en Navidad, de tus personajes (se compran); con el modo Navidad, de todos (gratis); y las que ya tienes
           puede: (id, skin) => perritaGratis(id) || (esDeNavidad(skin) ? flags.modoNavidad || comprada(id, skin) || (esNavidad() && tienes().has(id)) : esDePijama(skin) ? flags.modoPijama || tienes().has(id) : tienes().has(id)),
